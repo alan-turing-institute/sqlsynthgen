@@ -7,8 +7,17 @@ license = "MIT"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "3.9"
+python = "^3.9"
+sqlacodegen = "^2.3.0"
+pydantic = {extras = ["dotenv"], version = "^1.10.2"}
+psycopg2-binary = "^2.9.5"
 
+
+[tool.poetry.group.dev.dependencies]
+black = "^22.10.0"
+isort = "^5.10.1"
+pylint = "^2.15.8"
+mypy = "^0.991"
 
 [build-system]
 requires = ["poetry-core"]
