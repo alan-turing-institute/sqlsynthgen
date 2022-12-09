@@ -1,7 +1,8 @@
+from sqlalchemy import create_engine
+
 from sqlsynthgen.settings import Settings
 from sqlsynthgen.star import metadata
 
-from sqlalchemy import create_engine
 
 def main():
     settings = Settings()
@@ -9,5 +10,5 @@ def main():
     metadata.create_all(bind=engine)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

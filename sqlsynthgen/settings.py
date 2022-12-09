@@ -1,8 +1,10 @@
-from pydantic import BaseSettings, validator, PostgresDsn
-from typing import Optional, Any
+from typing import Any, Optional
+
+from pydantic import BaseSettings, PostgresDsn, validator
+
 
 class Settings(BaseSettings):
-   # Connection parameters for a PostgreSQL database to store
+    # Connection parameters for a PostgreSQL database to store
     # subscription data, user account info, sent emails, etc. See also
     # https://www.postgresql.org/docs/11/libpq-connect.html#LIBPQ-PARAMKEYWORDS
     db_host_name: str  # e.g. "mydb.postgres.database.azure.com" or "0.0.0.0"
@@ -10,11 +12,11 @@ class Settings(BaseSettings):
     db_user_name: str  # e.g. "postgres" or "rcpuser@rcpdb"
     db_password: str
     db_name: str = ""  # e.g. RCPTab or empty for the user's default db
-    ssl_required: bool = False  # Usually False for local and True for Azure DBs 
+    ssl_required: bool = False  # Usually False for local and True for Azure DBs
 
     # postgres_dsn is calculated so do not provide it explicitly
     postgres_dsn: Optional[PostgresDsn]
-    
+
     @validator("postgres_dsn", pre=True)
     def validate_postgres_dsn(cls, _: Optional[PostgresDsn], values: Any) -> str:
         """Build a DSN string from the host, db name, port, username and password."""

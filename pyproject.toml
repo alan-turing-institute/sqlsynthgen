@@ -11,6 +11,7 @@ python = "^3.9"
 sqlacodegen = "^2.3.0"
 pydantic = {extras = ["dotenv"], version = "^1.10.2"}
 psycopg2-binary = "^2.9.5"
+sqlalchemy-utils = "^0.38.3"
 
 
 [tool.poetry.group.dev.dependencies]
