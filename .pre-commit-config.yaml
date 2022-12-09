@@ -1,0 +1,44 @@
+---
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.2.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+  - repo: https://github.com/markdownlint/markdownlint
+    # Note the "v"
+    rev: v0.11.0
+    hooks:
+      - id: markdownlint
+        args: [--style=mdl_style.rb]
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.8.0.4
+    hooks:
+      - id: shellcheck
+  - repo: local
+    hooks:
+      - id: black
+        name: Black
+        entry: poetry run black
+        language: system
+        types: ['python']
+      - id: isort
+        name: isort
+        entry: poetry run isort
+        language: system
+        types: ['python']
+      - id: pylint
+        name: Pylint
+        entry: poetry run pylint
+        language: system
+        types: ['python']
+      - id: mypy
+        name: mypy
+        entry: poetry run mypy
+        language: system
+        exclude: stubs/
+        types: ['python']
