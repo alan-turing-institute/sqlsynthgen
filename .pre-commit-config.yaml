@@ -26,11 +26,19 @@ repos:
         entry: poetry run black
         language: system
         types: ['python']
+        exclude: (?x)(
+          star|
+          tests/examples
+          )
       - id: isort
         name: isort
         entry: poetry run isort
         language: system
         types: ['python']
+        exclude: (?x)(
+          star|
+          tests/examples
+          )
       - id: pylint
         name: Pylint
         entry: poetry run pylint
@@ -41,6 +49,7 @@ repos:
         entry: poetry run mypy --follow-imports=silent
         language: system
         exclude: (?x)(
-          star
+          star|
+          tests/examples
           )
         types: ['python']
