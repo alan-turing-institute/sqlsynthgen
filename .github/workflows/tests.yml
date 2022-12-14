@@ -1,5 +1,5 @@
 ---
-name: pre-commit action
+name: unit test action
 on:
   pull_request:
   # Run on merge to main because caches are inherited from parent branches
@@ -8,7 +8,6 @@ on:
       - main
 env:
   # This should be the default but we'll be explicit
-  PRE_COMMIT_HOME: ~/.caches/pre-commit
   PYTHON_VERSION: "3.9"
 jobs:
   the_job:
@@ -41,22 +40,7 @@ jobs:
         if: steps.poetry-cache.outputs.cache-hit != 'true'
         run: |
           python -m poetry install
-      - name: Install Pre-Commit
+      - name: Run Unit Tests
         shell: bash
         run: |
-          python -m pip install pre-commit
-      - name: Cache Pre-Commit Hooks
-        id: pre-commit-cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.PRE_COMMIT_HOME }}
-          key: hooks-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
-      - name: Install Pre-Commit Hooks
-        shell: bash
-        if: steps.pre-commit-cache.outputs.cache-hit != 'true'
-        run: |
-          pre-commit install-hooks
-      - name: Run Pre-Commit Hooks
-        shell: bash
-        run: |
-          pre-commit run --all-files
+          poetry run python -m unittest discover --verbose tests
