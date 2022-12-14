@@ -38,7 +38,9 @@ repos:
         types: ['python']
       - id: mypy
         name: mypy
-        entry: poetry run mypy
+        entry: poetry run mypy --follow-imports=silent
         language: system
-        exclude: stubs/
+        exclude: (?x)(
+          star
+          )
         types: ['python']
