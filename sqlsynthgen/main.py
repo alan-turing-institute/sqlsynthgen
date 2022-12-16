@@ -5,15 +5,15 @@ from typing import Any, Final
 from sqlalchemy import create_engine, insert
 from sqlalchemy.sql import sqltypes
 
-from sqlsynthgen.settings import Settings
+from sqlsynthgen.settings import get_settings
 from sqlsynthgen.star import AdvanceDecision, metadata
 from sqlsynthgen.star_gens import AdvanceDecisionGenerator
-
-settings = Settings()
 
 
 def main() -> None:
     """Create an empty schema and populate it with dummy data."""
+
+    settings = get_settings()
     engine = create_engine(settings.postgres_dsn)
     populate(engine)
 
@@ -38,8 +38,8 @@ def create_generators_from_tables(tables_module_name: str) -> str:
     """Creates sqlsynthgen generator classes from a sqlacodegen-generated file.
 
     Args:
-      tables_module_name: The name of a sqlacodegen-generated module.
-        It should be in "module" or "package.module" format.
+      tables_module_name: The name of a sqlacodegen-generated module
+        as you would provide to importlib.import_module.
 
     Returns:
       A string that is a valid Python module, once written to file.
@@ -75,13 +75,21 @@ def create_generators_from_tables(tables_module_name: str) -> str:
 
         for column in table.columns:
             # We presume that primary keys are populated automatically
-            if not column.primary_key:
+            if column.primary_key:
+                continue
+
+            elif column.foreign_keys:
+                # ToDo Use foreign_keys[0].referred_table and column_keys
+                continue
+
+            else:
+
                 new_content += (
                     indentation * 2
                     + "self."
                     + column.name
                     + " = "
-                    + sql_to_mimesis_map[type(column.type)]
+                    + sql_to_mimesis_map.get(type(column.type), "-1")
                     + "\n"
                 )
             # print(column)
@@ -94,4 +102,5 @@ def create_generators_from_tables(tables_module_name: str) -> str:
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    create_generators_from_tables("sqlsynthgen.star")

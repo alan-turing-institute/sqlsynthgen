@@ -1,4 +1,6 @@
 """Utils for reading settings from environment variables."""
+from functools import lru_cache
+
 # pylint: disable=no-name-in-module
 # pylint: disable=no-self-argument
 from typing import Any, Optional
@@ -9,16 +11,14 @@ from pydantic import BaseSettings, PostgresDsn, validator
 class Settings(BaseSettings):
     """A Pydantic settings class with optional and mandatory settings."""
 
-    # Connection parameters for a PostgreSQL database to store
-    # subscription data, user account info, sent emails, etc. See also
+    # Connection parameters for a PostgreSQL database. See also,
     # https://www.postgresql.org/docs/11/libpq-connect.html#LIBPQ-PARAMKEYWORDS
-    db_host_name: str  # e.g. "mydb.postgres.database.azure.com" or "0.0.0.0"
+    db_host_name: str  # e.g. "mydb.mydomain.com" or "0.0.0.0"
     db_port: int = 5432
-    db_user_name: str  # e.g. "postgres" or "rcpuser@rcpdb"
+    db_user_name: str  # e.g. "postgres" or "myuser@mydb"
     db_password: str
-
-    db_name: str = ""  # e.g. RCPTab or empty for the user's default db
-    ssl_required: bool = False  # Usually False for local and True for Azure DBs
+    db_name: str = ""  # e.g. leave empty to get the user's default db
+    ssl_required: bool = False  # whether the db requires SSL
 
     # postgres_dsn is calculated so do not provide it explicitly
     postgres_dsn: Optional[PostgresDsn]
@@ -49,3 +49,8 @@ class Settings(BaseSettings):
 
         env_file = ".env"
         env_file_encoding = "utf-8"
+
+
+@lru_cache(1)
+def get_settings():
+    return Settings()
