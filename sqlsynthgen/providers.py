@@ -1,4 +1,4 @@
-"""This module contains the ForeignKeyProvider class."""
+"""This module contains Mimesis Provider sub-classes."""
 from typing import Any
 
 from mimesis.providers.base import BaseProvider
