@@ -7,7 +7,7 @@ from sqlsynthgen import main, settings
 
 
 @lru_cache(1)
-def get_test_settings():
+def get_test_settings() -> settings.Settings:
     """Get a Settings object that ignores .env files and environment variables."""
     return settings.Settings(
         db_host_name="db_host_name",
