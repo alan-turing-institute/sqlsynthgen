@@ -1,10 +1,9 @@
 """Utils for reading settings from environment variables."""
 from functools import lru_cache
+from typing import Any, Optional
 
 # pylint: disable=no-name-in-module
 # pylint: disable=no-self-argument
-from typing import Any, Optional
-
 from pydantic import BaseSettings, PostgresDsn, validator
 
 
@@ -17,7 +16,7 @@ class Settings(BaseSettings):
     db_port: int = 5432
     db_user_name: str  # e.g. "postgres" or "myuser@mydb"
     db_password: str
-    db_name: str = ""  # e.g. leave empty to get the user's default db
+    db_name: str = ""  # leave empty to get the user's default db
     ssl_required: bool = False  # whether the db requires SSL
 
     # postgres_dsn is calculated so do not provide it explicitly
@@ -52,5 +51,6 @@ class Settings(BaseSettings):
 
 
 @lru_cache(1)
-def get_settings():
+def get_settings() -> Settings:
+    """Return the same Settings object every call."""
     return Settings()
