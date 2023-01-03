@@ -19,7 +19,7 @@ def main() -> None:
 
 
 def generate(sorted_tables: list, sorted_generators: list) -> Any:
-    """Connect to a database and"""
+    """Connect to a database and populate it with data."""
     settings = get_settings()
     engine = create_engine(settings.postgres_dsn)
 
