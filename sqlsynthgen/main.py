@@ -1,9 +1,17 @@
 """Entrypoint for the sqlsynthgen package."""
 from typing import Any
 
+import typer
 from sqlalchemy import create_engine, insert
 
 from sqlsynthgen.settings import get_settings
+
+app = typer.Typer()
+
+
+@app.command()
+def make_tables_file() -> None:
+    """Make a SQLAlchemy file of Table classes."""
 
 
 def create_tables(metadata: Any) -> Any:
@@ -13,6 +21,7 @@ def create_tables(metadata: Any) -> Any:
     metadata.create_all(engine)
 
 
+@app.command()
 def main() -> None:
     """Not implemented yet."""
     raise NotImplementedError
@@ -36,4 +45,4 @@ def populate(conn: Any, tables: list, generators: list) -> None:
 
 
 if __name__ == "__main__":
-    main()
+    app()

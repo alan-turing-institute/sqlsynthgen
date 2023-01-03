@@ -13,6 +13,7 @@ pydantic = {extras = ["dotenv"], version = "^1.10.2"}
 psycopg2-binary = "^2.9.5"
 sqlalchemy-utils = "^0.38.3"
 mimesis = "^6.1.1"
+typer = "^0.7.0"
 
 
 [tool.poetry.group.dev.dependencies]

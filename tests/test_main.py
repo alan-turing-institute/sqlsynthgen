@@ -3,8 +3,12 @@ from functools import lru_cache
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
+from typer.testing import CliRunner
+
 from sqlsynthgen import main, settings
-from sqlsynthgen.main import create_tables
+from sqlsynthgen.main import app, create_tables
+
+runner = CliRunner()
 
 
 @lru_cache(1)
@@ -58,3 +62,20 @@ class MyTestCase(TestCase):
             mock_create_engine.assert_called_once_with(
                 mock_get_settings.return_value.postgres_dsn
             )
+
+
+class TestCLI(TestCase):
+    """Tests for the command-line interface."""
+
+    def test_make_table_file(self) -> None:
+        """Test the make-tables-file sub-command."""
+        result = runner.invoke(
+            app,
+            [
+                "make-tables-file",
+            ],
+        )
+
+        if result.exit_code != 0:
+            print(result.stdout)
+            self.assertEqual(0, result.exit_code)
