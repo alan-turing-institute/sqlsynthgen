@@ -1,7 +1,7 @@
 """Tests for the main module."""
 from unittest import TestCase
 
-from sqlsynthgen import create_generators
+from sqlsynthgen import make
 
 
 class MyTestCase(TestCase):
@@ -14,7 +14,5 @@ class MyTestCase(TestCase):
         ) as expected_output:
             expected = expected_output.read()
 
-        actual = create_generators.create_generators_from_tables(
-            "tests.examples.example_tables"
-        )
+        actual = make.make_generators_from_tables("tests.examples.example_tables")
         self.assertEqual(expected, actual)

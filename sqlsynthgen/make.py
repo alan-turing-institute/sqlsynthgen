@@ -1,4 +1,4 @@
-"""Functions to create a module of generator classes."""
+"""Functions to make a module of generator classes."""
 import importlib
 from typing import Final
 
@@ -21,7 +21,7 @@ HEADER_TEXT: Final[str] = "\n".join(
 INDENTATION: Final[str] = " " * 4
 
 
-def create_generators_from_tables(tables_module_name: str) -> str:
+def make_generators_from_tables(tables_module_name: str) -> str:
     """Creates sqlsynthgen generator classes from a sqlacodegen-generated file.
 
     Args:
