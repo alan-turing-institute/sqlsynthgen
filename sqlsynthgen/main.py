@@ -1,8 +1,10 @@
-"""Entrypoint for the sqlsynthgen package."""
+"""Entrypoint for the SQLSynthGen package."""
+from pathlib import Path
 from subprocess import run
 
 import typer
 
+from sqlsynthgen.make import make_generators_from_tables
 from sqlsynthgen.settings import get_settings
 
 app = typer.Typer()
@@ -19,8 +21,11 @@ def create_tables() -> None:
 
 
 @app.command()
-def make_generators() -> None:
-    """Make a SQLSynthGun file of generator classes."""
+def make_generators(orm_file: str = typer.Argument(...)) -> None:
+    """Make a SQLSynthGen file of generator classes."""
+    file_path = Path(orm_file)
+    result = make_generators_from_tables(file_path.stem)
+    print(result)
 
 
 @app.command()

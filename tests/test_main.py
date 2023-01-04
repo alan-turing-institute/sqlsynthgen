@@ -92,15 +92,15 @@ class TestCLI(TestCase):
 
     def test_make_generators(self) -> None:
         """Test the make-generators sub-command."""
-        result = runner.invoke(
-            app,
-            [
-                "make-generators",
-            ],
-            catch_exceptions=False,
-        )
+        with patch("sqlsynthgen.main.make_generators_from_tables") as mock_make:
+            result = runner.invoke(
+                app,
+                ["make-generators", "orm_file.py"],
+                catch_exceptions=False,
+            )
 
         self.assertSuccess(result)
+        mock_make.assert_called_once_with("orm_file")
 
     def test_create_tables(self) -> None:
         """Test the create-tables sub-command."""
