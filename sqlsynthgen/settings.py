@@ -10,35 +10,55 @@ from pydantic import BaseSettings, PostgresDsn, validator
 class Settings(BaseSettings):
     """A Pydantic settings class with optional and mandatory settings."""
 
-    # Connection parameters for a PostgreSQL database. See also,
+    # Connection parameters for the source PostgreSQL database. See also
     # https://www.postgresql.org/docs/11/libpq-connect.html#LIBPQ-PARAMKEYWORDS
-    db_host_name: str  # e.g. "mydb.mydomain.com" or "0.0.0.0"
-    db_port: int = 5432
-    db_user_name: str  # e.g. "postgres" or "myuser@mydb"
-    db_password: str
-    db_name: str = ""  # leave empty to get the user's default db
-    ssl_required: bool = False  # whether the db requires SSL
+    src_host_name: str  # e.g. "mydb.mydomain.com" or "0.0.0.0"
+    src_port: int = 5432
+    src_user_name: str  # e.g. "postgres" or "myuser@mydb"
+    src_password: str
+    src_db_name: str = ""  # leave empty to get the user's default db
+    src_ssl_required: bool = False  # whether the db requires SSL
+    src_schema: Optional[str]
 
-    # postgres_dsn is calculated so do not provide it explicitly
-    postgres_dsn: Optional[PostgresDsn]
+    # Connection parameters for the destination PostgreSQL database.
+    dst_host_name: str  # e.g. "mydb.mydomain.com" or "0.0.0.0"
+    dst_port: int = 5432
+    dst_user_name: str  # e.g. "postgres" or "myuser@mydb"
+    dst_password: str
+    dst_db_name: str = ""  # leave empty to get the user's default db
+    dst_ssl_required: bool = False  # whether the db requires SSL
 
-    @validator("postgres_dsn", pre=True)
-    def validate_postgres_dsn(cls, _: Optional[PostgresDsn], values: Any) -> str:
+    # These are calculated so do not provide them explicitly
+    src_postgres_dsn: Optional[PostgresDsn]
+    dst_postgres_dsn: Optional[PostgresDsn]
+
+    @validator("src_postgres_dsn", pre=True)
+    def validate_src_postgres_dsn(cls, _: Optional[PostgresDsn], values: Any) -> str:
+        """Create and validate the source database DSN."""
+        return cls.check_postgres_dsn(_, values, "src")
+
+    @validator("dst_postgres_dsn", pre=True)
+    def validate_dst_postgres_dsn(cls, _: Optional[PostgresDsn], values: Any) -> str:
+        """Create and validate the destination database DSN."""
+        return cls.check_postgres_dsn(_, values, "dst")
+
+    @staticmethod
+    def check_postgres_dsn(_: Optional[PostgresDsn], values: Any, prefix: str) -> str:
         """Build a DSN string from the host, db name, port, username and password."""
 
         # We want to build the Data Source Name ourselves so none should be provided
         if _:
             raise ValueError("postgres_dsn should not be provided")
 
-        user = values["db_user_name"]
-        password = values["db_password"]
-        host = values["db_host_name"]
-        port = values["db_port"]
-        db_name = values["db_name"]
+        user = values[f"{prefix}_user_name"]
+        password = values[f"{prefix}_password"]
+        host = values[f"{prefix}_host_name"]
+        port = values[f"{prefix}_port"]
+        db_name = values[f"{prefix}_db_name"]
 
         dsn = f"postgresql://{user}:{password}@{host}:{port}/{db_name}"
 
-        if values["ssl_required"]:
+        if values[f"{prefix}_ssl_required"]:
             return dsn + "?sslmode=require"
 
         return dsn

@@ -1,10 +1,12 @@
 """Tests for the main module."""
 from unittest import TestCase
+from unittest.mock import call, patch
 
 from click.testing import Result
 from typer.testing import CliRunner
 
 from sqlsynthgen.main import app
+from tests.utils import get_test_settings
 
 runner = CliRunner()
 
@@ -19,23 +21,83 @@ class TestCLI(TestCase):
             print(result.stdout)
             self.assertEqual(0, result.exit_code)
 
-    def test_make_table_file(self) -> None:
-        """Test the make-tables-file sub-command."""
-        result = runner.invoke(
-            app,
-            [
-                "make-tables-file",
-            ],
-        )
+    def test_make_tables(self) -> None:
+        """Test the make-tables sub-command."""
+
+        with patch("sqlsynthgen.main.run") as mock_run, patch(
+            "sqlsynthgen.main.get_settings"
+        ) as mock_get_settings:
+            mock_get_settings.return_value = get_test_settings()
+            mock_run.return_value.returncode = 0
+
+            result = runner.invoke(
+                app,
+                [
+                    "make-tables",
+                ],
+                catch_exceptions=False,
+            )
+
         self.assertSuccess(result)
 
-    def test_make_generators_file(self) -> None:
-        """Test the make-generators-file sub-command."""
+        mock_run.assert_has_calls(
+            [
+                call(
+                    [
+                        "sqlacodegen",
+                        get_test_settings().src_postgres_dsn,
+                    ],
+                    capture_output=True,
+                    encoding="utf-8",
+                    check=True,
+                ),
+            ]
+        )
+        self.assertNotEqual("", result.stdout)
+
+    def test_make_tables_with_schema(self) -> None:
+        """Test the make-tables sub-command handles the schema setting."""
+
+        with patch("sqlsynthgen.main.run") as mock_run, patch(
+            "sqlsynthgen.main.get_settings"
+        ) as mock_get_settings:
+            mock_get_settings.return_value = get_test_settings()
+            mock_get_settings.return_value.src_schema = "sschema"
+
+            result = runner.invoke(
+                app,
+                [
+                    "make-tables",
+                ],
+                catch_exceptions=False,
+            )
+
+        self.assertSuccess(result)
+
+        mock_run.assert_has_calls(
+            [
+                call(
+                    [
+                        "sqlacodegen",
+                        "--schema=sschema",
+                        get_test_settings().src_postgres_dsn,
+                    ],
+                    capture_output=True,
+                    encoding="utf-8",
+                    check=True,
+                ),
+            ]
+        )
+        self.assertNotEqual("", result.stdout)
+
+    def test_make_generators(self) -> None:
+        """Test the make-generators sub-command."""
         result = runner.invoke(
             app,
             [
-                "make-generators-file",
+                "make-generators",
             ],
+            catch_exceptions=False,
         )
 
         self.assertSuccess(result)
@@ -47,6 +109,7 @@ class TestCLI(TestCase):
             [
                 "create-tables",
             ],
+            catch_exceptions=False,
         )
 
         self.assertSuccess(result)
@@ -58,6 +121,7 @@ class TestCLI(TestCase):
             [
                 "create-data",
             ],
+            catch_exceptions=False,
         )
 
         self.assertSuccess(result)
