@@ -27,7 +27,7 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-sqlsynthgen = "sqlsynthgen.main:main"
+sqlsynthgen = "sqlsynthgen.main:app"
 
 [tool.isort]
 profile = "black"
