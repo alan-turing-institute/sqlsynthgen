@@ -5,7 +5,7 @@ from subprocess import run
 
 import typer
 
-from sqlsynthgen.create import create_db_tables
+from sqlsynthgen.create import create_db_tables, generate
 from sqlsynthgen.make import make_generators_from_tables
 from sqlsynthgen.settings import get_settings
 
@@ -13,8 +13,21 @@ app = typer.Typer()
 
 
 @app.command()
-def create_data() -> None:
+def create_data(
+    orm_file: str = typer.Argument(...),
+    ssg_file: str = typer.Argument(...),
+) -> None:
     """Fill tables with synthetic data."""
+
+    orm_file_path = Path(orm_file)
+    orm_module_path = ".".join(orm_file_path.parts[:-1] + (orm_file_path.stem,))
+    orm_module = import_module(orm_module_path)
+
+    ssg_file_path = Path(ssg_file)
+    ssg_module_path = ".".join(ssg_file_path.parts[:-1] + (ssg_file_path.stem,))
+    ssg_module = import_module(ssg_module_path)
+
+    generate(orm_module.metadata.sorted_tables, ssg_module.sorted_generators)
 
 
 @app.command()

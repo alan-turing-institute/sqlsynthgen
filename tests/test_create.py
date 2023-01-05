@@ -23,7 +23,7 @@ class MyTestCase(TestCase):
             mock_populate.assert_called_once()
             mock_create_engine.assert_called_once()
 
-    def test_create_tables(self) -> None:
+    def test_create_db_tables(self) -> None:
         """Test the create_tables function."""
         mock_meta = MagicMock()
 
