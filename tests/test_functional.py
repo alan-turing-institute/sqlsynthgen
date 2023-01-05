@@ -12,7 +12,24 @@ class FunctionalTests(TestCase):
     """End-to-end tests."""
 
     def setUp(self) -> None:
-        pass
+        """Pre-test setup."""
+
+        env = os.environ.copy()
+        env = {**env, "PGPASSWORD": "password"}
+        # Clear and re-create the destination database
+        completed_process = run(
+            [
+                "psql",
+                "--host=localhost",
+                "--username=postgres",
+                "--file=" + str(Path("tests/examples/dst.dump")),
+            ],
+            capture_output=True,
+            env=env,
+            check=True,
+        )
+        # psql doesn't always return != 0 if it fails
+        assert completed_process.stderr == b""
 
     @staticmethod
     def test_workflow() -> None:
