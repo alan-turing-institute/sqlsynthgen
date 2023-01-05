@@ -14,8 +14,12 @@ class FunctionalTests(TestCase):
     def setUp(self) -> None:
         """Pre-test setup."""
 
+        # If you need to update src.dump or dst.dump, use
+        # pg_dump -d src|dst -h localhost -U postgres -C -c > tests/examples/src|dst.dump
+
         env = os.environ.copy()
         env = {**env, "PGPASSWORD": "password"}
+
         # Clear and re-create the destination database
         completed_process = run(
             [
@@ -28,20 +32,13 @@ class FunctionalTests(TestCase):
             env=env,
             check=True,
         )
+
         # psql doesn't always return != 0 if it fails
-        assert completed_process.stderr == b""
+        assert completed_process.stderr == b"", completed_process.stderr
 
     @staticmethod
     def test_workflow() -> None:
         """Test the recommended CLI workflow runs without errors."""
-
-        # Export example databases
-        # pg_dump -d src -h localhost -U postgres -C > tests/examples/src.dump
-        # pg_dump -d dst -h localhost -U postgres -C > tests/examples/dst.dump
-
-        # Restore databases
-        # psql --host localhost --username postgres --file="tests/examples/src.dump"
-        # psql --host localhost --username postgres --file="tests/examples/dst.dump"
 
         env = os.environ.copy()
         env = {
