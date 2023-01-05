@@ -95,12 +95,12 @@ class TestCLI(TestCase):
         with patch("sqlsynthgen.main.make_generators_from_tables") as mock_make:
             result = runner.invoke(
                 app,
-                ["make-generators", "directory/orm_file.py"],
+                ["make-generators", "somedir/orm_file.py"],
                 catch_exceptions=False,
             )
 
         self.assertSuccess(result)
-        mock_make.assert_called_once_with("directory.orm_file")
+        mock_make.assert_called_once_with("somedir.orm_file")
 
     def test_create_tables(self) -> None:
         """Test the create-tables sub-command."""
@@ -119,12 +119,20 @@ class TestCLI(TestCase):
 
     def test_create_data(self) -> None:
         """Test the create-data sub-command."""
-        result = runner.invoke(
-            app,
-            [
-                "create-data",
-            ],
-            catch_exceptions=False,
-        )
+        # pylint: disable=import-outside-toplevel
+        from tests.examples.example_tables import metadata
+        from tests.examples.expected_output import sorted_generators
+
+        with patch("sqlsynthgen.main.generate") as mock_generate:
+            result = runner.invoke(
+                app,
+                [
+                    "create-data",
+                    "tests/examples/example_tables.py",
+                    "tests/examples/expected_output.py",
+                ],
+                catch_exceptions=False,
+            )
 
         self.assertSuccess(result)
+        mock_generate.assert_called_once_with(metadata.sorted_tables, sorted_generators)
