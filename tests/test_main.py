@@ -6,6 +6,7 @@ from click.testing import Result
 from typer.testing import CliRunner
 
 from sqlsynthgen.main import app
+from tests.examples import example_tables, expected_output
 from tests.utils import get_test_settings
 
 runner = CliRunner()
@@ -95,17 +96,15 @@ class TestCLI(TestCase):
         with patch("sqlsynthgen.main.make_generators_from_tables") as mock_make:
             result = runner.invoke(
                 app,
-                ["make-generators", "somedir/orm_file.py"],
+                ["make-generators", "tests/examples/example_tables.py"],
                 catch_exceptions=False,
             )
 
         self.assertSuccess(result)
-        mock_make.assert_called_once_with("somedir.orm_file")
+        mock_make.assert_called_once_with(example_tables)
 
     def test_create_tables(self) -> None:
         """Test the create-tables sub-command."""
-        # pylint: disable=import-outside-toplevel
-        from tests.examples.example_tables import metadata
 
         with patch("sqlsynthgen.main.create_db_tables") as mock_create:
             result = runner.invoke(
@@ -115,15 +114,12 @@ class TestCLI(TestCase):
             )
 
         self.assertSuccess(result)
-        mock_create.assert_called_once_with(metadata)
+        mock_create.assert_called_once_with(example_tables.metadata)
 
     def test_create_data(self) -> None:
         """Test the create-data sub-command."""
-        # pylint: disable=import-outside-toplevel
-        from tests.examples.example_tables import metadata
-        from tests.examples.expected_output import sorted_generators
 
-        with patch("sqlsynthgen.main.generate") as mock_generate:
+        with patch("sqlsynthgen.main.create_db_data") as mock_create_db_data:
             result = runner.invoke(
                 app,
                 [
@@ -135,4 +131,6 @@ class TestCLI(TestCase):
             )
 
         self.assertSuccess(result)
-        mock_generate.assert_called_once_with(metadata.sorted_tables, sorted_generators)
+        mock_create_db_data.assert_called_once_with(
+            example_tables.metadata.sorted_tables, expected_output.sorted_generators
+        )
