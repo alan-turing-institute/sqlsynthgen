@@ -1,9 +1,11 @@
 """Entrypoint for the SQLSynthGen package."""
+from importlib import import_module
 from pathlib import Path
 from subprocess import run
 
 import typer
 
+from sqlsynthgen.create import create_db_tables
 from sqlsynthgen.make import make_generators_from_tables
 from sqlsynthgen.settings import get_settings
 
@@ -16,15 +18,20 @@ def create_data() -> None:
 
 
 @app.command()
-def create_tables() -> None:
+def create_tables(orm_file: str = typer.Argument(...)) -> None:
     """Create tables using the SQLAlchemy file."""
+    file_path = Path(orm_file)
+    module_path = ".".join(file_path.parts[:-1] + (file_path.stem,))
+    orm_module = import_module(module_path)
+    create_db_tables(orm_module.metadata)
 
 
 @app.command()
 def make_generators(orm_file: str = typer.Argument(...)) -> None:
     """Make a SQLSynthGen file of generator classes."""
     file_path = Path(orm_file)
-    result = make_generators_from_tables(file_path.stem)
+    module_path = ".".join(file_path.parts[:-1] + (file_path.stem,))
+    result = make_generators_from_tables(module_path)
     print(result)
 
 
