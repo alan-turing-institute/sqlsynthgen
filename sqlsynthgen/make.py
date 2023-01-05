@@ -1,5 +1,5 @@
 """Functions to make a module of generator classes."""
-import importlib
+from types import ModuleType
 from typing import Final
 
 from sqlalchemy.sql import sqltypes
@@ -21,12 +21,11 @@ HEADER_TEXT: Final[str] = "\n".join(
 INDENTATION: Final[str] = " " * 4
 
 
-def make_generators_from_tables(tables_module_name: str) -> str:
+def make_generators_from_tables(tables_module: ModuleType) -> str:
     """Creates sqlsynthgen generator classes from a sqlacodegen-generated file.
 
     Args:
-      tables_module_name: The name of a sqlacodegen-generated module
-        as you would provide to importlib.import_module.
+      tables_module: A sqlacodegen-generated module.
 
     Returns:
       A string that is a valid Python module, once written to file.
@@ -47,7 +46,6 @@ def make_generators_from_tables(tables_module_name: str) -> str:
         sqltypes.LargeBinary: "generic.binary_provider.bytes()",
     }
 
-    tables_module = importlib.import_module(tables_module_name)
     for table in tables_module.metadata.sorted_tables:
         new_class_name = table.name + "Generator"
         sorted_generators += INDENTATION + new_class_name + ",\n"

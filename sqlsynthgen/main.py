@@ -2,14 +2,22 @@
 from importlib import import_module
 from pathlib import Path
 from subprocess import run
+from types import ModuleType
 
 import typer
 
-from sqlsynthgen.create import create_db_tables, generate
+from sqlsynthgen.create import create_db_data, create_db_tables
 from sqlsynthgen.make import make_generators_from_tables
 from sqlsynthgen.settings import get_settings
 
 app = typer.Typer()
+
+
+def import_file(file_path: str) -> ModuleType:
+    """Import a file given a relative path."""
+    file_path_path = Path(file_path)
+    module_path = ".".join(file_path_path.parts[:-1] + (file_path_path.stem,))
+    return import_module(module_path)
 
 
 @app.command()
@@ -18,33 +26,23 @@ def create_data(
     ssg_file: str = typer.Argument(...),
 ) -> None:
     """Fill tables with synthetic data."""
-
-    orm_file_path = Path(orm_file)
-    orm_module_path = ".".join(orm_file_path.parts[:-1] + (orm_file_path.stem,))
-    orm_module = import_module(orm_module_path)
-
-    ssg_file_path = Path(ssg_file)
-    ssg_module_path = ".".join(ssg_file_path.parts[:-1] + (ssg_file_path.stem,))
-    ssg_module = import_module(ssg_module_path)
-
-    generate(orm_module.metadata.sorted_tables, ssg_module.sorted_generators)
+    orm_module = import_file(orm_file)
+    ssg_module = import_file(ssg_file)
+    create_db_data(orm_module.metadata.sorted_tables, ssg_module.sorted_generators)
 
 
 @app.command()
 def create_tables(orm_file: str = typer.Argument(...)) -> None:
     """Create tables using the SQLAlchemy file."""
-    file_path = Path(orm_file)
-    module_path = ".".join(file_path.parts[:-1] + (file_path.stem,))
-    orm_module = import_module(module_path)
+    orm_module = import_file(orm_file)
     create_db_tables(orm_module.metadata)
 
 
 @app.command()
 def make_generators(orm_file: str = typer.Argument(...)) -> None:
     """Make a SQLSynthGen file of generator classes."""
-    file_path = Path(orm_file)
-    module_path = ".".join(file_path.parts[:-1] + (file_path.stem,))
-    result = make_generators_from_tables(module_path)
+    orm_module = import_file(orm_file)
+    result = make_generators_from_tables(orm_module)
     print(result)
 
 

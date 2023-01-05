@@ -2,14 +2,14 @@
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
-from sqlsynthgen.create import create_db_tables, generate
+from sqlsynthgen.create import create_db_data, create_db_tables
 from tests.utils import get_test_settings
 
 
 class MyTestCase(TestCase):
     """Module test case."""
 
-    def test_generate(self) -> None:
+    def test_create_db_data(self) -> None:
         """Test the generate function."""
         with patch("sqlsynthgen.create.populate") as mock_populate, patch(
             "sqlsynthgen.create.get_settings"
@@ -18,7 +18,7 @@ class MyTestCase(TestCase):
         ) as mock_create_engine:
             mock_get_settings.return_value = get_test_settings()
 
-            generate([], [])
+            create_db_data([], [])
 
             mock_populate.assert_called_once()
             mock_create_engine.assert_called_once()

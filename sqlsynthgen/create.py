@@ -13,7 +13,7 @@ def create_db_tables(metadata: Any) -> Any:
     metadata.create_all(engine)
 
 
-def generate(sorted_tables: list, sorted_generators: list) -> None:
+def create_db_data(sorted_tables: list, sorted_generators: list) -> None:
     """Connect to a database and populate it with data."""
     settings = get_settings()
     engine = create_engine(settings.dst_postgres_dsn)
