@@ -1,8 +1,8 @@
 """Entrypoint for the SQLSynthGen package."""
+import sys
 from importlib import import_module
 from pathlib import Path
 from subprocess import CalledProcessError, run
-from sys import exit as sys_exit
 from sys import stderr
 from types import ModuleType
 
@@ -66,7 +66,7 @@ def make_tables() -> None:
         )
     except CalledProcessError as e:
         print(e.stderr, file=stderr)
-        sys_exit(e.returncode)
+        sys.exit(e.returncode)
 
     print(completed_process.stdout)
 
