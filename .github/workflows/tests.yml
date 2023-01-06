@@ -12,6 +12,13 @@ env:
 jobs:
   the_job:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -40,7 +47,11 @@ jobs:
         if: steps.poetry-cache.outputs.cache-hit != 'true'
         run: |
           python -m poetry install
+      - name: Create src database
+        shell: bash
+        run: |
+          PGPASSWORD=password psql --host=localhost --username=postgres --file=tests/examples/src.dump
       - name: Run Unit Tests
         shell: bash
         run: |
-          poetry run python -m unittest discover --verbose tests
+          FUNCTIONAL_TESTS=1 poetry run python -m unittest discover --verbose tests
