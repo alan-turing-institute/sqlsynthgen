@@ -1,4 +1,5 @@
 """Tests for the main module."""
+from subprocess import CalledProcessError
 from unittest import TestCase
 from unittest.mock import call, patch
 
@@ -90,6 +91,30 @@ class TestCLI(TestCase):
             ]
         )
         self.assertNotEqual("", result.stdout)
+
+    def test_make_tables_handles_errors(self) -> None:
+        """Test the make-tables sub-command handles sqlacodegen errors."""
+
+        with patch("sqlsynthgen.main.run") as mock_run, patch(
+            "sqlsynthgen.main.get_settings"
+        ) as mock_get_settings, patch("sqlsynthgen.main.stderr") as mock_stderr:
+            mock_run.side_effect = CalledProcessError(
+                returncode=99, cmd="some-cmd", stderr="some-error-output"
+            )
+            mock_get_settings.return_value = get_test_settings()
+
+            result = runner.invoke(
+                app,
+                [
+                    "make-tables",
+                ],
+                catch_exceptions=False,
+            )
+
+        self.assertEqual(99, result.exit_code)
+        mock_stderr.assert_has_calls(
+            [call.write("some-error-output"), call.write("\n")]
+        )
 
     def test_make_generators(self) -> None:
         """Test the make-generators sub-command."""
