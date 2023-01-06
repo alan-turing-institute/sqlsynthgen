@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     src_port: int = 5432
     src_user_name: str  # e.g. "postgres" or "myuser@mydb"
     src_password: str
-    src_db_name: str = ""  # leave empty to get the user's default db
+    src_db_name: str
     src_ssl_required: bool = False  # whether the db requires SSL
     src_schema: Optional[str]
 
@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     dst_port: int = 5432
     dst_user_name: str  # e.g. "postgres" or "myuser@mydb"
     dst_password: str
-    dst_db_name: str = ""  # leave empty to get the user's default db
+    dst_db_name: str
     dst_ssl_required: bool = False  # whether the db requires SSL
 
     # These are calculated so do not provide them explicitly
