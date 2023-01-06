@@ -13,20 +13,24 @@ class TestSettings(TestCase):
             src_host_name="shost",
             src_user_name="suser",
             src_password="spassword",
+            src_db_name="sdbname",
             dst_host_name="dhost",
             dst_user_name="duser",
             dst_password="dpassword",
+            dst_db_name="ddbname",
             # To stop any local .env files influencing the test
             _env_file=None,
         )
 
         self.assertEqual(
-            "postgresql://suser:spassword@shost:5432/", str(settings.src_postgres_dsn)
+            "postgresql://suser:spassword@shost:5432/sdbname",
+            str(settings.src_postgres_dsn),
         )
         self.assertIsNone(settings.src_schema)
 
         self.assertEqual(
-            "postgresql://duser:dpassword@dhost:5432/", str(settings.dst_postgres_dsn)
+            "postgresql://duser:dpassword@dhost:5432/ddbname",
+            str(settings.dst_postgres_dsn),
         )
 
     def test_maximal_settings(self) -> None:
