@@ -11,8 +11,13 @@ from unittest import TestCase, skipUnless
 class FunctionalTests(TestCase):
     """End-to-end tests."""
 
+    orm_file_path = Path("tests/tmp/orm.py")
+    ssg_file_path = Path("tests/tmp/ssg.py")
+
     def setUp(self) -> None:
         """Pre-test setup."""
+        self.orm_file_path.unlink(missing_ok=True)
+        self.ssg_file_path.unlink(missing_ok=True)
 
         # If you need to update src.dump or dst.dump, use
         # pg_dump -d src|dst -h localhost -U postgres -C -c > tests/examples/src|dst.dump
@@ -36,8 +41,7 @@ class FunctionalTests(TestCase):
         # psql doesn't always return != 0 if it fails
         assert completed_process.stderr == b"", completed_process.stderr
 
-    @staticmethod
-    def test_workflow() -> None:
+    def test_workflow(self) -> None:
         """Test the recommended CLI workflow runs without errors."""
 
         env = os.environ.copy()
@@ -54,22 +58,20 @@ class FunctionalTests(TestCase):
             "dst_db_name": "dst",
         }
 
-        orm_file_path = str(Path("tests/tmp/orm.py"))
-        with open(orm_file_path, "wb") as file:
+        with open(self.orm_file_path, "wb") as file:
             run(["sqlsynthgen", "make-tables"], stdout=file, env=env, check=True)
 
-        ssg_file_path = str(Path("tests/tmp/ssg.py"))
-        with open(ssg_file_path, "wb") as file:
+        with open(self.ssg_file_path, "wb") as file:
             run(
-                ["sqlsynthgen", "make-generators", orm_file_path],
+                ["sqlsynthgen", "make-generators", self.orm_file_path],
                 stdout=file,
                 env=env,
                 check=True,
             )
 
-        run(["sqlsynthgen", "create-tables", orm_file_path], env=env, check=True)
+        run(["sqlsynthgen", "create-tables", self.orm_file_path], env=env, check=True)
         run(
-            ["sqlsynthgen", "create-data", orm_file_path, ssg_file_path],
+            ["sqlsynthgen", "create-data", self.orm_file_path, self.ssg_file_path],
             env=env,
             check=True,
         )
