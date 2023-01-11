@@ -1,4 +1,4 @@
-"""Tests for the main module."""
+"""Tests for the CLI."""
 import os
 from pathlib import Path
 from subprocess import run
