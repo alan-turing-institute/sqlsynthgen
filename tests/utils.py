@@ -1,5 +1,8 @@
 """Utilities for testing."""
+import os
 from functools import lru_cache
+from pathlib import Path
+from subprocess import run
 
 from sqlsynthgen import settings
 
@@ -20,3 +23,28 @@ def get_test_settings() -> settings.Settings:
         # To stop any local .env files influencing the test
         _env_file=None,
     )
+
+
+def run_psql(dump_file_name: str) -> None:
+    """Run psql and"""
+
+    # If you need to update a .dump file, use
+    # pg_dump -d DBNAME -h localhost -U postgres -C -c > tests/examples/FILENAME.dump
+
+    env = os.environ.copy()
+    env = {**env, "PGPASSWORD": "password"}
+
+    # Clear and re-create the test database
+    completed_process = run(
+        [
+            "psql",
+            "--host=localhost",
+            "--username=postgres",
+            "--file=" + str(Path(f"tests/examples/{dump_file_name}")),
+        ],
+        capture_output=True,
+        env=env,
+        check=True,
+    )
+    # psql doesn't always return != 0 if it fails
+    assert completed_process.stderr == b"", completed_process.stderr
