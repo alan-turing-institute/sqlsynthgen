@@ -4,6 +4,8 @@ from pathlib import Path
 from subprocess import run
 from unittest import TestCase, skipUnless
 
+from tests.utils import run_psql
+
 
 @skipUnless(
     os.environ.get("FUNCTIONAL_TESTS") == "1", "Set 'FUNCTIONAL_TESTS=1' to enable."
@@ -19,27 +21,7 @@ class FunctionalTests(TestCase):
         self.orm_file_path.unlink(missing_ok=True)
         self.ssg_file_path.unlink(missing_ok=True)
 
-        # If you need to update src.dump or dst.dump, use
-        # pg_dump -d src|dst -h localhost -U postgres -C -c > tests/examples/src|dst.dump
-
-        env = os.environ.copy()
-        env = {**env, "PGPASSWORD": "password"}
-
-        # Clear and re-create the destination database
-        completed_process = run(
-            [
-                "psql",
-                "--host=localhost",
-                "--username=postgres",
-                "--file=" + str(Path("tests/examples/dst.dump")),
-            ],
-            capture_output=True,
-            env=env,
-            check=True,
-        )
-
-        # psql doesn't always return != 0 if it fails
-        assert completed_process.stderr == b"", completed_process.stderr
+        run_psql("dst.dump")
 
     def test_workflow(self) -> None:
         """Test the recommended CLI workflow runs without errors."""
