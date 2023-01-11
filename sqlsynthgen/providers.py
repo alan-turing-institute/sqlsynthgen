@@ -3,11 +3,7 @@ from typing import Any
 
 from mimesis import Text
 from mimesis.providers.base import BaseDataProvider, BaseProvider
-
-# from mimesis.locales import Locale
 from sqlalchemy.sql import text
-
-# generic = Generic(locale=Locale.EN)
 
 
 class ForeignKeyProvider(BaseProvider):
