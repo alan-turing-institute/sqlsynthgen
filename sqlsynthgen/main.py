@@ -35,7 +35,17 @@ def create_data(
 
 @app.command()
 def create_tables(orm_file: str = typer.Argument(...)) -> None:
-    """Create tables using the SQLAlchemy file."""
+    # """Create tables using the SQLAlchemy file."""
+    """
+    Create tables using the SQLAlchemy file.
+
+    :param orm_file: Mandatory path to SQLAlchemy file
+    :type kind: str
+    :raise lumache.InvalidKindError: If the kind is invalid.
+    :return: None
+    :rtype: None
+
+    """
     orm_module = import_file(orm_file)
     create_db_tables(orm_module.metadata)
 
@@ -70,6 +80,24 @@ def make_tables() -> None:
 
     print(completed_process.stdout)
 
+@app.command()
+def print_int(
+    phone: int = typer.Argument(...),
+) -> None:
+    """
+    Print argument on screen
+
+    :param message: Text to be printed
+    :type message: str
+    :raise TypeError: If the phone is invalid.
+    :return: None
+    :rtype: None
+
+    """
+    if type(phone) is int:
+        print("My phone: [{}]".format(phone))
+    else:
+        raise TypeError("Argument `phone` has to be of type integer")
 
 if __name__ == "__main__":
     app()
