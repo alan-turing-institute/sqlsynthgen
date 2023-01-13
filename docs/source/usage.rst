@@ -4,39 +4,23 @@ Usage
 Installation
 ------------
 
-To use Lumache, first install it using pip:
+To use sqlsynthgen, first install it using poetry:
 
 .. code-block:: console
 
-   (.venv) $ pip install lumache
+   (<your_poetry_shell>) $ poetry add sqlsynthgen
 
-Creating recipes
-----------------
+Test print integer function
+---------------------------
 
-To retrieve a list of random ingredients,
-you can use the ``lumache.get_random_ingredients()`` function:
+To test print integer function,
+you can use the ``sqlsynthgen.main.print_int`` function:
 
-.. py:function:: lumache.get_random_ingredients(kind=None)
+.. autofunction:: sqlsynthgen.main.print_int
 
-   Return a list of random ingredients as strings.
-
-   :param kind: Optional "kind" of ingredients.
-   :type kind: list[str] or None
-   :raise lumache.InvalidKindError: If the kind is invalid.
-   :return: The ingredients list.
-   :rtype: list[str]
-
-The ``kind`` parameter should be either ``"meat"``, ``"fish"``,
-or ``"veggies"``. Otherwise, :py:func:`lumache.get_random_ingredients`
+The ``phone`` argument should be of type integer. Otherwise, :py:func:`sqlsynthgen.main.print_int`
 will raise an exception.
 
-.. py:exception:: lumache.InvalidKindError
+.. py:exception:: TypeError
 
-   Raised if the kind is invalid.
-
-.. Notes
-.. -----
-
-.. The ``kind`` parameter should be either ``"meat"``, ``"fish"``,
-.. or ``"veggies"``. Otherwise, :py:func:`lumache.get_random_ingredients`
-.. will raise an exception.
+   Raised if the ``phone`` argument is invalid.
