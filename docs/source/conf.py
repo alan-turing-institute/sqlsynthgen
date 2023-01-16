@@ -8,7 +8,7 @@
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../../sqlsynthgen/'))
+sys.path.insert(0, os.path.abspath('../../'))
 
 project = 'sqlsynthgen'
 copyright = '2023, anon'
