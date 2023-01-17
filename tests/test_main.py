@@ -7,7 +7,7 @@ from click.testing import Result
 from typer.testing import CliRunner
 
 from sqlsynthgen.main import app
-from tests.examples import example_tables, expected_output
+from tests.examples import example_orm, expected_ssg
 from tests.utils import get_test_settings
 
 runner = CliRunner()
@@ -121,12 +121,12 @@ class TestCLI(TestCase):
         with patch("sqlsynthgen.main.make_generators_from_tables") as mock_make:
             result = runner.invoke(
                 app,
-                ["make-generators", "tests/examples/example_tables.py"],
+                ["make-generators", "tests/examples/example_orm.py"],
                 catch_exceptions=False,
             )
 
         self.assertSuccess(result)
-        mock_make.assert_called_once_with(example_tables)
+        mock_make.assert_called_once_with(example_orm)
 
     def test_create_tables(self) -> None:
         """Test the create-tables sub-command."""
@@ -134,12 +134,12 @@ class TestCLI(TestCase):
         with patch("sqlsynthgen.main.create_db_tables") as mock_create:
             result = runner.invoke(
                 app,
-                ["create-tables", "tests/examples/example_tables.py"],
+                ["create-tables", "tests/examples/example_orm.py"],
                 catch_exceptions=False,
             )
 
         self.assertSuccess(result)
-        mock_create.assert_called_once_with(example_tables.metadata)
+        mock_create.assert_called_once_with(example_orm.metadata)
 
     def test_create_data(self) -> None:
         """Test the create-data sub-command."""
@@ -149,13 +149,13 @@ class TestCLI(TestCase):
                 app,
                 [
                     "create-data",
-                    "tests/examples/example_tables.py",
-                    "tests/examples/expected_output.py",
+                    "tests/examples/example_orm.py",
+                    "tests/examples/expected_ssg.py",
                 ],
                 catch_exceptions=False,
             )
 
         self.assertSuccess(result)
         mock_create_db_data.assert_called_once_with(
-            example_tables.metadata.sorted_tables, expected_output.sorted_generators
+            example_orm.metadata.sorted_tables, expected_ssg.sorted_generators
         )
