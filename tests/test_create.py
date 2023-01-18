@@ -18,7 +18,7 @@ class MyTestCase(TestCase):
         ) as mock_create_engine:
             mock_get_settings.return_value = get_test_settings()
 
-            create_db_data([], [])
+            create_db_data([], [], 0)
 
             mock_populate.assert_called_once()
             mock_create_engine.assert_called_once()

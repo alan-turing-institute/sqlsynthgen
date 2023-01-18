@@ -26,11 +26,14 @@ def import_file(file_path: str) -> ModuleType:
 def create_data(
     orm_file: str = typer.Argument(...),
     ssg_file: str = typer.Argument(...),
+    num_rows: int = typer.Argument(...),
 ) -> None:
     """Fill tables with synthetic data."""
     orm_module = import_file(orm_file)
     ssg_module = import_file(ssg_file)
-    create_db_data(orm_module.metadata.sorted_tables, ssg_module.sorted_generators)
+    create_db_data(
+        orm_module.metadata.sorted_tables, ssg_module.sorted_generators, num_rows
+    )
 
 
 @app.command()

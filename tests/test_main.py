@@ -151,11 +151,12 @@ class TestCLI(TestCase):
                     "create-data",
                     "tests/examples/example_orm.py",
                     "tests/examples/expected_ssg.py",
+                    "10",
                 ],
                 catch_exceptions=False,
             )
 
         self.assertSuccess(result)
         mock_create_db_data.assert_called_once_with(
-            example_orm.metadata.sorted_tables, expected_ssg.sorted_generators
+            example_orm.metadata.sorted_tables, expected_ssg.sorted_generators, 10
         )
