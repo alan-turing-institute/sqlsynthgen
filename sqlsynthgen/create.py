@@ -26,18 +26,23 @@ def create_db_tables(metadata: Any) -> Any:
 def create_db_data(sorted_tables: list, sorted_generators: list, num_rows: int) -> None:
     """Connect to a database and populate it with data."""
     settings = get_settings()
-    engine = create_engine(settings.dst_postgres_dsn)
+    dst_engine = create_engine(settings.dst_postgres_dsn)
+    src_engine = create_engine(settings.src_postgres_dsn)
 
-    with engine.connect() as conn:
-        populate(conn, sorted_tables, sorted_generators, num_rows)
+    with dst_engine.connect() as dst_conn:
+        with src_engine.connect() as src_conn:
+            populate(src_conn, dst_conn, sorted_tables, sorted_generators, num_rows)
 
 
-def populate(conn: Any, tables: list, generators: list, num_rows: int) -> None:
+def populate(
+    src_conn: Any, dst_conn: Any, tables: list, generators: list, num_rows: int
+) -> None:
     """Populate a database schema with dummy data."""
 
-    for table, generator in zip(tables, generators):
-        # Run all the inserts for one table in a transaction
-        with conn.begin():
+    for table, generator in zip(
+        tables, generators
+    ):  # Run all the inserts for one table in a transaction
+        with dst_conn.begin():
             for _ in range(num_rows):
-                stmt = insert(table).values(generator(conn).__dict__)
-                conn.execute(stmt)
+                stmt = insert(table).values(generator(src_conn, dst_conn).__dict__)
+                dst_conn.execute(stmt)
