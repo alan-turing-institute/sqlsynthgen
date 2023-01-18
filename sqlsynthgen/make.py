@@ -56,7 +56,7 @@ def make_generators_from_tables(tables_module: ModuleType) -> str:
             + new_class_name
             + ":\n"
             + INDENTATION
-            + "def __init__(self, db_connection):\n"
+            + "def __init__(self, src_db_conn, dst_db_conn):\n"
         )
 
         for column in table.columns:
@@ -72,7 +72,7 @@ def make_generators_from_tables(tables_module: ModuleType) -> str:
                 fk_schema, fk_table, fk_column = fk_column_path.split(".")
                 new_content += (
                     f"{INDENTATION*2}self.{column.name} = "
-                    f"generic.column_value_provider.column_value(db_connection, "
+                    f"generic.column_value_provider.column_value(dst_db_conn, "
                     f'"{fk_schema}", "{fk_table}", "{fk_column}"'
                     ")\n"
                 )
