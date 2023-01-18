@@ -2,6 +2,7 @@
 from typing import Any
 
 from sqlalchemy import create_engine, insert
+from sqlalchemy.schema import CreateSchema
 
 from sqlsynthgen.settings import get_settings
 
@@ -10,6 +11,15 @@ def create_db_tables(metadata: Any) -> Any:
     """Create tables described by the sqlalchemy metadata object."""
     settings = get_settings()
     engine = create_engine(settings.dst_postgres_dsn)
+    # Create schemas, if necessary.
+    for table in metadata.sorted_tables:
+        try:
+            schema = table.schema
+            if not engine.dialect.has_schema(engine, schema=schema):
+                engine.execute(CreateSchema(schema, if_not_exists=True))
+        except AttributeError:
+            # This table didn't have a schema field
+            pass
     metadata.create_all(engine)
 
 
