@@ -9,7 +9,7 @@ generic.add_provider(BytesProvider)
 
 
 class personGenerator:
-    def __init__(self, db_connection):
+    def __init__(self, src_db_conn, dst_db_conn):
         self.name = generic.text.color()
         self.nhs_number = generic.text.color()
         self.research_opt_out = generic.development.boolean()
@@ -18,8 +18,8 @@ class personGenerator:
 
 
 class hospital_visitGenerator:
-    def __init__(self, db_connection):
-        self.person_id = generic.column_value_provider.column_value(db_connection, "myschema", "person", "person_id")
+    def __init__(self, src_db_conn, dst_db_conn):
+        self.person_id = generic.column_value_provider.column_value(dst_db_conn, "myschema", "person", "person_id")
         self.visit_start = generic.datetime.datetime()
         self.visit_end = generic.datetime.date()
         self.visit_duration_seconds = generic.numeric.float_number()

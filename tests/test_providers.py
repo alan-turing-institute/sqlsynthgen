@@ -30,7 +30,8 @@ class BinaryProviderTestCase(TestCase):
     """Tests for the BytesProvider class."""
 
     def test_bytes(self) -> None:
-        BytesProvider().bytes().decode("utf-8")
+        """Test the bytes method."""
+        self.assertTrue(BytesProvider().bytes().decode("utf-8") != "")
 
 
 @skipUnless(
