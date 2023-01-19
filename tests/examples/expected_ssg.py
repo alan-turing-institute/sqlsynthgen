@@ -8,8 +8,14 @@ generic.add_provider(ForeignKeyProvider)
 generic.add_provider(BinaryProvider)
 
 
+class entityGenerator:
+    def __init__(self, db_connection):
+        pass
+
+
 class personGenerator:
     def __init__(self, db_connection):
+        pass
         self.name = generic.text.color()
         self.nhs_number = generic.text.color()
         self.research_opt_out = generic.development.boolean()
@@ -19,6 +25,7 @@ class personGenerator:
 
 class hospital_visitGenerator:
     def __init__(self, db_connection):
+        pass
         self.person_id = generic.foreign_key_provider.key(db_connection, "myschema", "person", "person_id")
         self.visit_start = generic.datetime.datetime()
         self.visit_end = generic.datetime.date()
@@ -27,6 +34,7 @@ class hospital_visitGenerator:
 
 
 sorted_generators = [
+    entityGenerator,
     personGenerator,
     hospital_visitGenerator,
 ]

@@ -35,3 +35,15 @@ class HopsitalVisit(Base):
     visit_end = Column(Date)
     visit_duration_seconds = Column(Float)
     visit_image = Column(LargeBinary)
+
+
+class Entity(Base):
+    __tablename__ = "entity"
+    __table_args__ = {"schema": "myschema"}
+
+    # NB Do not add any more columns to this table as
+    # we use it to test what happens in the one-column case
+    entity_id = Column(
+        Integer,
+        primary_key=True,
+    )
