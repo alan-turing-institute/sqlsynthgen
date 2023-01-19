@@ -8,8 +8,14 @@ generic.add_provider(ColumnValueProvider)
 generic.add_provider(BytesProvider)
 
 
+class entityGenerator:
+    def __init__(self, src_db_conn, dst_db_conn):
+        pass
+
+
 class personGenerator:
     def __init__(self, src_db_conn, dst_db_conn):
+        pass
         self.name = generic.text.color()
         self.nhs_number = generic.text.color()
         self.research_opt_out = generic.development.boolean()
@@ -19,6 +25,7 @@ class personGenerator:
 
 class hospital_visitGenerator:
     def __init__(self, src_db_conn, dst_db_conn):
+        pass
         self.person_id = generic.column_value_provider.column_value(dst_db_conn, "myschema", "person", "person_id")
         self.visit_start = generic.datetime.datetime()
         self.visit_end = generic.datetime.date()
@@ -27,6 +34,7 @@ class hospital_visitGenerator:
 
 
 sorted_generators = [
+    entityGenerator,
     personGenerator,
     hospital_visitGenerator,
 ]

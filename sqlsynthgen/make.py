@@ -42,7 +42,7 @@ def make_generators_from_tables(tables_module: ModuleType) -> str:
         sqltypes.DateTime: "generic.datetime.datetime()",
         sqltypes.Float: "generic.numeric.float_number()",
         sqltypes.Integer: "generic.numeric.integer_number()",
-        sqltypes.LargeBinary: "generic.binary_provider.bytes()",
+        sqltypes.LargeBinary: "generic.bytes_provider.bytes()",
         sqltypes.Numeric: "generic.numeric.float_number()",
         sqltypes.String: "generic.text.color()",
         sqltypes.Text: "generic.text.color()",
@@ -62,9 +62,9 @@ def make_generators_from_tables(tables_module: ModuleType) -> str:
         for column in table.columns:
             # We presume that primary keys are populated automatically
             if column.primary_key:
-                continue
+                new_content += f"{INDENTATION*2}pass\n"
 
-            if column.foreign_keys:
+            elif column.foreign_keys:
                 if len(column.foreign_keys) > 1:
                     raise NotImplementedError("Can't handle multiple foreign keys.")
                 fkey = column.foreign_keys.pop()
@@ -76,8 +76,8 @@ def make_generators_from_tables(tables_module: ModuleType) -> str:
                     f'"{fk_schema}", "{fk_table}", "{fk_column}"'
                     ")\n"
                 )
-            else:
 
+            else:
                 new_content += (
                     INDENTATION * 2
                     + "self."
