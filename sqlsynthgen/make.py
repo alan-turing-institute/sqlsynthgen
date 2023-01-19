@@ -38,12 +38,14 @@ def make_generators_from_tables(tables_module: ModuleType) -> str:
     sql_to_mimesis_map = {
         sqltypes.BigInteger: "generic.numeric.integer_number()",
         sqltypes.Boolean: "generic.development.boolean()",
-        sqltypes.DateTime: "generic.datetime.datetime()",
         sqltypes.Date: "generic.datetime.date()",
-        sqltypes.Integer: "generic.numeric.integer_number()",
-        sqltypes.Text: "generic.text.color()",
+        sqltypes.DateTime: "generic.datetime.datetime()",
         sqltypes.Float: "generic.numeric.float_number()",
-        sqltypes.LargeBinary: "generic.bytes_provider.bytes()",
+        sqltypes.Integer: "generic.numeric.integer_number()",
+        sqltypes.LargeBinary: "generic.binary_provider.bytes()",
+        sqltypes.Numeric: "generic.numeric.float_number()",
+        sqltypes.String: "generic.text.color()",
+        sqltypes.Text: "generic.text.color()",
     }
 
     for table in tables_module.Base.metadata.sorted_tables:
