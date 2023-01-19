@@ -46,7 +46,7 @@ def make_generators_from_tables(tables_module: ModuleType) -> str:
         sqltypes.LargeBinary: "generic.bytes_provider.bytes()",
     }
 
-    for table in tables_module.metadata.sorted_tables:
+    for table in tables_module.Base.metadata.sorted_tables:
         new_class_name = table.name + "Generator"
         sorted_generators += INDENTATION + new_class_name + ",\n"
         new_content += (

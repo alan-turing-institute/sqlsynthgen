@@ -32,7 +32,7 @@ def create_data(
     orm_module = import_file(orm_file)
     ssg_module = import_file(ssg_file)
     create_db_data(
-        orm_module.metadata.sorted_tables, ssg_module.sorted_generators, num_rows
+        orm_module.Base.metadata.sorted_tables, ssg_module.sorted_generators, num_rows
     )
 
 
@@ -40,7 +40,7 @@ def create_data(
 def create_tables(orm_file: str = typer.Argument(...)) -> None:
     """Create tables using the SQLAlchemy file."""
     orm_module = import_file(orm_file)
-    create_db_tables(orm_module.metadata)
+    create_db_tables(orm_module.Base.metadata)
 
 
 @app.command()
