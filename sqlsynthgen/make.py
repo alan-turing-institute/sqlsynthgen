@@ -67,7 +67,8 @@ def make_generators_from_tables(tables_module: ModuleType) -> str:
                     raise NotImplementedError("Can't handle multiple foreign keys.")
                 fkey = column.foreign_keys.pop()
                 fk_column_path = fkey.target_fullname
-                fk_schema, fk_table, fk_column = fk_column_path.split(".")
+                *fk_schema, fk_table, fk_column = fk_column_path.split(".")
+                fk_schema = fk_schema or "public"
                 new_content += (
                     f"{INDENTATION*2}self.{column.name} = "
                     f"generic.column_value_provider.column_value(dst_db_conn, "

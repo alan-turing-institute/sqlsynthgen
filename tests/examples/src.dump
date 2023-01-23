@@ -73,6 +73,30 @@ CREATE TABLE public.person (
 ALTER TABLE public.person OWNER TO postgres;
 
 --
+-- Name: a; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.a (
+    a_id integer NOT NULL,
+    b_id integer NOT NULL
+);
+
+
+ALTER TABLE public.a OWNER TO postgres;
+
+--
+-- Name: b; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.b (
+    b_id integer NOT NULL,
+    a_id integer NOT NULL
+);
+
+
+ALTER TABLE public.b OWNER TO postgres;
+
+--
 -- Data for Name: hospital_visit; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -103,6 +127,33 @@ ALTER TABLE ONLY public.hospital_visit
 ALTER TABLE ONLY public.person
     ADD CONSTRAINT person_pkey PRIMARY KEY (person_id);
 
+--
+-- Name: a a_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.a
+    ADD CONSTRAINT a_pkey PRIMARY KEY (a_id);
+
+--
+-- Name: b b_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.b
+    ADD CONSTRAINT b_pkey PRIMARY KEY (b_id);
+
+--
+-- Name: a fk_a_b; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.a
+    ADD CONSTRAINT fk_a_b FOREIGN KEY (b_id) REFERENCES public.b (b_id) deferrable initially immediate;
+
+--
+-- Name: b fk_b_a; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.b
+    ADD CONSTRAINT fk_b_a FOREIGN KEY (a_id) REFERENCES public.a (a_id) deferrable initially immediate;
 
 --
 -- PostgreSQL database dump complete
