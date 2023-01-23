@@ -4,8 +4,8 @@ from mimesis.locales import Locale
 from sqlsynthgen.providers import BytesProvider, ColumnValueProvider
 
 generic = Generic(locale=Locale.EN)
-generic.add_provider(ColumnValueProvider)
 generic.add_provider(BytesProvider)
+generic.add_provider(ColumnValueProvider)
 
 
 class entityGenerator:
