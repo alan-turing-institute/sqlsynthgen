@@ -1,0 +1,29 @@
+imports:
+  - datetime
+
+tables:
+  person:
+    vocabulary_table: false
+    columns:
+      name:
+        provider: generic.person.full_name()
+      stored_from:
+        provider: generic.datetime.datetime(start=2022)
+  hospital_visit:
+    columns:
+      visit_start:
+        provider: generic.datetime.datetime(start=2022)
+      visit_end:
+        provider: >-
+          generic.column_value_provider.column_value(dst_db_conn, "myschema",
+          "hospital_visit", "visit_start") +
+          datetime.timedelta(seconds=generic.column_value_provider.column_value(dst_db_conn, "myschema",
+          "hospital_visit", "visit_duration_seconds"))
+          # This doesn't currently work as intended: We want to refer to the visit_start and visit_duration_seconds
+          # from _this_ row, not from some random row.
+      visit_duration_seconds:
+        provider: >-
+          generic.timedelta_provider.timedelta(
+            min_dt=datetime.timedelta(minutes=60),
+            max_dt=datetime.timedelta(days=30),
+          ).total_seconds()

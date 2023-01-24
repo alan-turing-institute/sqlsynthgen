@@ -1,4 +1,6 @@
 """This module contains Mimesis Provider sub-classes."""
+import datetime as dt
+import random
 from typing import Any
 
 from mimesis import Text
@@ -34,3 +36,24 @@ class BytesProvider(BaseDataProvider):
     def bytes(self) -> bytes:
         """Return a UTF-8 encoded sentence."""
         return Text(self.locale).sentence().encode("utf-8")
+
+
+class TimedeltaProvider(BaseProvider):
+    """A Mimesis provider of timedeltas."""
+
+    class Meta:
+        """Meta-class for TimedeltaProvider settings."""
+
+        name = "timedelta_provider"
+
+    def timedelta(
+        self,
+        min_dt: Any = dt.timedelta(seconds=0),
+        # ints bigger than this cause trouble
+        max_dt: Any = dt.timedelta(seconds=2**32),
+    ) -> dt.timedelta:
+        """Return a random timedelta object."""
+        min_s = min_dt.total_seconds()
+        max_s = max_dt.total_seconds()
+        seconds = random.randint(min_s, max_s)
+        return dt.timedelta(seconds=seconds)
