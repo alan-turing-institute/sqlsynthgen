@@ -8,6 +8,7 @@
 
 import pathlib
 import sys
+import sphinx_rtd_theme
 sys.path.insert(0, pathlib.Path(__file__).parents[2].resolve().as_posix())
 print("Path: {}".format(pathlib.Path(__file__).parents[2]))
 
@@ -28,7 +29,10 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
+    'sphinx_rtd_theme',
     ]
+
+autodoc_mock_imports = ["typer", "pydantic", "mimesis"]
 
 templates_path = ['_templates']
 exclude_patterns = []
@@ -36,6 +40,14 @@ exclude_patterns = []
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
-
+# html_sidebars = {
+#     '**': [
+#         'about.html',
+#         'navigation.html',
+#         'relations.html',
+#         'searchbox.html',
+#         'donate.html',
+#     ]
+# }

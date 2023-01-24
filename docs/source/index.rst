@@ -16,12 +16,16 @@ Contents:
 ---------
 
 .. toctree::
+   :maxdepth: 2
 
-   usage
+   changelog
+   installation
+   modules
    api
 
+
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`
