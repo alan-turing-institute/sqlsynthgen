@@ -14,13 +14,10 @@ Test print integer function
 ---------------------------
 
 To test print integer function,
-you can use the ``sqlsynthgen.main.print_int`` function:
+you can use the ``sqlsynthgen.docs.print_int`` function:
 
-.. autofunction:: sqlsynthgen.main.print_int
+.. autofunction:: sqlsynthgen.docs.print_int
 
-The ``phone`` argument should be of type integer. Otherwise, :py:func:`sqlsynthgen.main.print_int`
+The ``phone`` argument should be of type integer. Otherwise, :py:func:`sqlsynthgen.docs.print_int`
 will raise an exception.
 
-.. py:exception:: TypeError
-
-   Raised if the ``phone`` argument is invalid.

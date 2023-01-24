@@ -6,9 +6,14 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-import os
+import pathlib
 import sys
-sys.path.insert(0, os.path.abspath('../../'))
+sys.path.insert(0, pathlib.Path(__file__).parents[2].resolve().as_posix())
+print("Path: {}".format(pathlib.Path(__file__).parents[2]))
+
+# import os
+# import sys
+# sys.path.insert(0, os.path.abspath('../../'))
 
 project = 'sqlsynthgen'
 copyright = '2023, anon'
@@ -27,8 +32,6 @@ extensions = [
 
 templates_path = ['_templates']
 exclude_patterns = []
-
-language = 'Python'
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
