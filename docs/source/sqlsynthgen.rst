@@ -4,8 +4,16 @@ sqlsynthgen package
 Submodules
 ----------
 
-sqlsynthgen.docs module
+sqlsynthgen.create module
 -------------------------
+
+.. automodule:: sqlsynthgen.create
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+sqlsynthgen.docs module
+-----------------------
 
 .. automodule:: sqlsynthgen.docs
    :members:
@@ -13,13 +21,36 @@ sqlsynthgen.docs module
    :show-inheritance:
 
 sqlsynthgen.main module
--------------------------
+-----------------------
 
 .. automodule:: sqlsynthgen.main
    :members:
    :undoc-members:
    :show-inheritance:
 
+sqlsynthgen.make module
+-----------------------
+
+.. automodule:: sqlsynthgen.make
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+sqlsynthgen.providers module
+----------------------------
+
+.. automodule:: sqlsynthgen.providers
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+sqlsynthgen.settings module
+---------------------------
+
+.. automodule:: sqlsynthgen.settings
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Module contents
 ---------------

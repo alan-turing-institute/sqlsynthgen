@@ -14,7 +14,6 @@ from sqlsynthgen.settings import get_settings
 
 app = typer.Typer()
 
-
 def import_file(file_path: str) -> ModuleType:
     """Import a file given a relative path."""
     file_path_path = Path(file_path)
@@ -79,25 +78,6 @@ def make_tables() -> None:
         sys.exit(e.returncode)
 
     print(completed_process.stdout)
-
-@app.command()
-def print_int(
-    phone: int = typer.Argument(...),
-) -> None:
-    """
-    Print argument on screen
-
-    :param message: Text to be printed
-    :type message: str
-    :raise TypeError: If the phone is invalid.
-    :return: None
-    :rtype: None
-
-    """
-    if type(phone) is int:
-        print("My phone: [{}]".format(phone))
-    else:
-        raise TypeError("Argument `phone` has to be of type integer")
-
+    
 if __name__ == "__main__":
     app()

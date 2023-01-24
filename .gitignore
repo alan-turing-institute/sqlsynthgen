@@ -136,4 +136,5 @@ dmypy.json
 .fake
 sqlsynthgen/config.ini
 
-docs/source/generated/*
+# sphinx
+docs/build/*
