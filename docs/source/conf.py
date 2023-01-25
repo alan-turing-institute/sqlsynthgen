@@ -34,7 +34,7 @@ extensions = [
     'sphinx_rtd_theme',
     ]
 
-autodoc_mock_imports = ["typer", "pydantic", "mimesis"]
+autodoc_mock_imports = ["typer", "pydantic", "mimesis", "sqlalchemy"]
 
 templates_path = ['_templates']
 exclude_patterns = []
