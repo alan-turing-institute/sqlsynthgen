@@ -5,4 +5,4 @@ Changelog
 
 - [Feature]: Detect tables, create Python classes
 - [Feature]: Populate classes with random values.
-- [Feature]: Create new tables, load values. 
+- [Feature]: Create new tables, load values.
