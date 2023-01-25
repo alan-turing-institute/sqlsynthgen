@@ -28,7 +28,7 @@ extensions: list[str] = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx_rtd_theme",
-    "sphinxcontrib",
+    "sphinxcontrib.napoleon",
 ]
 
 autodoc_mock_imports: list[str] = ["typer", "pydantic", "mimesis", "sqlalchemy"]

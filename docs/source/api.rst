@@ -5,4 +5,3 @@ API
    :toctree: generated
 
    sqlsynthgen.main
-   sqlsynthgen.docs
