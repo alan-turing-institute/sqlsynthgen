@@ -12,14 +12,6 @@ sqlsynthgen.create module
    :undoc-members:
    :show-inheritance:
 
-sqlsynthgen.docs module
------------------------
-
-.. automodule:: sqlsynthgen.docs
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 sqlsynthgen.main module
 -----------------------
 

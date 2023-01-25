@@ -2,22 +2,3 @@
 ================
 
 .. automodule:: sqlsynthgen.docs
-
-   
-   
-   
-
-   
-   
-   
-
-   
-   
-   
-
-   
-   
-   
-
-
-

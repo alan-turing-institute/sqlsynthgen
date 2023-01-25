@@ -21,4 +21,3 @@ To use sqlsynthgen, first install it using poetry:
 
 .. The ``phone`` argument should be of type integer. Otherwise, :py:func:`sqlsynthgen.docs.print_int`
 .. will raise an exception.
-

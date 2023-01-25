@@ -1,3 +1,4 @@
+"""Sphinx configuration"""
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -6,50 +7,37 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+import os
 import pathlib
 import sys
-import sphinx_rtd_theme
+
 sys.path.insert(0, pathlib.Path(__file__).parents[2].resolve().as_posix())
-print("Path 0: {}".format(pathlib.Path(__file__).parents[0]))
-print("Path 1: {}".format(pathlib.Path(__file__).parents[1]))
-print("Path 2: {}".format(pathlib.Path(__file__).parents[2]))
+sys.path.insert(0, os.path.abspath("../.."))
 
-import os
-import sys
-sys.path.insert(0, os.path.abspath('../..'))
-
-project = 'sqlsynthgen'
-copyright = '2023, anon'
-author = 'anon'
-release = '0.0'
+project = "sqlsynthgen"  # pylint: disable=C0103
+copyright = "2023, anon"  # pylint: disable=C0103,W0622
+author = "anon"  # pylint: disable=C0103
+release = "0.0"  # pylint: disable=C0103
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = [
-    'sphinx.ext.duration',
-    'sphinx.ext.doctest',
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx_rtd_theme',
-    ]
+extensions: list[str] = [
+    "sphinx.ext.duration",
+    "sphinx.ext.doctest",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx_rtd_theme",
+    "sphinxcontrib",
+]
 
-autodoc_mock_imports = ["typer", "pydantic", "mimesis", "sqlalchemy"]
+autodoc_mock_imports: list[str] = ["typer", "pydantic", "mimesis", "sqlalchemy"]
 
-templates_path = ['_templates']
-exclude_patterns = []
+templates_path: list[str] = ["_templates"]
+exclude_patterns: list[str] = []
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'sphinx_rtd_theme'
-html_static_path = ['_static']
-# html_sidebars = {
-#     '**': [
-#         'about.html',
-#         'navigation.html',
-#         'relations.html',
-#         'searchbox.html',
-#         'donate.html',
-#     ]
-# }
+html_theme = "sphinx_rtd_theme"  # pylint: disable=C0103
+html_static_path = ["_static"]

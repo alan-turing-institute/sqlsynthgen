@@ -1,0 +1,10 @@
+# remember to place requirements in docs/
+poetry export --without-hashes --format=requirements.txt > requirements.txt
+
+# this does not clean, use make clean html from docs instead?
+sphinx-build -b html docs/source docs/build/html
+
+# sweep up autodocs, check out options
+rm docs/source/modules.rst
+rm docs/source/sqlsynthgen.rst
+sphinx-apidoc -o docs/source sqlsynthgen/

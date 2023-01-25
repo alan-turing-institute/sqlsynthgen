@@ -11,7 +11,7 @@ Draft sqlsynthgen's documentation
 .. note::
 
    This project will be under active development from Jan - Oct 2023
-   
+
 Contents:
 ---------
 
