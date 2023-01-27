@@ -1,4 +1,20 @@
-"""Utils for reading settings from environment variables."""
+"""Utils for reading settings from environment variables.
+
+See module pydantic for enforcing type hints at runtime.
+See module functools.lru_cache to save time and memory
+in case of repeated calls.
+See module typing for type hinting.
+
+Classes:
+
+    Settings
+
+Functions:
+
+    get_settings() -> Settings
+
+"""
+from dataclasses import dataclass
 from functools import lru_cache
 from typing import Any, Optional
 
@@ -8,7 +24,41 @@ from pydantic import BaseSettings, PostgresDsn, validator
 
 
 class Settings(BaseSettings):
-    """A Pydantic settings class with optional and mandatory settings."""
+    """A Pydantic settings class with optional and mandatory settings.
+
+    Settings class attributes describe two database connection. The source database connection is
+    the database schema from which the object relational model is discovered. The destination
+    database connection is the location where tables based on the ORM is created
+    and synthetic values inserted.
+
+    Attributes:
+        src_host_name (str):
+            An element (host-name) of connection parameter
+        src_port (int):
+            Connection port eg. 5432
+        src_user_name (str) :
+            Connection username e.g. `postgres` or `myuser@mydb`
+        src_password (str) :
+            Connection password
+        src_db_name (str) :
+            Connection database e.g. "postgres"
+        src_ssl_required (bool) :
+            Flag `True` if db requires SSL
+
+        dst_host_name (str):
+            Connection host-name to destination db
+        dst_port (int) :
+            Connection port eg. 5432
+        dst_user_name (str) :
+            Connection username e.g. `postgres` or `myuser@mydb`
+        dst_password (str) :
+            Connection password
+        dst_db_name (str) :
+            Connection database e.g. `postgres`
+        dst_ssl_required (bool) :
+            Flag `True` if db requires SSL
+
+    """
 
     # Connection parameters for the source PostgreSQL database. See also
     # https://www.postgresql.org/docs/11/libpq-connect.html#LIBPQ-PARAMKEYWORDS
@@ -21,7 +71,7 @@ class Settings(BaseSettings):
     src_schema: Optional[str]
 
     # Connection parameters for the destination PostgreSQL database.
-    dst_host_name: str  # e.g. "mydb.mydomain.com" or "0.0.0.0"
+    dst_host_name: str  # Connection parameter e.g. "mydb.mydomain.com" or "0.0.0.0"
     dst_port: int = 5432
     dst_user_name: str  # e.g. "postgres" or "myuser@mydb"
     dst_password: str
@@ -34,17 +84,41 @@ class Settings(BaseSettings):
 
     @validator("src_postgres_dsn", pre=True)
     def validate_src_postgres_dsn(cls, _: Optional[PostgresDsn], values: Any) -> str:
-        """Create and validate the source database DSN."""
+        """Create and validate the source db data source name.
+
+        Args:
+            cls (Settings): Self Settings instance
+            values (Optional Any): Eg. parameters for source database connection
+
+        Return:
+            (str): Validated data source name
+        """
         return cls.check_postgres_dsn(_, values, "src")
 
     @validator("dst_postgres_dsn", pre=True)
     def validate_dst_postgres_dsn(cls, _: Optional[PostgresDsn], values: Any) -> str:
-        """Create and validate the destination database DSN."""
+        """Create and validate the destination db data source name.
+
+        Args:
+            cls (Settings): Self Settings instance
+            values (Optional Any): Eg. Connection parameters for destination database
+
+        Return:
+            (str): Validated data source name
+        """
         return cls.check_postgres_dsn(_, values, "dst")
 
     @staticmethod
     def check_postgres_dsn(_: Optional[PostgresDsn], values: Any, prefix: str) -> str:
-        """Build a DSN string from the host, db name, port, username and password."""
+        """Build a DSN string from the host, db name, port, username and password.
+
+        Args:
+            cls (Settings): Self Settings instance
+            values (Optional Any): Eg. Connection parameters
+
+        Return:
+            (str): A data source name
+        """
 
         # We want to build the Data Source Name ourselves so none should be provided
         if _:
@@ -63,6 +137,7 @@ class Settings(BaseSettings):
 
         return dsn
 
+    @dataclass
     class Config:
         """Meta-settings for the Settings class."""
 
