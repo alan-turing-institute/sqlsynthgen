@@ -16,5 +16,5 @@ class MyTestCase(TestCase):
         ) as expected_output:
             expected = expected_output.read()
 
-        actual = make.make_generators_from_tables(example_orm)
+        actual = make.make_generators_from_tables(example_orm, {})
         self.assertEqual(expected, actual)

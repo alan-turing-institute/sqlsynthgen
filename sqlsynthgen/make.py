@@ -54,8 +54,9 @@ def make_generators_from_tables(
 
     new_content = HEADER_TEXT
 
-    for import_statement in provider_config.get("imports", []):
-        new_content += f"\nimport {import_statement}"
+    generator_module_name = provider_config.get("custom_generators_module", None)
+    if generator_module_name is not None:
+        new_content += f"\nimport {generator_module_name}"
 
     sorted_generators = "[\n"
 
@@ -64,7 +65,6 @@ def make_generators_from_tables(
         table_config = provider_config.get("tables", {}).get(table.name, {})
         if table_config.get("vocabulary_table", False):
             raise NotImplementedError("Vocabulary tables currently unimplemented.")
-        columns_config = table_config.get("columns", {})
 
         sorted_generators += INDENTATION + new_class_name + ",\n"
         new_content += (
@@ -75,18 +75,39 @@ def make_generators_from_tables(
             + "def __init__(self, src_db_conn, dst_db_conn):\n"
         )
 
+        generators_config = table_config.get("custom_generators", {})
+        columns_covered = []
+        for gen_conf in generators_config:
+            name = gen_conf["name"]
+            columns_assigned = gen_conf["columns_assigned"]
+            args = gen_conf["args"]
+            if isinstance(columns_assigned, str):
+                columns_assigned = [columns_assigned]
+
+            new_content += INDENTATION * 2
+            new_content += ", ".join(map(lambda x: f"self.{x}", columns_assigned))
+            try:
+                columns_covered += columns_assigned
+            except TypeError:
+                # Might be a single string, rather than a list of strings.
+                columns_covered.append(columns_assigned)
+            new_content += f" = {name}("
+            if args is not None:
+                new_content += ", ".join(
+                    f"{key}={value}" for key, value in args.items()
+                )
+            new_content += ")\n"
+
         for column in table.columns:
+            if column.name in columns_covered:
+                # A generator for this column was already covered in the user config.
+                continue
             new_content += INDENTATION * 2
             # For each column, choose which mimesis provider to use for generating
             # values.
-            # If the user has specified a particular provider to use, use that.
-            if column.name in columns_config:
-                provider = columns_config[column.name]["provider"]
-                new_content += f"self.{column.name} = {provider}"
-
-            # If not, and it's a primary key column, we presume that primary keys are
-            # populated automatically.
-            elif column.primary_key:
+            # If it's a primary key column, we presume that primary keys are populated
+            # automatically.
+            if column.primary_key:
                 new_content += "pass"
 
             # If it's a foreign key column, pull random values from the column it

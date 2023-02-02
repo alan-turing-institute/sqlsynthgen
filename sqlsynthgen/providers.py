@@ -3,7 +3,7 @@ import datetime as dt
 import random
 from typing import Any
 
-from mimesis import Text
+from mimesis import Datetime, Text
 from mimesis.providers.base import BaseDataProvider, BaseProvider
 from sqlalchemy.sql import text
 
@@ -57,3 +57,28 @@ class TimedeltaProvider(BaseProvider):
         max_s = max_dt.total_seconds()
         seconds = random.randint(min_s, max_s)
         return dt.timedelta(seconds=seconds)
+
+
+class TimespanProvider(BaseProvider):
+    """A Mimesis provider for timespans, consisting of start datetime, end datetime, and
+    the timedelta in between. Returns a 3-tuple.
+    """
+
+    class Meta:
+        """Meta-class for TimespanProvider settings."""
+
+        name = "timespan_provider"
+
+    def timespan(
+        self,
+        earliest_start_year: Any,
+        last_start_year: Any,
+        min_dt: Any = dt.timedelta(seconds=0),
+        # ints bigger than this cause trouble
+        max_dt: Any = dt.timedelta(seconds=2**32),
+    ) -> dt.timedelta:
+        """Return a timespan as a 3-tuple of (start, end, delta)."""
+        delta = TimedeltaProvider().timedelta(min_dt, max_dt)
+        start = Datetime().datetime(start=earliest_start_year, end=last_start_year)
+        end = start + delta
+        return start, end, delta

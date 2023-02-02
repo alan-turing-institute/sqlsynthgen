@@ -126,7 +126,7 @@ class TestCLI(TestCase):
             )
 
         self.assertSuccess(result)
-        mock_make.assert_called_once_with(example_orm)
+        mock_make.assert_called_once_with(example_orm, {})
 
     def test_create_tables(self) -> None:
         """Test the create-tables sub-command."""
