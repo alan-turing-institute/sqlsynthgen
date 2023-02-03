@@ -155,11 +155,17 @@ def make_generators_from_tables(
 
     sorted_generators = "[\n"
     for table in tables_module.Base.metadata.sorted_tables:
+        # ToDo Get list of vocab tables from config file
+        if table.name in ("",):
+            pass
+            continue
+
         table_config = generator_config.get("tables", {}).get(table.name, {})
         new_content, new_generator_name = _add_generator_for_table(
             new_content, tables_module, table_config, table
         )
         sorted_generators += f"{INDENTATION}{new_generator_name},\n"
+
     sorted_generators += "]"
     new_content += "\n\n" + "sorted_generators = " + sorted_generators + "\n"
     return new_content

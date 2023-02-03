@@ -23,6 +23,12 @@ def create_db_tables(metadata: Any) -> Any:
     metadata.create_all(engine)
 
 
+def create_db_vocab(sorted_vocab):
+    settings = get_settings()
+    for vocab_table in sorted_vocab:
+        vocab_table.load()
+
+
 def create_db_data(sorted_tables: list, sorted_generators: list, num_rows: int) -> None:
     """Connect to a database and populate it with data."""
     settings = get_settings()

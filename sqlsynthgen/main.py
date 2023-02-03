@@ -46,6 +46,16 @@ def create_data(
 
 
 @app.command()
+def create_vocab(
+    orm_file: str = typer.Argument(...), ssg_file: str = typer.Argument(...)
+) -> None:
+    """Create tables using the SQLAlchemy file."""
+    orm_module = import_file(orm_file)
+    ssg_module = import_file(ssg_file)
+    create_db_vocab(ssg_module.sorted_vocab)
+
+
+@app.command()
 def create_tables(orm_file: str = typer.Argument(...)) -> None:
     """Create tables using the SQLAlchemy file."""
     orm_module = import_file(orm_file)

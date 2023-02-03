@@ -53,6 +53,11 @@ class FunctionalTests(TestCase):
 
         run(["sqlsynthgen", "create-tables", self.orm_file_path], env=env, check=True)
         run(
+            ["sqlsynthgen", "create-vocab", self.orm_file_path, self.ssg_file_path],
+            env=env,
+            check=True,
+        )
+        run(
             ["sqlsynthgen", "create-data", self.orm_file_path, self.ssg_file_path, "1"],
             env=env,
             check=True,
