@@ -64,8 +64,8 @@ def make_generators(
 ) -> None:
     """Make a SQLSynthGen file of generator classes."""
     orm_module = import_file(orm_file)
-    provider_config = read_yaml_file(config_file)
-    result = make_generators_from_tables(orm_module, provider_config)
+    generator_config = read_yaml_file(config_file)
+    result = make_generators_from_tables(orm_module, generator_config)
     print(result)
 
 

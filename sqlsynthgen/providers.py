@@ -76,7 +76,7 @@ class TimespanProvider(BaseProvider):
         min_dt: Any = dt.timedelta(seconds=0),
         # ints bigger than this cause trouble
         max_dt: Any = dt.timedelta(seconds=2**32),
-    ) -> dt.timedelta:
+    ) -> tuple[dt.datetime, dt.datetime, dt.timedelta]:
         """Return a timespan as a 3-tuple of (start, end, delta)."""
         delta = TimedeltaProvider().timedelta(min_dt, max_dt)
         start = Datetime().datetime(start=earliest_start_year, end=last_start_year)

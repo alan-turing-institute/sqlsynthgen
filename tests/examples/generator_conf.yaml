@@ -1,4 +1,4 @@
-custom_generators_module: generators
+custom_generators_module: custom_generators
 tables:
   person:
     num_rows_per_pass: 2
@@ -16,7 +16,7 @@ tables:
   hospital_visit:
     num_rows_per_pass: 3
     custom_generators:
-      - name: generators.timespan_generator
+      - name: custom_generators.timespan_generator
         args:
           generic: generic
           earliest_start_year: 2021

@@ -1,7 +1,7 @@
 """Functions to make a module of generator classes."""
 import inspect
 from types import ModuleType
-from typing import Final
+from typing import Any, Final
 
 from mimesis.providers.base import BaseProvider
 from sqlalchemy.sql import sqltypes
@@ -40,8 +40,90 @@ SQL_TO_MIMESIS_MAP = {
 }
 
 
+def _add_custom_generators(content: str, table_config: dict) -> tuple[str, list[str]]:
+    """Add to the generators file, written in the string `content`, the custom
+    generators for the given table.
+    """
+    generators_config = table_config.get("custom_generators", {})
+    columns_covered = []
+    for gen_conf in generators_config:
+        name = gen_conf["name"]
+        columns_assigned = gen_conf["columns_assigned"]
+        args = gen_conf["args"]
+        if isinstance(columns_assigned, str):
+            columns_assigned = [columns_assigned]
+
+        content += INDENTATION * 2
+        content += ", ".join(map(lambda x: f"self.{x}", columns_assigned))
+        try:
+            columns_covered += columns_assigned
+        except TypeError:
+            # Might be a single string, rather than a list of strings.
+            columns_covered.append(columns_assigned)
+        content += f" = {name}("
+        if args is not None:
+            content += ", ".join(f"{key}={value}" for key, value in args.items())
+        content += ")\n"
+    return content, columns_covered
+
+
+def _add_default_generator(content: str, column: Any) -> str:
+    """Add to the generator file `content` a default generator for the given column,
+    determined by the column's type.
+    """
+    content += INDENTATION * 2
+    # If it's a primary key column, we presume that primary keys are populated
+    # automatically.
+    if column.primary_key:
+        content += "pass"
+    # If it's a foreign key column, pull random values from the column it
+    # references.
+    elif column.foreign_keys:
+        if len(column.foreign_keys) > 1:
+            raise NotImplementedError(
+                "Can't handle multiple foreign keys for one column."
+            )
+        fkey = column.foreign_keys.pop()
+        fk_schema, fk_table, fk_column = fkey.target_fullname.split(".")
+        content += (
+            f"self.{column.name} = "
+            f"generic.column_value_provider.column_value(dst_db_conn, "
+            f'"{fk_schema}", "{fk_table}", "{fk_column}"'
+            ")"
+        )
+
+    # Otherwise generate values based on just the datatype of the column.
+    else:
+        provider = SQL_TO_MIMESIS_MAP[type(column.type)]
+        content += f"self.{column.name} = {provider}"
+    content += "\n"
+    return content
+
+
+def _add_generator_for_table(
+    content: str, generator_config: dict, table: Any
+) -> tuple[str, str]:
+    """Add to the generator file `content` a generator for the given table."""
+    new_class_name = table.name + "Generator"
+    table_config = generator_config.get("tables", {}).get(table.name, {})
+    if table_config.get("vocabulary_table", False):
+        raise NotImplementedError("Vocabulary tables currently unimplemented.")
+
+    content += (
+        f"\n\nclass {new_class_name}:\n"
+        f"{INDENTATION}def __init__(self, src_db_conn, dst_db_conn):\n"
+    )
+    content, columns_covered = _add_custom_generators(content, table_config)
+    for column in table.columns:
+        if column.name in columns_covered:
+            # A generator for this column was already covered in the user config.
+            continue
+        content = _add_default_generator(content, column)
+    return content, new_class_name
+
+
 def make_generators_from_tables(
-    tables_module: ModuleType, provider_config: dict
+    tables_module: ModuleType, generator_config: dict
 ) -> str:
     """Creates sqlsynthgen generator classes from a sqlacodegen-generated file.
 
@@ -51,89 +133,17 @@ def make_generators_from_tables(
     Returns:
       A string that is a valid Python module, once written to file.
     """
-
     new_content = HEADER_TEXT
-
-    generator_module_name = provider_config.get("custom_generators_module", None)
+    generator_module_name = generator_config.get("custom_generators_module", None)
     if generator_module_name is not None:
-        new_content += f"\nimport {generator_module_name}"
+        new_content += f"\nfrom . import {generator_module_name}"
 
     sorted_generators = "[\n"
-
     for table in tables_module.Base.metadata.sorted_tables:
-        new_class_name = table.name + "Generator"
-        table_config = provider_config.get("tables", {}).get(table.name, {})
-        if table_config.get("vocabulary_table", False):
-            raise NotImplementedError("Vocabulary tables currently unimplemented.")
-
-        sorted_generators += INDENTATION + new_class_name + ",\n"
-        new_content += (
-            "\n\nclass "
-            + new_class_name
-            + ":\n"
-            + INDENTATION
-            + "def __init__(self, src_db_conn, dst_db_conn):\n"
+        new_content, new_generator_name = _add_generator_for_table(
+            new_content, generator_config, table
         )
-
-        generators_config = table_config.get("custom_generators", {})
-        columns_covered = []
-        for gen_conf in generators_config:
-            name = gen_conf["name"]
-            columns_assigned = gen_conf["columns_assigned"]
-            args = gen_conf["args"]
-            if isinstance(columns_assigned, str):
-                columns_assigned = [columns_assigned]
-
-            new_content += INDENTATION * 2
-            new_content += ", ".join(map(lambda x: f"self.{x}", columns_assigned))
-            try:
-                columns_covered += columns_assigned
-            except TypeError:
-                # Might be a single string, rather than a list of strings.
-                columns_covered.append(columns_assigned)
-            new_content += f" = {name}("
-            if args is not None:
-                new_content += ", ".join(
-                    f"{key}={value}" for key, value in args.items()
-                )
-            new_content += ")\n"
-
-        for column in table.columns:
-            if column.name in columns_covered:
-                # A generator for this column was already covered in the user config.
-                continue
-            new_content += INDENTATION * 2
-            # For each column, choose which mimesis provider to use for generating
-            # values.
-            # If it's a primary key column, we presume that primary keys are populated
-            # automatically.
-            if column.primary_key:
-                new_content += "pass"
-
-            # If it's a foreign key column, pull random values from the column it
-            # references.
-            elif column.foreign_keys:
-                if len(column.foreign_keys) > 1:
-                    raise NotImplementedError(
-                        "Can't handle multiple foreign keys for one column."
-                    )
-                fkey = column.foreign_keys.pop()
-                fk_schema, fk_table, fk_column = fkey.target_fullname.split(".")
-                new_content += (
-                    f"self.{column.name} = "
-                    f"generic.column_value_provider.column_value(dst_db_conn, "
-                    f'"{fk_schema}", "{fk_table}", "{fk_column}"'
-                    ")"
-                )
-
-            # Otherwise generate values based on just the datatype of the column.
-            else:
-                provider = SQL_TO_MIMESIS_MAP[type(column.type)]
-                new_content += f"self.{column.name} = {provider}"
-            new_content += "\n"
-
+        sorted_generators += f"{INDENTATION}{new_generator_name},\n"
     sorted_generators += "]"
-
     new_content += "\n\n" + "sorted_generators = " + sorted_generators + "\n"
-
     return new_content
