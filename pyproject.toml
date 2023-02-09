@@ -14,6 +14,7 @@ psycopg2-binary = "^2.9.5"
 sqlalchemy-utils = "^0.38.3"
 mimesis = "^6.1.1"
 typer = "^0.7.0"
+pyyaml = "^6.0"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -21,6 +22,7 @@ black = "^22.10.0"
 isort = "^5.10.1"
 pylint = "^2.15.8"
 mypy = "^0.991"
+types-pyyaml = "^6.0.12.4"
 
 [build-system]
 requires = ["poetry-core"]

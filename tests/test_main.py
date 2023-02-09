@@ -3,6 +3,7 @@ from subprocess import CalledProcessError
 from unittest import TestCase
 from unittest.mock import call, patch
 
+import yaml
 from click.testing import Result
 from typer.testing import CliRunner
 
@@ -119,14 +120,21 @@ class TestCLI(TestCase):
     def test_make_generators(self) -> None:
         """Test the make-generators sub-command."""
         with patch("sqlsynthgen.main.make_generators_from_tables") as mock_make:
+            conf_path = "tests/examples/generator_conf.yaml"
+            with open(conf_path, "r", encoding="utf8") as f:
+                config = yaml.safe_load(f)
             result = runner.invoke(
                 app,
-                ["make-generators", "tests/examples/example_orm.py"],
+                [
+                    "make-generators",
+                    "tests/examples/example_orm.py",
+                    conf_path,
+                ],
                 catch_exceptions=False,
             )
 
         self.assertSuccess(result)
-        mock_make.assert_called_once_with(example_orm)
+        mock_make.assert_called_once_with(example_orm, config)
 
     def test_create_tables(self) -> None:
         """Test the create-tables sub-command."""
