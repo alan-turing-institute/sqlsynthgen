@@ -101,11 +101,10 @@ def _add_default_generator(content: str, column: Any) -> str:
 
 
 def _add_generator_for_table(
-    content: str, generator_config: dict, table: Any
+    content: str, table_config: dict, table: Any
 ) -> tuple[str, str]:
     """Add to the generator file `content` a generator for the given table."""
     new_class_name = table.name + "Generator"
-    table_config = generator_config.get("tables", {}).get(table.name, {})
     if table_config.get("vocabulary_table", False):
         raise NotImplementedError("Vocabulary tables currently unimplemented.")
 
@@ -140,8 +139,9 @@ def make_generators_from_tables(
 
     sorted_generators = "[\n"
     for table in tables_module.Base.metadata.sorted_tables:
+        table_config = generator_config.get("tables", {}).get(table.name, {})
         new_content, new_generator_name = _add_generator_for_table(
-            new_content, generator_config, table
+            new_content, table_config, table
         )
         sorted_generators += f"{INDENTATION}{new_generator_name},\n"
     sorted_generators += "]"

@@ -24,13 +24,8 @@ def import_file(file_path: str) -> ModuleType:
     return import_module(module_path)
 
 
-def read_yaml_file(path: Optional[str]) -> Any:
-    """Read a yaml file in to dictionary, given a path.
-
-    If the argument is None, return {}.
-    """
-    if path is None:
-        return {}
+def read_yaml_file(path: str) -> Any:
+    """Read a yaml file in to dictionary, given a path."""
     with open(path, "r", encoding="utf8") as f:
         config = yaml.safe_load(f)
     return config
@@ -64,7 +59,7 @@ def make_generators(
 ) -> None:
     """Make a SQLSynthGen file of generator classes."""
     orm_module = import_file(orm_file)
-    generator_config = read_yaml_file(config_file)
+    generator_config = read_yaml_file(config_file) if config_file is not None else {}
     result = make_generators_from_tables(orm_module, generator_config)
     print(result)
 

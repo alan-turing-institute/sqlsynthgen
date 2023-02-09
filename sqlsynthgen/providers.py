@@ -60,8 +60,10 @@ class TimedeltaProvider(BaseProvider):
 
 
 class TimespanProvider(BaseProvider):
-    """A Mimesis provider for timespans, consisting of start datetime, end datetime, and
-    the timedelta in between. Returns a 3-tuple.
+    """A Mimesis provider for timespans.
+
+    A timespan consits of start datetime, end datetime, and the timedelta in between.
+    Returns a 3-tuple.
     """
 
     class Meta:
