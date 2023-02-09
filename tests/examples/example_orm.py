@@ -47,3 +47,14 @@ class Entity(Base):
         Integer,
         primary_key=True,
     )
+
+
+class Concept(Base):
+    __tablename__ = "concept"
+    __table_args__ = {"schema": "myschema"}
+
+    concept_id = Column(
+        Integer,
+        primary_key=True,
+    )
+    concept_name = Column(Text)

@@ -2,7 +2,12 @@
 from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
-from sqlsynthgen.create import create_db_data, create_db_tables, populate
+from sqlsynthgen.create import (
+    create_db_data,
+    create_db_tables,
+    create_db_vocab,
+    populate,
+)
 from tests.utils import get_test_settings
 
 
@@ -54,3 +59,9 @@ class MyTestCase(TestCase):
             mock_dst_conn.execute.assert_called_once_with(
                 mock_insert.return_value.values.return_value
             )
+
+    def test_create_db_vocab(self) -> None:
+        """Test the create_db_vocab function."""
+        vocab_list = [MagicMock()]
+        create_db_vocab(vocab_list)
+        vocab_list[0].load.assert_called_once()

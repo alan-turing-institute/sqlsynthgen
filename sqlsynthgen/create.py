@@ -1,5 +1,5 @@
 """Functions and classes to create and populate the target database."""
-from typing import Any
+from typing import Any, List
 
 from sqlalchemy import create_engine, insert
 from sqlalchemy.schema import CreateSchema
@@ -23,8 +23,9 @@ def create_db_tables(metadata: Any) -> Any:
     metadata.create_all(engine)
 
 
-def create_db_vocab(sorted_vocab):
-    settings = get_settings()
+def create_db_vocab(sorted_vocab: List[Any]) -> None:
+    """Load vocabulary tables from files."""
+    # settings = get_settings()
     for vocab_table in sorted_vocab:
         vocab_table.load()
 

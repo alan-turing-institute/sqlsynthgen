@@ -10,7 +10,7 @@ from typing import Any, Optional
 import typer
 import yaml
 
-from sqlsynthgen.create import create_db_data, create_db_tables
+from sqlsynthgen.create import create_db_data, create_db_tables, create_db_vocab
 from sqlsynthgen.make import make_generators_from_tables
 from sqlsynthgen.settings import get_settings
 
