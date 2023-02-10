@@ -1,7 +1,7 @@
 """Functions to make a module of generator classes."""
 import inspect
 from types import ModuleType
-from typing import Any, Final
+from typing import Any, Final, Optional
 
 from mimesis.providers.base import BaseProvider
 from sqlalchemy.sql import sqltypes
@@ -40,6 +40,15 @@ SQL_TO_MIMESIS_MAP = {
 }
 
 
+def _orm_class_from_table_name(tables_module: Any, full_name: str) -> Optional[Any]:
+    """Return the ORM class corresponding to a table name."""
+    for mapper in tables_module.Base.registry.mappers:
+        cls = mapper.class_
+        if cls.__table__.fullname == full_name:
+            return cls
+    return None
+
+
 def _add_custom_generators(content: str, table_config: dict) -> tuple[str, list[str]]:
     """Add to the generators file, written in the string `content`, the custom
     generators for the given table.
@@ -67,7 +76,7 @@ def _add_custom_generators(content: str, table_config: dict) -> tuple[str, list[
     return content, columns_covered
 
 
-def _add_default_generator(content: str, column: Any) -> str:
+def _add_default_generator(content: str, tables_module: ModuleType, column: Any) -> str:
     """Add to the generator file `content` a default generator for the given column,
     determined by the column's type.
     """
@@ -84,11 +93,17 @@ def _add_default_generator(content: str, column: Any) -> str:
                 "Can't handle multiple foreign keys for one column."
             )
         fkey = column.foreign_keys.pop()
-        fk_schema, fk_table, fk_column = fkey.target_fullname.split(".")
+        target_name_parts = fkey.target_fullname.split(".")
+        target_table_name = ".".join(target_name_parts[:-1])
+        target_column_name = target_name_parts[-1]
+        target_orm_class = _orm_class_from_table_name(tables_module, target_table_name)
+        if target_orm_class is None:
+            raise ValueError(f"Could not find the ORM class for {target_table_name}.")
         content += (
             f"self.{column.name} = "
             f"generic.column_value_provider.column_value(dst_db_conn, "
-            f'"{fk_schema}", "{fk_table}", "{fk_column}"'
+            f"{tables_module.__name__}.{target_orm_class.__name__}, "
+            f'"{target_column_name}"'
             ")"
         )
 
@@ -101,7 +116,7 @@ def _add_default_generator(content: str, column: Any) -> str:
 
 
 def _add_generator_for_table(
-    content: str, table_config: dict, table: Any
+    content: str, tables_module: ModuleType, table_config: dict, table: Any
 ) -> tuple[str, str]:
     """Add to the generator file `content` a generator for the given table."""
     new_class_name = table.name + "Generator"
@@ -117,7 +132,7 @@ def _add_generator_for_table(
         if column.name in columns_covered:
             # A generator for this column was already covered in the user config.
             continue
-        content = _add_default_generator(content, column)
+        content = _add_default_generator(content, tables_module, column)
     return content, new_class_name
 
 
@@ -133,6 +148,7 @@ def make_generators_from_tables(
       A string that is a valid Python module, once written to file.
     """
     new_content = HEADER_TEXT
+    new_content += f"\nimport {tables_module.__name__}"
     generator_module_name = generator_config.get("custom_generators_module", None)
     if generator_module_name is not None:
         new_content += f"\nfrom . import {generator_module_name}"
@@ -141,7 +157,7 @@ def make_generators_from_tables(
     for table in tables_module.Base.metadata.sorted_tables:
         table_config = generator_config.get("tables", {}).get(table.name, {})
         new_content, new_generator_name = _add_generator_for_table(
-            new_content, table_config, table
+            new_content, tables_module, table_config, table
         )
         sorted_generators += f"{INDENTATION}{new_generator_name},\n"
     sorted_generators += "]"

@@ -5,7 +5,7 @@ from typing import Any
 
 from mimesis import Datetime, Text
 from mimesis.providers.base import BaseDataProvider, BaseProvider
-from sqlalchemy.sql import text
+from sqlalchemy.sql import func, select
 
 
 class ColumnValueProvider(BaseProvider):
@@ -16,13 +16,11 @@ class ColumnValueProvider(BaseProvider):
 
         name = "column_value_provider"
 
-    def column_value(
-        self, db_connection: Any, schema: str, table: str, column: str
-    ) -> Any:
+    def column_value(self, db_connection: Any, orm_class: Any, column_name: str) -> Any:
         """Return a random value from the column specified."""
-        query_str = f"SELECT {column} FROM {schema}.{table} ORDER BY random() LIMIT 1"
-        key = db_connection.execute(text(query_str)).fetchone()[0]
-        return key
+        query = select(orm_class).order_by(func.random()).limit(1)
+        random_row = db_connection.execute(query).first()
+        return getattr(random_row, column_name)
 
 
 class BytesProvider(BaseDataProvider):

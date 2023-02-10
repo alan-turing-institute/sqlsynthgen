@@ -13,6 +13,7 @@ generic.add_provider(TimedeltaProvider)
 from sqlsynthgen.providers import TimespanProvider
 generic.add_provider(TimespanProvider)
 
+import tests.examples.example_orm
 from . import custom_generators
 
 class entityGenerator:
@@ -34,7 +35,7 @@ class hospital_visitGenerator:
     def __init__(self, src_db_conn, dst_db_conn):
         self.visit_start, self.visit_end, self.visit_duration_seconds = custom_generators.timespan_generator(generic=generic, earliest_start_year=2021, last_start_year=2022, min_dt_days=1, max_dt_days=30)
         pass
-        self.person_id = generic.column_value_provider.column_value(dst_db_conn, "myschema", "person", "person_id")
+        self.person_id = generic.column_value_provider.column_value(dst_db_conn, tests.examples.example_orm.Person, "person_id")
         self.visit_image = generic.bytes_provider.bytes()
 
 
