@@ -60,7 +60,7 @@ class ColumnValueProviderTestCase(TestCase):
             conn.execute(stmt)
 
             provider = providers.ColumnValueProvider()
-            key = provider.column_value(conn, "public", "person", "sex")
+            key = provider.column_value(conn, Person, "sex")
 
         self.assertEqual("M", key)
 
