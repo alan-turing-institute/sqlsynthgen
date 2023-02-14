@@ -25,9 +25,12 @@ def create_db_tables(metadata: Any) -> Any:
 
 def create_db_vocab(sorted_vocab: List[Any]) -> None:
     """Load vocabulary tables from files."""
-    # settings = get_settings()
-    for vocab_table in sorted_vocab:
-        vocab_table.load()
+    settings = get_settings()
+    dst_engine = create_engine(settings.dst_postgres_dsn)
+
+    with dst_engine.connect() as dst_conn:
+        for vocab_table in sorted_vocab:
+            vocab_table.load(dst_conn)
 
 
 def create_db_data(sorted_tables: list, sorted_generators: list, num_rows: int) -> None:
@@ -46,6 +49,8 @@ def populate(
 ) -> None:
     """Populate a database schema with dummy data."""
 
+    # ToDo Now that we have the vocab list, we can't assume that these are the same length
+    #  We could reverse them, zip them and then reverse them again?
     for table, generator in zip(
         tables, generators
     ):  # Run all the inserts for one table in a transaction

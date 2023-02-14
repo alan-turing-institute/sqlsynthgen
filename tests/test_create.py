@@ -62,6 +62,14 @@ class MyTestCase(TestCase):
 
     def test_create_db_vocab(self) -> None:
         """Test the create_db_vocab function."""
-        vocab_list = [MagicMock()]
-        create_db_vocab(vocab_list)
-        vocab_list[0].load.assert_called_once()
+        with patch("sqlsynthgen.create.create_engine") as mock_create_engine, patch(
+            "sqlsynthgen.create.get_settings"
+        ) as mock_get_settings:
+            vocab_list = [MagicMock()]
+            create_db_vocab(vocab_list)
+            vocab_list[0].load.assert_called_once_with(
+                mock_create_engine.return_value.connect.return_value.__enter__.return_value
+            )
+            mock_create_engine.assert_called_once_with(
+                mock_get_settings.return_value.dst_postgres_dsn
+            )

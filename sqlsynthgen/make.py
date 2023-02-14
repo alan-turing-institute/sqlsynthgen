@@ -168,7 +168,7 @@ def make_generators_from_tables(
             class_name = orm_class.__name__
             new_content += (
                 f"\n\n{class_name.lower()}_vocab "
-                f"= FileUploader({tables_module.__name__}.{class_name})"
+                f"= FileUploader({tables_module.__name__}.{class_name}.__table__)"
             )
             sorted_vocab += f"{INDENTATION}{class_name.lower()}_vocab,\n"
             continue
