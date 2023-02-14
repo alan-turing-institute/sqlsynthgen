@@ -17,7 +17,7 @@ generic.add_provider(TimespanProvider)
 import tests.examples.example_orm
 from . import custom_generators
 
-concept_vocab = FileUploader(tests.examples.example_orm.Concept)
+concept_vocab = FileUploader(tests.examples.example_orm.Concept.__table__)
 
 class entityGenerator:
     def __init__(self, src_db_conn, dst_db_conn):

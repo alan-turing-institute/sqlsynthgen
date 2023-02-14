@@ -1,15 +1,52 @@
 """Tests for the main module."""
+import os
 from unittest import TestCase
-from unittest.mock import MagicMock
+
+from sqlalchemy import Column, Integer, create_engine, select
+from sqlalchemy.orm import declarative_base
 
 from sqlsynthgen.base import FileUploader
+from tests.utils import run_psql
+
+# pylint: disable=invalid-name
+Base = declarative_base()
+# pylint: enable=invalid-name
+metadata = Base.metadata
+
+
+class MyTable(Base):  # type: ignore
+    """A SQLAlchemy table."""
+
+    __tablename__ = "mytable"
+    id = Column(
+        Integer,
+        primary_key=True,
+    )
 
 
 class VocabTests(TestCase):
     """Module test case."""
 
+    def setUp(self) -> None:
+        """Pre-test setup."""
+
+        run_psql("providers.dump")
+
+        self.engine = create_engine(
+            "postgresql://postgres:password@localhost:5432/providers"
+        )
+        metadata.create_all(self.engine)
+        os.chdir("tests/examples")
+
+    def tearDown(self) -> None:
+        os.chdir("../..")
+
     def test_load(self) -> None:
         """Test the load method."""
-        mock_table = MagicMock()
-        vocab_gen = FileUploader(mock_table)
-        vocab_gen.load()
+        vocab_gen = FileUploader(MyTable.__table__)
+
+        with self.engine.connect() as conn:
+            vocab_gen.load(conn)
+            statement = select([MyTable])
+            rows = list(conn.execute(statement))
+        self.assertEqual(3, len(rows))
