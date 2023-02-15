@@ -2,7 +2,6 @@ custom_generators_module: custom_generators
 tables:
   person:
     num_rows_per_pass: 2
-    vocabulary_table: false
     custom_generators:
       - name: generic.person.full_name
         args: null
@@ -27,3 +26,5 @@ tables:
           - visit_start
           - visit_end
           - visit_duration_seconds
+  concept:
+    vocabulary_table: true

@@ -187,8 +187,11 @@ def make_generators_from_tables(
     engine = create_engine(settings.src_postgres_dsn)
 
     for table in tables_module.Base.metadata.sorted_tables:
-        # ToDo Get list of vocab tables from config file
-        if table.name in ("concept",):
+        if table.name in [
+            x
+            for x in generator_config.get("tables", {}).keys()
+            if generator_config["tables"][x].get("vocabulary_table")
+        ]:
 
             orm_class = _orm_class_from_table_name(tables_module, table.fullname)
             if not orm_class:

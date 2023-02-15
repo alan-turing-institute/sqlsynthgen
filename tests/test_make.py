@@ -63,9 +63,9 @@ class MyTestCase(TestCase):
         with patch("sqlsynthgen.make._download_table",) as mock_download, patch(
             "sqlsynthgen.make.create_engine"
         ) as mock_create_engine, patch("sqlsynthgen.make.get_settings"):
-            # pass
             actual = make.make_generators_from_tables(example_orm, config)
             mock_download.assert_called_once()
+            # self.assertEqual(, mock_download.call_args_list[0])
             mock_create_engine.assert_called_once()
 
         self.assertEqual(expected, actual)
