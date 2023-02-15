@@ -1,6 +1,6 @@
 """Tests for the main module."""
 from unittest import TestCase
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 from sqlsynthgen.create import (
     create_db_data,
@@ -59,6 +59,21 @@ class MyTestCase(TestCase):
             mock_dst_conn.execute.assert_called_once_with(
                 mock_insert.return_value.values.return_value
             )
+
+    def test_populate_diff_length(self) -> None:
+        """Test when generators and tables differ in length."""
+        mock_dst_conn = MagicMock()
+        mock_gen_two = MagicMock()
+        mock_gen_three = MagicMock()
+        tables = [1, 2, 3]
+        generators = [mock_gen_two, mock_gen_three]
+
+        with patch("sqlsynthgen.create.insert") as mock_insert:
+            populate(2, mock_dst_conn, tables, generators, 1)
+            self.assertListEqual([call(2), call(3)], mock_insert.call_args_list)
+
+        mock_gen_two.assert_called_once()
+        mock_gen_three.assert_called_once()
 
     def test_create_db_vocab(self) -> None:
         """Test the create_db_vocab function."""

@@ -49,10 +49,8 @@ def populate(
 ) -> None:
     """Populate a database schema with dummy data."""
 
-    # ToDo Now that we have the vocab list, we can't assume that these are the same length
-    #  We could reverse them, zip them and then reverse them again?
-    for table, generator in zip(
-        tables, generators
+    for table, generator in reversed(
+        list(zip(reversed(tables), reversed(generators)))
     ):  # Run all the inserts for one table in a transaction
         with dst_conn.begin():
             for _ in range(num_rows):

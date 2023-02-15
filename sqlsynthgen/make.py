@@ -1,12 +1,16 @@
 """Functions to make a module of generator classes."""
+import csv
 import inspect
+from pathlib import Path
 from types import ModuleType
 from typing import Any, Final, Optional
 
 from mimesis.providers.base import BaseProvider
+from sqlalchemy import create_engine, select
 from sqlalchemy.sql import sqltypes
 
 from sqlsynthgen import providers
+from sqlsynthgen.settings import get_settings
 
 HEADER_TEXT: str = "\n".join(
     (
@@ -137,6 +141,27 @@ def _add_generator_for_table(
     return content, new_class_name
 
 
+def _download_table(table: Any, engine: Any) -> None:
+    """Download a table and store it as a .csv file"""
+    stmt = select([table])
+    with engine.connect() as conn:
+        # result = conn.execute("select * from concept")
+        result = list(conn.execute(stmt))
+    with Path(table.fullname + ".csv").open(
+        "w", newline="", encoding="utf-8"
+    ) as csvfile:
+        writer = csv.writer(
+            csvfile, delimiter=","
+        )  # , quotechar='|', quoting=csv.quote_minimal)
+        writer.writerow([x.name for x in table.columns])
+        # writer = csv.dictwriter(csvfile, fieldnames=[x.name for x in table.columns])
+        for row in result:
+            writer.writerow(row)
+
+        # writer.writeheader()
+        # writer.writerow({'first_name': 'baked', 'last_name': 'beans'})
+
+
 def make_generators_from_tables(
     tables_module: ModuleType, generator_config: dict
 ) -> str:
@@ -158,6 +183,9 @@ def make_generators_from_tables(
     sorted_generators = "[\n"
     sorted_vocab = "[\n"
 
+    settings = get_settings()
+    engine = create_engine(settings.src_postgres_dsn)
+
     for table in tables_module.Base.metadata.sorted_tables:
         # ToDo Get list of vocab tables from config file
         if table.name in ("concept",):
@@ -171,6 +199,9 @@ def make_generators_from_tables(
                 f"= FileUploader({tables_module.__name__}.{class_name}.__table__)"
             )
             sorted_vocab += f"{INDENTATION}{class_name.lower()}_vocab,\n"
+
+            _download_table(table, engine)
+
             continue
 
         table_config = generator_config.get("tables", {}).get(table.name, {})

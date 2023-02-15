@@ -14,10 +14,10 @@ Base = declarative_base()
 metadata = Base.metadata
 
 
-class MyTable(Base):  # type: ignore
+class BaseTable(Base):  # type: ignore
     """A SQLAlchemy table."""
 
-    __tablename__ = "mytable"
+    __tablename__ = "basetable"
     id = Column(
         Integer,
         primary_key=True,
@@ -43,10 +43,10 @@ class VocabTests(TestCase):
 
     def test_load(self) -> None:
         """Test the load method."""
-        vocab_gen = FileUploader(MyTable.__table__)
+        vocab_gen = FileUploader(BaseTable.__table__)
 
         with self.engine.connect() as conn:
             vocab_gen.load(conn)
-            statement = select([MyTable])
+            statement = select([BaseTable])
             rows = list(conn.execute(statement))
         self.assertEqual(3, len(rows))
