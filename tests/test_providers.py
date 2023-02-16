@@ -1,13 +1,12 @@
 """Tests for the providers module."""
 import datetime as dt
-import os
-from unittest import TestCase, skipUnless
+from unittest import TestCase
 
 from sqlalchemy import Column, Integer, Text, create_engine, insert
 from sqlalchemy.ext.declarative import declarative_base
 
 from sqlsynthgen import providers
-from tests.utils import run_psql
+from tests.utils import RequiresDBTestCase, run_psql
 
 # pylint: disable=invalid-name
 Base = declarative_base()
@@ -35,10 +34,7 @@ class BinaryProviderTestCase(TestCase):
         self.assertTrue(providers.BytesProvider().bytes().decode("utf-8") != "")
 
 
-@skipUnless(
-    os.environ.get("FUNCTIONAL_TESTS") == "1", "Set 'FUNCTIONAL_TESTS=1' to enable."
-)
-class ColumnValueProviderTestCase(TestCase):
+class ColumnValueProviderTestCase(RequiresDBTestCase):
     """Tests for the ColumnValueProvider class."""
 
     def setUp(self) -> None:
