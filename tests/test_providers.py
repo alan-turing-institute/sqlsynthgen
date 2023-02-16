@@ -5,7 +5,6 @@ from unittest import TestCase, skipUnless
 
 from sqlalchemy import Column, Integer, Text, create_engine, insert
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.pool import NullPool
 
 from sqlsynthgen import providers
 from tests.utils import run_psql
@@ -49,13 +48,8 @@ class ColumnValueProviderTestCase(TestCase):
 
         self.engine = create_engine(
             "postgresql://postgres:password@localhost:5432/providers",
-            # pool=NullPool
-            poolclass=NullPool,
         )
         metadata.create_all(self.engine)
-
-    def tearDown(self) -> None:
-        self.engine.dispose()
 
     def test_column_value(self) -> None:
         """Test the key method."""
@@ -69,7 +63,6 @@ class ColumnValueProviderTestCase(TestCase):
             key = provider.column_value(conn, Person, "sex")
 
         self.assertEqual("M", key)
-        # pass
 
 
 class TimedeltaProvider(TestCase):

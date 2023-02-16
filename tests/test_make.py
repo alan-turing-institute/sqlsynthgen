@@ -7,7 +7,6 @@ from unittest.mock import patch
 import yaml
 from sqlalchemy import Column, Integer, create_engine, insert
 from sqlalchemy.orm import declarative_base
-from sqlalchemy.pool import NullPool
 
 from sqlsynthgen import make
 from tests.examples import example_orm
@@ -40,16 +39,12 @@ class MyTestCase(TestCase):
 
         self.engine = create_engine(
             "postgresql://postgres:password@localhost:5432/providers",
-            # pool=NullPool
-            poolclass=NullPool,
         )
         metadata.create_all(self.engine)
         os.chdir("tests/examples")
 
     def tearDown(self) -> None:
         os.chdir("../..")
-
-        self.engine.dispose()
 
     def test_make_generators_from_tables(self) -> None:
         """Check that we can make a generators file from a tables module."""
