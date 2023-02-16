@@ -47,7 +47,7 @@ class ColumnValueProviderTestCase(TestCase):
         run_psql("providers.dump")
 
         self.engine = create_engine(
-            "postgresql://postgres:password@localhost:5432/providers"
+            "postgresql://postgres:password@localhost:5432/providers",
         )
         metadata.create_all(self.engine)
 

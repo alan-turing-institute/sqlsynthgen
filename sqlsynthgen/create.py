@@ -1,5 +1,5 @@
 """Functions and classes to create and populate the target database."""
-from typing import Any
+from typing import Any, List
 
 from sqlalchemy import create_engine, insert
 from sqlalchemy.schema import CreateSchema
@@ -23,6 +23,16 @@ def create_db_tables(metadata: Any) -> Any:
     metadata.create_all(engine)
 
 
+def create_db_vocab(sorted_vocab: List[Any]) -> None:
+    """Load vocabulary tables from files."""
+    settings = get_settings()
+    dst_engine = create_engine(settings.dst_postgres_dsn)
+
+    with dst_engine.connect() as dst_conn:
+        for vocab_table in sorted_vocab:
+            vocab_table.load(dst_conn)
+
+
 def create_db_data(sorted_tables: list, sorted_generators: list, num_rows: int) -> None:
     """Connect to a database and populate it with data."""
     settings = get_settings()
@@ -39,8 +49,8 @@ def populate(
 ) -> None:
     """Populate a database schema with dummy data."""
 
-    for table, generator in zip(
-        tables, generators
+    for table, generator in reversed(
+        list(zip(reversed(tables), reversed(generators)))
     ):  # Run all the inserts for one table in a transaction
         with dst_conn.begin():
             for _ in range(num_rows):

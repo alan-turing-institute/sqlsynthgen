@@ -10,7 +10,7 @@ from typing import Any, Optional
 import typer
 import yaml
 
-from sqlsynthgen.create import create_db_data, create_db_tables
+from sqlsynthgen.create import create_db_data, create_db_tables, create_db_vocab
 from sqlsynthgen.make import make_generators_from_tables
 from sqlsynthgen.settings import get_settings
 
@@ -43,6 +43,13 @@ def create_data(
     create_db_data(
         orm_module.Base.metadata.sorted_tables, ssg_module.sorted_generators, num_rows
     )
+
+
+@app.command()
+def create_vocab(ssg_file: str = typer.Argument(...)) -> None:
+    """Create tables using the SQLAlchemy file."""
+    ssg_module = import_file(ssg_file)
+    create_db_vocab(ssg_module.sorted_vocab)
 
 
 @app.command()
