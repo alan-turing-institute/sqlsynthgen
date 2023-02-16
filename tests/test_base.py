@@ -1,4 +1,4 @@
-"""Tests for the main module."""
+"""Tests for the base module."""
 import os
 from unittest import TestCase
 

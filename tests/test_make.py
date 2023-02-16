@@ -12,7 +12,6 @@ from sqlsynthgen import make
 from tests.examples import example_orm
 from tests.utils import run_psql
 
-# pylint: disable=protected-access
 # pylint: disable=invalid-name
 Base = declarative_base()
 # pylint: enable=invalid-name
@@ -60,13 +59,13 @@ class MyTestCase(TestCase):
         ) as mock_create_engine, patch("sqlsynthgen.make.get_settings"):
             actual = make.make_generators_from_tables(example_orm, config)
             mock_download.assert_called_once()
-            # self.assertEqual(, mock_download.call_args_list[0])
             mock_create_engine.assert_called_once()
 
         self.assertEqual(expected, actual)
 
     def test__download_table(self) -> None:
         """Test the _download_table function."""
+        # pylint: disable=protected-access
         with self.engine.connect() as conn:
             conn.execute(insert(MakeTable).values({"id": 1}))
 

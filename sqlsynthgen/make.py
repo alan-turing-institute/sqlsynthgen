@@ -145,21 +145,14 @@ def _download_table(table: Any, engine: Any) -> None:
     """Download a table and store it as a .csv file"""
     stmt = select([table])
     with engine.connect() as conn:
-        # result = conn.execute("select * from concept")
         result = list(conn.execute(stmt))
     with Path(table.fullname + ".csv").open(
         "w", newline="", encoding="utf-8"
     ) as csvfile:
-        writer = csv.writer(
-            csvfile, delimiter=","
-        )  # , quotechar='|', quoting=csv.quote_minimal)
+        writer = csv.writer(csvfile, delimiter=",")
         writer.writerow([x.name for x in table.columns])
-        # writer = csv.dictwriter(csvfile, fieldnames=[x.name for x in table.columns])
         for row in result:
             writer.writerow(row)
-
-        # writer.writeheader()
-        # writer.writerow({'first_name': 'baked', 'last_name': 'beans'})
 
 
 def make_generators_from_tables(
