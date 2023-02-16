@@ -12,9 +12,9 @@ import sphinx_rtd_theme
 sys.path.insert(0, pathlib.Path(__file__).parents[2].resolve().as_posix())
 print("Path: {}".format(pathlib.Path(__file__).parents[2]))
 
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('../../'))
+import os
+import sys
+sys.path.insert(0, os.path.abspath('../../'))
 
 project = 'sqlsynthgen'
 copyright = '2023, anon'
