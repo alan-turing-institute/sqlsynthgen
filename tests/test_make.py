@@ -1,7 +1,6 @@
 """Tests for the main module."""
 import os
 from pathlib import Path
-from unittest import TestCase
 from unittest.mock import patch
 
 import yaml
@@ -10,7 +9,7 @@ from sqlalchemy.orm import declarative_base
 
 from sqlsynthgen import make
 from tests.examples import example_orm
-from tests.utils import run_psql
+from tests.utils import RequiresDBTestCase, run_psql
 
 # pylint: disable=invalid-name
 Base = declarative_base()
@@ -28,7 +27,7 @@ class MakeTable(Base):  # type: ignore
     )
 
 
-class MyTestCase(TestCase):
+class MyTestCase(RequiresDBTestCase):
     """Module test case."""
 
     def setUp(self) -> None:

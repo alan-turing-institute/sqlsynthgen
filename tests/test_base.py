@@ -1,12 +1,11 @@
 """Tests for the base module."""
 import os
-from unittest import TestCase
 
 from sqlalchemy import Column, Integer, create_engine, select
 from sqlalchemy.orm import declarative_base
 
 from sqlsynthgen.base import FileUploader
-from tests.utils import run_psql
+from tests.utils import RequiresDBTestCase, run_psql
 
 # pylint: disable=invalid-name
 Base = declarative_base()
@@ -24,7 +23,7 @@ class BaseTable(Base):  # type: ignore
     )
 
 
-class VocabTests(TestCase):
+class VocabTests(RequiresDBTestCase):
     """Module test case."""
 
     def setUp(self) -> None:

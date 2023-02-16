@@ -2,15 +2,11 @@
 import os
 from pathlib import Path
 from subprocess import run
-from unittest import TestCase, skipUnless
 
-from tests.utils import run_psql
+from tests.utils import RequiresDBTestCase, run_psql
 
 
-@skipUnless(
-    os.environ.get("FUNCTIONAL_TESTS") == "1", "Set 'FUNCTIONAL_TESTS=1' to enable."
-)
-class FunctionalTests(TestCase):
+class FunctionalTestCase(RequiresDBTestCase):
     """End-to-end tests."""
 
     orm_file_path = Path("tests/tmp/orm.py")
