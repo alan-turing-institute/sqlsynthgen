@@ -41,13 +41,4 @@ sqlsynthgen.settings module
 
 .. automodule:: sqlsynthgen.settings
    :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: sqlsynthgen
-   :members:
-   :undoc-members:
    :show-inheritance:

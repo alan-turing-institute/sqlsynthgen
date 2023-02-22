@@ -21,7 +21,6 @@ Contents:
    changelog
    installation
    modules
-   api
 
 
 Indices and tables

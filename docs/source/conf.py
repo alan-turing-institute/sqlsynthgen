@@ -31,7 +31,7 @@ extensions: list[str] = [
     "sphinxcontrib.napoleon",
 ]
 
-autodoc_mock_imports: list[str] = ["typer", "pydantic", "mimesis", "sqlalchemy"]
+autodoc_mock_imports: list[str] = ["typer", "pydantic", "sqlalchemy"]
 
 templates_path: list[str] = ["_templates"]
 exclude_patterns: list[str] = []
