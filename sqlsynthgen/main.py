@@ -124,10 +124,6 @@ def make_generators(
     Args:
         orm_file (str): Path to Python tables file.
         config_file (str): Path to configuration file.
-
-    Returns:
-        None
-
     """
     orm_module = import_file(orm_file)
     generator_config = read_yaml_file(config_file) if config_file is not None else {}
@@ -145,13 +141,6 @@ def make_tables() -> None:
 
     Example:
         $ python sqlsynthgen/main.py make_tables
-
-    Args:
-        None
-
-    Returns:
-        None
-
     """
     settings = get_settings()
 
