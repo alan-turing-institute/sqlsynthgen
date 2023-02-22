@@ -18,7 +18,7 @@ app = typer.Typer()
 
 
 def import_file(file_path: str) -> ModuleType:
-    """Import a file
+    """Import a file.
 
     This utility function returns
     the file at file_path as a module
@@ -29,7 +29,6 @@ def import_file(file_path: str) -> ModuleType:
     Returns:
         ModuleType
     """
-
     file_path_path = Path(file_path)
     module_path = ".".join(file_path_path.parts[:-1] + (file_path_path.stem,))
     return import_module(module_path)
@@ -48,7 +47,8 @@ def create_data(
     ssg_file: str = typer.Argument(...),
     num_rows: int = typer.Argument(...),
 ) -> None:
-    """Populate schema with synthetic data
+    """Populate schema with synthetic data.
+
     This CLI command generates synthetic data for
     Python table structures, and inserts these rows
     into a destination schema.
@@ -89,7 +89,7 @@ def create_vocab(ssg_file: str = typer.Argument(...)) -> None:
 
 @app.command()
 def create_tables(orm_file: str = typer.Argument(...)) -> None:
-    """Create schema from Python classes
+    """Create schema from Python classes.
 
     This CLI command creates Postgresql schema using object relational model
     declared as Python tables. (eg.)

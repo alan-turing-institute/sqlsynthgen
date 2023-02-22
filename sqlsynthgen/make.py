@@ -55,9 +55,7 @@ def _orm_class_from_table_name(tables_module: Any, full_name: str) -> Optional[A
 
 
 def _add_custom_generators(content: str, table_config: dict) -> tuple[str, list[str]]:
-    """Add to the generators file, written in the string `content`, the custom
-    generators for the given table.
-    """
+    """Append the custom generators to content, for the given table."""
     generators_config = table_config.get("custom_generators", {})
     columns_covered = []
     for gen_conf in generators_config:
@@ -82,9 +80,7 @@ def _add_custom_generators(content: str, table_config: dict) -> tuple[str, list[
 
 
 def _add_default_generator(content: str, tables_module: ModuleType, column: Any) -> str:
-    """Add to the generator file `content` a default generator for the given column,
-    determined by the column's type.
-    """
+    """Append a default generator to content, for the given column."""
     content += INDENTATION * 2
     # If it's a primary key column, we presume that primary keys are populated
     # automatically.
@@ -142,7 +138,7 @@ def _add_generator_for_table(
 
 
 def _download_table(table: Any, engine: Any) -> None:
-    """Download a table and store it as a .csv file"""
+    """Download a table and store it as a .csv file."""
     stmt = select([table])
     with engine.connect() as conn:
         result = list(conn.execute(stmt))
@@ -158,7 +154,7 @@ def _download_table(table: Any, engine: Any) -> None:
 def make_generators_from_tables(
     tables_module: ModuleType, generator_config: dict
 ) -> str:
-    """Creates sqlsynthgen generator classes from a sqlacodegen-generated file.
+    """Create sqlsynthgen generator classes from a sqlacodegen-generated file.
 
     Args:
       tables_module: A sqlacodegen-generated module.

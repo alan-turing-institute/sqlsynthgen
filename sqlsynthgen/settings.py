@@ -45,7 +45,6 @@ class Settings(BaseSettings):
     @staticmethod
     def check_postgres_dsn(_: Optional[PostgresDsn], values: Any, prefix: str) -> str:
         """Build a DSN string from the host, db name, port, username and password."""
-
         # We want to build the Data Source Name ourselves so none should be provided
         if _:
             raise ValueError("postgres_dsn should not be provided")
