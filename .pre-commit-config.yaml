@@ -44,6 +44,15 @@ repos:
         entry: poetry run pylint
         language: system
         types: ['python']
+      - id: pydocstyle
+        name: pydocstyle
+        entry: poetry run pydocstyle
+        language: system
+        types: ['python']
+        exclude: (?x)(
+          tests/|
+          docs/
+          )
       - id: mypy
         name: mypy
         entry: poetry run mypy --follow-imports=silent

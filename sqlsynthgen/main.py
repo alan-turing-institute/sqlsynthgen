@@ -5,10 +5,12 @@ from pathlib import Path
 from subprocess import CalledProcessError, run
 from sys import stderr
 from types import ModuleType
+from typing import Any, Optional
 
 import typer
+import yaml
 
-from sqlsynthgen.create import create_db_data, create_db_tables
+from sqlsynthgen.create import create_db_data, create_db_tables, create_db_vocab
 from sqlsynthgen.make import make_generators_from_tables
 from sqlsynthgen.settings import get_settings
 
@@ -16,7 +18,7 @@ app = typer.Typer()
 
 
 def import_file(file_path: str) -> ModuleType:
-    """Import a file
+    """Import a file.
 
     This utility function returns
     the file at file_path as a module
@@ -27,10 +29,16 @@ def import_file(file_path: str) -> ModuleType:
     Returns:
         ModuleType
     """
-
     file_path_path = Path(file_path)
     module_path = ".".join(file_path_path.parts[:-1] + (file_path_path.stem,))
     return import_module(module_path)
+
+
+def read_yaml_file(path: str) -> Any:
+    """Read a yaml file in to dictionary, given a path."""
+    with open(path, "r", encoding="utf8") as f:
+        config = yaml.safe_load(f)
+    return config
 
 
 @app.command()
@@ -39,7 +47,8 @@ def create_data(
     ssg_file: str = typer.Argument(...),
     num_rows: int = typer.Argument(...),
 ) -> None:
-    """Populate schema with synthetic data
+    """Populate schema with synthetic data.
+
     This CLI command generates synthetic data for
     Python table structures, and inserts these rows
     into a destination schema.
@@ -72,8 +81,15 @@ def create_data(
 
 
 @app.command()
+def create_vocab(ssg_file: str = typer.Argument(...)) -> None:
+    """Create tables using the SQLAlchemy file."""
+    ssg_module = import_file(ssg_file)
+    create_db_vocab(ssg_module.sorted_vocab)
+
+
+@app.command()
 def create_tables(orm_file: str = typer.Argument(...)) -> None:
-    """Create schema from Python classes
+    """Create schema from Python classes.
 
     This CLI command creates Postgresql schema using object relational model
     declared as Python tables. (eg.)
@@ -93,7 +109,10 @@ def create_tables(orm_file: str = typer.Argument(...)) -> None:
 
 
 @app.command()
-def make_generators(orm_file: str = typer.Argument(...)) -> None:
+def make_generators(
+    orm_file: str = typer.Argument(...),
+    config_file: Optional[str] = typer.Argument(None),
+) -> None:
     """Make a SQLSynthGen file of generator classes.
 
     This CLI command takes an object relation model output by sqlcodegen and
@@ -104,13 +123,15 @@ def make_generators(orm_file: str = typer.Argument(...)) -> None:
 
     Args:
         orm_file (str): Path to Python tables file.
+        config_file (str): Path to configuration file.
 
     Returns:
         None
 
     """
     orm_module = import_file(orm_file)
-    result = make_generators_from_tables(orm_module)
+    generator_config = read_yaml_file(config_file) if config_file is not None else {}
+    result = make_generators_from_tables(orm_module, generator_config)
     print(result)
 
 

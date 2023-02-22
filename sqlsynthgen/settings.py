@@ -119,7 +119,6 @@ class Settings(BaseSettings):
         Return:
             (str): A data source name
         """
-
         # We want to build the Data Source Name ourselves so none should be provided
         if _:
             raise ValueError("postgres_dsn should not be provided")

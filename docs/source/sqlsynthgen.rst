@@ -17,6 +17,7 @@ sqlsynthgen.main module
 
 .. automodule:: sqlsynthgen.main
    :members:
+   :undoc-members:
    :show-inheritance:
 
 sqlsynthgen.make module
@@ -40,9 +41,8 @@ sqlsynthgen.settings module
 
 .. automodule:: sqlsynthgen.settings
    :members:
+   :undoc-members:
    :show-inheritance:
-   :noindex:
-
 
 Module contents
 ---------------

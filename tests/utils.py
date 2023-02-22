@@ -3,6 +3,7 @@ import os
 from functools import lru_cache
 from pathlib import Path
 from subprocess import run
+from unittest import TestCase, skipUnless
 
 from sqlsynthgen import settings
 
@@ -48,3 +49,14 @@ def run_psql(dump_file_name: str) -> None:
     )
     # psql doesn't always return != 0 if it fails
     assert completed_process.stderr == b"", completed_process.stderr
+
+
+@skipUnless(os.environ.get("REQUIRES_DB") == "1", "Set 'REQUIRES_DB=1' to enable.")
+class RequiresDBTestCase(TestCase):
+    """A test case that only runs if REQUIRES_DB has been set to true."""
+
+    def setUp(self) -> None:
+        pass
+
+    def tearDown(self) -> None:
+        pass

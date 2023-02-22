@@ -1,0 +1,30 @@
+custom_generators_module: custom_generators
+tables:
+  person:
+    num_rows_per_pass: 2
+    custom_generators:
+      - name: generic.person.full_name
+        args: null
+        columns_assigned: name
+      - name: generic.datetime.datetime
+        args:
+          start: 2022
+          end: 2022
+        columns_assigned: stored_from
+
+  hospital_visit:
+    num_rows_per_pass: 3
+    custom_generators:
+      - name: custom_generators.timespan_generator
+        args:
+          generic: generic
+          earliest_start_year: 2021
+          last_start_year: 2022
+          min_dt_days: 1
+          max_dt_days: 30
+        columns_assigned:
+          - visit_start
+          - visit_end
+          - visit_duration_seconds
+  concept:
+    vocabulary_table: true
