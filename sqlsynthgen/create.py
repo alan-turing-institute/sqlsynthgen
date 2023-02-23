@@ -48,7 +48,6 @@ def populate(
     src_conn: Any, dst_conn: Any, tables: list, generators: list, num_rows: int
 ) -> None:
     """Populate a database schema with dummy data."""
-
     for table, generator in reversed(
         list(zip(reversed(tables), reversed(generators)))
     ):  # Run all the inserts for one table in a transaction

@@ -135,3 +135,7 @@ dmypy.json
 
 .fake
 sqlsynthgen/config.ini
+
+# sphinx
+docs/build/*
+docs/temp/*
