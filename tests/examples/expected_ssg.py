@@ -20,11 +20,15 @@ from . import custom_generators
 concept_vocab = FileUploader(tests.examples.example_orm.Concept.__table__)
 
 class entityGenerator:
+    num_rows_per_pass = 1
+
     def __init__(self, src_db_conn, dst_db_conn):
         pass
 
 
 class personGenerator:
+    num_rows_per_pass = 2
+
     def __init__(self, src_db_conn, dst_db_conn):
         self.name = generic.person.full_name()
         self.stored_from = generic.datetime.datetime(start=2022, end=2022)
@@ -35,6 +39,8 @@ class personGenerator:
 
 
 class hospital_visitGenerator:
+    num_rows_per_pass = 3
+
     def __init__(self, src_db_conn, dst_db_conn):
         self.visit_start, self.visit_end, self.visit_duration_seconds = custom_generators.timespan_generator(generic=generic, earliest_start_year=2021, last_start_year=2022, min_dt_days=1, max_dt_days=30)
         pass
