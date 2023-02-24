@@ -63,7 +63,7 @@ def create_data(
     Final input is the number of rows required.
 
     Example:
-        $ python sqlsynthgen/main.py create-data example_orm.py expected_ssg.py 100
+        $ sqlsynthgen create-data example_orm.py expected_ssg.py 100
 
     Args:
         orm_file (str): Path to object relational model.
@@ -95,7 +95,7 @@ def create_tables(orm_file: str = typer.Argument(...)) -> None:
     declared as Python tables. (eg.)
 
     Example:
-        $ python sqlsynthgen/main.py create-tables example_orm.py
+        $ sqlsynthgen create-tables example_orm.py
 
     Args:
         orm_file (str): Path to Python tables file.
@@ -119,7 +119,7 @@ def make_generators(
     returns a set of synthetic data generators for each attribute
 
     Example:
-        $ python sqlsynthgen/main.py make-generators example_orm.py
+        $ sqlsynthgen make-generators example_orm.py
 
     Args:
         orm_file (str): Path to Python tables file.
@@ -140,7 +140,7 @@ def make_tables() -> None:
     as Python classes.
 
     Example:
-        $ python sqlsynthgen/main.py make_tables
+        $ sqlsynthgen make_tables
     """
     settings = get_settings()
 
