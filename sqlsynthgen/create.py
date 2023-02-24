@@ -33,7 +33,9 @@ def create_db_vocab(sorted_vocab: List[Any]) -> None:
             vocab_table.load(dst_conn)
 
 
-def create_db_data(sorted_tables: list, sorted_generators: list, num_rows: int) -> None:
+def create_db_data(
+    sorted_tables: list, sorted_generators: list, num_passes: int
+) -> None:
     """Connect to a database and populate it with data."""
     settings = get_settings()
     dst_engine = create_engine(settings.dst_postgres_dsn)
@@ -41,17 +43,18 @@ def create_db_data(sorted_tables: list, sorted_generators: list, num_rows: int) 
 
     with dst_engine.connect() as dst_conn:
         with src_engine.connect() as src_conn:
-            populate(src_conn, dst_conn, sorted_tables, sorted_generators, num_rows)
+            populate(src_conn, dst_conn, sorted_tables, sorted_generators, num_passes)
 
 
 def populate(
-    src_conn: Any, dst_conn: Any, tables: list, generators: list, num_rows: int
+    src_conn: Any, dst_conn: Any, tables: list, generators: list, num_passes: int
 ) -> None:
     """Populate a database schema with dummy data."""
     for table, generator in reversed(
         list(zip(reversed(tables), reversed(generators)))
     ):  # Run all the inserts for one table in a transaction
         with dst_conn.begin():
-            for _ in range(num_rows):
-                stmt = insert(table).values(generator(src_conn, dst_conn).__dict__)
-                dst_conn.execute(stmt)
+            for _ in range(num_passes):
+                for __ in range(generator.num_rows_per_pass):
+                    stmt = insert(table).values(generator(src_conn, dst_conn).__dict__)
+                    dst_conn.execute(stmt)
