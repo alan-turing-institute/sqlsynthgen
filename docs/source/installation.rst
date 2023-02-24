@@ -4,7 +4,7 @@ Get Started
 Sqlsynthgen is a Python package that references a database schema and generates synthetic data accordingly. The generators are configurable. The output is a database schema populated with synthetic values.
 
 Installation
-**********
+************
 
 To use Sqlsynthgen, first install it using poetry:
 
@@ -31,13 +31,15 @@ Sqlsynthgen provides a CLI interface. The commands are as below:
 
 The ordering of the steps from end to end may be as follows:
 
-#. Make python classes based on source database schema tables. The console printout contains metadata about the source schema. The example below shows the output when the source schema comprises of a table ``Person`` with three columns.
+#. Make python classes based on source database schema tables. Classes are output as stdout and is referred to as the `object-relational-model` (orm) value. Tables in schema must have primary key constraints in order for the orm to be generated.
+
+The example below shows the output when the source schema comprises of a table ``Person`` with three columns. The stdout is piped into a python file eg. person_orm.py
 
 .. code-block:: bash
 
-   (<your_poetry_shell>) $ python sqlsynthgen/main.py make-tables
+   (<your_poetry_shell>) $ python sqlsynthgen/main.py make-tables >> sqlsynthgen/person_orm.py
 
-which outputs the following:
+The orm value (snippet) is as follows:
 
 .. code-block:: python
 
@@ -59,16 +61,21 @@ which outputs the following:
       nhs_number = Column(Text)
       research_opt_out = Column(Boolean)
 
-This printout from stdout is the referred to as the `object-relational-model` value.
-
-.. code-block:: bash
-
-   (<your_poetry_shell>) $ python sqlsynthgen/main.py make-tables >> sqlsynthgen/person_orm.py
-
-In this example, it is piped as input for the next step and named `sqlsynthgen/person_orm.py`
-
 #. Make a set of default generators for generating values in reference to Table classes above.
 
 .. code-block:: bash
 
-   (<your_poetry_shell>) $ python sqlsynthgen/main.py make-generators person_orm.py
+   (<your_poetry_shell>) $ python sqlsynthgen/main.py make-generators person_orm.py >> person_generator.py
+
+A snippet of the generator code is as below:
+
+.. code-block:: python
+
+   class personGenerator:
+      def __init__(self, src_db_conn, dst_db_conn):
+         pass
+         self.name = generic.text.color()
+         self.nhs_number = generic.text.color()
+         self.research_opt_out = generic.development.boolean()
+         self.source_system = generic.text.color()
+         self.stored_from = generic.datetime.datetime()
