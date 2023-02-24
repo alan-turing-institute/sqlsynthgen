@@ -121,19 +121,14 @@ def _add_generator_for_table(
 ) -> tuple[str, str]:
     """Add to the generator file `content` a generator for the given table."""
     new_class_name = table.name + "Generator"
-    if table_config.get("vocabulary_table", False):
-        raise NotImplementedError("Vocabulary tables currently unimplemented.")
-
-    content += (
-        f"\n\nclass {new_class_name}:\n"
-        f"{INDENTATION}def __init__(self, src_db_conn, dst_db_conn):\n"
-    )
+    content += f"\n\nclass {new_class_name}:\n"
+    content += f"{INDENTATION}num_rows_per_pass = {table_config.get('num_rows_per_pass', 1)}\n\n"
+    content += f"{INDENTATION}def __init__(self, src_db_conn, dst_db_conn):\n"
     content, columns_covered = _add_custom_generators(content, table_config)
     for column in table.columns:
-        if column.name in columns_covered:
-            # A generator for this column was already covered in the user config.
-            continue
-        content = _add_default_generator(content, tables_module, column)
+        if column.name not in columns_covered:
+            # No generator for this column in the user config.
+            content = _add_default_generator(content, tables_module, column)
     return content, new_class_name
 
 
@@ -176,11 +171,9 @@ def make_generators_from_tables(
     engine = create_engine(settings.src_postgres_dsn)
 
     for table in tables_module.Base.metadata.sorted_tables:
-        if table.name in [
-            x
-            for x in generator_config.get("tables", {}).keys()
-            if generator_config["tables"][x].get("vocabulary_table")
-        ]:
+        table_config = generator_config.get("tables", {}).get(table.name, {})
+
+        if table_config.get("vocabulary_table") is True:
 
             orm_class = _orm_class_from_table_name(tables_module, table.fullname)
             if not orm_class:
@@ -194,13 +187,11 @@ def make_generators_from_tables(
 
             _download_table(table, engine)
 
-            continue
-
-        table_config = generator_config.get("tables", {}).get(table.name, {})
-        new_content, new_generator_name = _add_generator_for_table(
-            new_content, tables_module, table_config, table
-        )
-        sorted_generators += f"{INDENTATION}{new_generator_name},\n"
+        else:
+            new_content, new_generator_name = _add_generator_for_table(
+                new_content, tables_module, table_config, table
+            )
+            sorted_generators += f"{INDENTATION}{new_generator_name},\n"
 
     sorted_generators += "]"
     sorted_vocab += "]"

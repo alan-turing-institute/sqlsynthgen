@@ -45,7 +45,7 @@ def read_yaml_file(path: str) -> Any:
 def create_data(
     orm_file: str = typer.Argument(...),
     ssg_file: str = typer.Argument(...),
-    num_rows: int = typer.Argument(...),
+    num_passes: int = typer.Argument(...),
 ) -> None:
     """Populate schema with synthetic data.
 
@@ -68,7 +68,7 @@ def create_data(
     Args:
         orm_file (str): Path to object relational model.
         ssg_file (str): Path to sqlsyngen output.
-        num_rows (int): Number of rows of values required
+        num_passes (int): Number of passes to make.
 
     Returns:
         None
@@ -76,7 +76,7 @@ def create_data(
     orm_module = import_file(orm_file)
     ssg_module = import_file(ssg_file)
     create_db_data(
-        orm_module.Base.metadata.sorted_tables, ssg_module.sorted_generators, num_rows
+        orm_module.Base.metadata.sorted_tables, ssg_module.sorted_generators, num_passes
     )
 
 
