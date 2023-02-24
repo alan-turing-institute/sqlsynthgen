@@ -31,7 +31,10 @@ Sqlsynthgen provides a CLI interface. The commands are as below:
 
 The ordering of the steps from end to end may be as follows:
 
-#. Make python classes based on source database schema tables. Classes are output as stdout and is referred to as the `object-relational-model` (orm) value. Tables in schema must have primary key constraints in order for the orm to be generated.
+1. Make python classes
+======================
+
+Python classes made are based on source database schema tables. Classes code are output as stdout and is referred to as the `object-relational-model` (orm) value. Tables in schema must have primary key constraints in order for the orm to be generated.
 
 The example below shows the output when the source schema comprises of a table ``Person`` with three columns. The stdout is piped into a python file eg. person_orm.py
 
@@ -61,7 +64,10 @@ The orm value (snippet) is as follows:
       nhs_number = Column(Text)
       research_opt_out = Column(Boolean)
 
-#. Make a set of default generators for generating values in reference to Table classes above.
+2. Make generators
+==================
+
+Default generators are made to generate values in reference to Table classes above. These can be then manually configured and customised with domain knowledge.
 
 .. code-block:: bash
 
