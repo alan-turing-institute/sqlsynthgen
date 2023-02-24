@@ -18,9 +18,9 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   changelog
    installation
-   modules
+   sqlsynthgen
+   changelog
 
 
 Indices and tables
