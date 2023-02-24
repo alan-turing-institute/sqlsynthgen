@@ -48,16 +48,17 @@ class MyTestCase(TestCase):
             mock_src_conn = MagicMock()
             mock_dst_conn = MagicMock()
             mock_gen = MagicMock()
+            mock_gen.num_rows_per_pass = 2
             tables = [None]
             generators = [mock_gen]
             populate(mock_src_conn, mock_dst_conn, tables, generators, 1)
 
-            mock_gen.assert_called_once_with(mock_src_conn, mock_dst_conn)
-            mock_insert.return_value.values.assert_called_once_with(
-                mock_gen.return_value.__dict__
+            mock_gen.assert_has_calls([call(mock_src_conn, mock_dst_conn)] * 2)
+            mock_insert.return_value.values.assert_has_calls(
+                [call(mock_gen.return_value.__dict__)] * 2
             )
-            mock_dst_conn.execute.assert_called_once_with(
-                mock_insert.return_value.values.return_value
+            mock_dst_conn.execute.assert_has_calls(
+                [call(mock_insert.return_value.values.return_value)] * 2
             )
 
     def test_populate_diff_length(self) -> None:
