@@ -1,23 +1,17 @@
 Installation
 ============
 
-Get started
-------------
+End User
+--------
 
-To use sqlsynthgen, first install it using poetry:
+To use sqlsynthgen, first install it:
 
 .. code-block:: console
 
-   (<your_poetry_shell>) $ poetry add sqlsynthgen
+   $ pip install git+https://github.com/alan-turing-institute/sqlsynthgen.git
 
+and check that you can view the help message with:
 
-.. Test print integer function
-.. ---------------------------
+.. code-block:: console
 
-.. To test print integer function,
-.. you can use the ``sqlsynthgen.docs.print_int`` function:
-
-.. .. autofunction:: sqlsynthgen.docs.print_int
-
-.. The ``phone`` argument should be of type integer. Otherwise, :py:func:`sqlsynthgen.docs.print_int`
-.. will raise an exception.
+   $ sqlsynthgen --help
