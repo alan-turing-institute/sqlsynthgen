@@ -1,5 +1,5 @@
-sqlsynthgen package
-===================
+The sqlsynthgen Package
+=======================
 
 Submodules
 ----------
