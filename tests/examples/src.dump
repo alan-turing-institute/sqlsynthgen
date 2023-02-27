@@ -66,8 +66,8 @@ CREATE TABLE public.person (
     stored_from timestamp with time zone NOT NULL
 );
 
-
 ALTER TABLE public.person OWNER TO postgres;
+
 
 --
 -- Name: hospital_visit; Type: TABLE; Schema: public; Owner: postgres
@@ -83,6 +83,16 @@ CREATE TABLE public.hospital_visit (
 );
 
 ALTER TABLE public.hospital_visit OWNER TO postgres;
+
+--
+-- Name: hospital_visit; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.no_pk_test (
+    not_an_id integer NOT NULL
+);
+
+ALTER TABLE public.no_pk_test OWNER TO postgres;
 
 --
 -- Data for Name: hospital_visit; Type: TABLE DATA; Schema: public; Owner: postgres
