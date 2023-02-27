@@ -12,6 +12,13 @@ sqlsynthgen's documentation
 
    This project will be under active development from Jan - Oct 2023
 
+
+.. note::
+
+   We do not currently support tables without primary keys.
+   If you have tables without primary keys, some sqlsynthgen functionality
+   may work but vocabulary tables will not.
+
 Contents:
 ---------
 
