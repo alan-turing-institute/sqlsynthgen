@@ -1,7 +1,10 @@
 """Functions to make a module of generator classes."""
 import csv
 import inspect
+import sys
 from pathlib import Path
+from subprocess import CalledProcessError, run
+from sys import stderr
 from types import ModuleType
 from typing import Any, Final, Optional
 
@@ -200,3 +203,34 @@ def make_generators_from_tables(
     new_content += "\n\n" + "sorted_vocab = " + sorted_vocab + "\n"
 
     return new_content
+
+
+def make_tables_file(db_dsn: str, schema_name: Optional[str]) -> None:
+    """Write a file with the SQLAlchemy ORM classes.
+
+    Exists with an error if sqlacodegen is unsuccessful.
+    """
+    command = ["sqlacodegen"]
+
+    if schema_name:
+        command.append(f"--schema={schema_name}")
+
+    command.append(db_dsn)
+
+    try:
+        completed_process = run(
+            command, capture_output=True, encoding="utf-8", check=True
+        )
+    except CalledProcessError as e:
+        print(e.stderr, file=stderr)
+        sys.exit(e.returncode)
+
+    # sqlacodegen falls back on Tables() for tables without PKs,
+    # but we don't explicitly support Tables and behaviour is unpredictable.
+    if " = Table(" in completed_process.stdout:
+        print(
+            "WARNING: Table without PK detected. sqlsynthgen may not be able to continue.",
+            file=stderr,
+        )
+
+    print(completed_process.stdout)

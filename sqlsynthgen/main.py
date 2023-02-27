@@ -1,9 +1,6 @@
 """Entrypoint for the SQLSynthGen package."""
-import sys
 from importlib import import_module
 from pathlib import Path
-from subprocess import CalledProcessError, run
-from sys import stderr
 from types import ModuleType
 from typing import Any, Optional
 
@@ -11,7 +8,7 @@ import typer
 import yaml
 
 from sqlsynthgen.create import create_db_data, create_db_tables, create_db_vocab
-from sqlsynthgen.make import make_generators_from_tables
+from sqlsynthgen.make import make_generators_from_tables, make_tables_file
 from sqlsynthgen.settings import get_settings
 
 app = typer.Typer()
@@ -144,30 +141,7 @@ def make_tables() -> None:
     """
     settings = get_settings()
 
-    command = ["sqlacodegen"]
-
-    if settings.src_schema:
-        command.append(f"--schema={settings.src_schema}")
-
-    command.append(str(get_settings().src_postgres_dsn))
-
-    try:
-        completed_process = run(
-            command, capture_output=True, encoding="utf-8", check=True
-        )
-    except CalledProcessError as e:
-        print(e.stderr, file=stderr)
-        sys.exit(e.returncode)
-
-    # sqlacodegen falls back on Tables() for tables without PKs,
-    # but we don't explicitly support Tables and behaviour is unpredictable.
-    if " = Table(" in completed_process.stdout:
-        print(
-            "WARNING: Table without PK detected. sqlsynthgen may not be able to continue.",
-            file=stderr,
-        )
-
-    print(completed_process.stdout)
+    make_tables_file(str(settings.src_postgres_dsn), settings.src_schema)
 
 
 if __name__ == "__main__":

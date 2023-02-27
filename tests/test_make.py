@@ -1,13 +1,17 @@
 """Tests for the main module."""
 import os
+from io import StringIO
 from pathlib import Path
-from unittest.mock import patch
+from subprocess import CalledProcessError
+from unittest import TestCase
+from unittest.mock import call, patch
 
 import yaml
 from sqlalchemy import Column, Integer, create_engine, insert
 from sqlalchemy.orm import declarative_base
 
 from sqlsynthgen import make
+from sqlsynthgen.make import make_tables_file
 from tests.examples import example_orm
 from tests.utils import RequiresDBTestCase, run_psql
 
@@ -18,7 +22,7 @@ metadata = Base.metadata
 
 
 class MakeTable(Base):  # type: ignore
-    """A SQLAlchemy table."""
+    """A SQLAlchemy model."""
 
     __tablename__ = "maketable"
     id = Column(
@@ -27,8 +31,8 @@ class MakeTable(Base):  # type: ignore
     )
 
 
-class MyTestCase(RequiresDBTestCase):
-    """Module test case."""
+class TestsThatRequireDB(RequiresDBTestCase):
+    """Tests that require a database."""
 
     def setUp(self) -> None:
         """Pre-test setup."""
@@ -42,6 +46,36 @@ class MyTestCase(RequiresDBTestCase):
         os.chdir("tests/examples")
 
     def tearDown(self) -> None:
+        """Post-test cleanup."""
+        os.chdir("../..")
+
+    def test__download_table(self) -> None:
+        """Test the _download_table function."""
+        # pylint: disable=protected-access
+        with self.engine.connect() as conn:
+            conn.execute(insert(MakeTable).values({"id": 1}))
+
+        make._download_table(MakeTable.__table__, self.engine)
+
+        with Path("expected.csv").open(encoding="utf-8") as csvfile:
+            expected = csvfile.read()
+
+        with Path("maketable.csv").open(encoding="utf-8") as csvfile:
+            actual = csvfile.read()
+
+        self.assertEqual(expected, actual)
+
+
+class TestMake(TestCase):
+    """Tests that don't require a database."""
+
+    def setUp(self) -> None:
+        """Pre-test setup."""
+
+        os.chdir("tests/examples")
+
+    def tearDown(self) -> None:
+        """Post-test cleanup."""
         os.chdir("../..")
 
     def test_make_generators_from_tables(self) -> None:
@@ -62,18 +96,94 @@ class MyTestCase(RequiresDBTestCase):
 
         self.assertEqual(expected, actual)
 
-    def test__download_table(self) -> None:
-        """Test the _download_table function."""
-        # pylint: disable=protected-access
-        with self.engine.connect() as conn:
-            conn.execute(insert(MakeTable).values({"id": 1}))
+    def test_make_tables(self) -> None:
+        """Test the make-tables sub-command."""
 
-        make._download_table(MakeTable.__table__, self.engine)
+        with patch("sqlsynthgen.make.run") as mock_run, patch(
+            "sys.stdout", new_callable=StringIO
+        ) as mock_stdout:
+            make_tables_file("my:postgres/db", None)
 
-        with Path("expected.csv").open(encoding="utf-8") as csvfile:
-            expected = csvfile.read()
+            self.assertEqual(
+                call(
+                    [
+                        "sqlacodegen",
+                        "my:postgres/db",
+                    ],
+                    capture_output=True,
+                    encoding="utf-8",
+                    check=True,
+                ),
+                mock_run.call_args_list[0],
+            )
+        self.assertNotEqual("", mock_stdout.getvalue())
 
-        with Path("maketable.csv").open(encoding="utf-8") as csvfile:
-            actual = csvfile.read()
+    def test_make_tables_with_schema(self) -> None:
+        """Test the make-tables sub-command handles the schema setting."""
+        with patch("sqlsynthgen.make.run") as mock_run, patch(
+            "sys.stdout", new_callable=StringIO
+        ) as mock_stdout:
+            make_tables_file("my:postgres/db", "my_schema")
 
-        self.assertEqual(expected, actual)
+            self.assertEqual(
+                call(
+                    [
+                        "sqlacodegen",
+                        "--schema=my_schema",
+                        "my:postgres/db",
+                    ],
+                    capture_output=True,
+                    encoding="utf-8",
+                    check=True,
+                ),
+                mock_run.call_args_list[0],
+            )
+        self.assertNotEqual("", mock_stdout.getvalue())
+
+    def test_make_tables_handles_errors(self) -> None:
+        """Test the make-tables sub-command handles sqlacodegen errors."""
+
+        class SysExit(Exception):
+            """To force the function to exit as sys.exit() would."""
+
+        with patch("sqlsynthgen.make.run") as mock_run, patch(
+            "sqlsynthgen.make.stderr", new_callable=StringIO
+        ) as mock_stderr, patch("sys.exit") as mock_exit:
+            mock_run.side_effect = CalledProcessError(
+                returncode=99, cmd="some-cmd", stderr="some-error-output"
+            )
+            mock_exit.side_effect = SysExit
+
+            try:
+                make_tables_file("my:postgres/db", None)
+            except SysExit:
+                pass
+
+            mock_exit.assert_called_once_with(99)
+            self.assertEqual("some-error-output\n", mock_stderr.getvalue())
+
+    def test_make_tables_warns_no_pk(self) -> None:
+        """Test the make-tables sub-command warns about Tables()."""
+
+        with patch("sqlsynthgen.make.run") as mock_run, patch(
+            "sqlsynthgen.make.stderr", new_callable=StringIO
+        ) as mock_stderr:
+            mock_run.return_value.stdout = "t_nopk_table = Table("
+            make_tables_file("my:postgres/db", None)
+
+            self.assertEqual(
+                call(
+                    [
+                        "sqlacodegen",
+                        "my:postgres/db",
+                    ],
+                    capture_output=True,
+                    encoding="utf-8",
+                    check=True,
+                ),
+                mock_run.call_args_list[0],
+            )
+        self.assertEqual(
+            "WARNING: Table without PK detected. sqlsynthgen may not be able to continue.\n",
+            mock_stderr.getvalue(),
+        )
