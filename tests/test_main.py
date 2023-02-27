@@ -117,6 +117,32 @@ class TestCLI(TestCase):
             [call.write("some-error-output"), call.write("\n")]
         )
 
+    def test_make_tables_warns_no_pk(self) -> None:
+        """Test the make-tables sub-command warns about Tables()."""
+        with patch("sqlsynthgen.main.run") as mock_run, patch(
+            "sqlsynthgen.main.get_settings"
+        ) as mock_get_settings, patch("sqlsynthgen.main.stderr") as mock_stderr:
+            mock_get_settings.return_value = get_test_settings()
+            mock_run.return_value.stdout = "t_nopk_table = Table("
+
+            result = runner.invoke(
+                app,
+                [
+                    "make-tables",
+                ],
+                catch_exceptions=False,
+            )
+
+        self.assertEqual(0, result.exit_code)
+        mock_stderr.assert_has_calls(
+            [
+                call.write(
+                    "WARNING: Table without PK detected. sqlsynthgen may not be able to continue."
+                ),
+                call.write("\n"),
+            ]
+        )
+
     def test_make_generators(self) -> None:
         """Test the make-generators sub-command."""
         with patch("sqlsynthgen.main.make_generators_from_tables") as mock_make:
