@@ -159,6 +159,14 @@ def make_tables() -> None:
         print(e.stderr, file=stderr)
         sys.exit(e.returncode)
 
+    # sqlacodegen falls back on Tables() for tables without PKs,
+    # but we don't explicitly support Tables and behaviour is unpredictable.
+    if " = Table(" in completed_process.stdout:
+        print(
+            "WARNING: Table without PK detected. sqlsynthgen may not be able to continue.",
+            file=stderr,
+        )
+
     print(completed_process.stdout)
 
 
