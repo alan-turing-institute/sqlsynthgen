@@ -64,7 +64,7 @@ def create_data(
 
     Args:
         orm_file (str): Path to object relational model.
-        ssg_file (str): Path to sqlsyngen output.
+        ssg_file (str): Path to sqlsynthgen output.
         num_passes (int): Number of passes to make.
 
     Returns:

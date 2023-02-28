@@ -1,7 +1,7 @@
 """Tests for the CLI."""
 import os
 from pathlib import Path
-from subprocess import run
+from subprocess import DEVNULL, run
 
 from tests.utils import RequiresDBTestCase, run_psql
 
@@ -37,7 +37,13 @@ class FunctionalTestCase(RequiresDBTestCase):
         }
 
         with open(self.orm_file_path, "wb") as file:
-            run(["sqlsynthgen", "make-tables"], stdout=file, env=env, check=True)
+            run(
+                ["sqlsynthgen", "make-tables"],
+                stdout=file,
+                stderr=DEVNULL,
+                env=env,
+                check=True,
+            )
 
         with open(self.ssg_file_path, "wb") as file:
             run(
