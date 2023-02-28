@@ -15,7 +15,7 @@ from sqlsynthgen.providers import TimespanProvider
 generic.add_provider(TimespanProvider)
 
 import tests.examples.example_orm
-from . import custom_generators
+import custom_generators
 
 concept_vocab = FileUploader(tests.examples.example_orm.Concept.__table__)
 
