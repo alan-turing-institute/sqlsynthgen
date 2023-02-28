@@ -96,12 +96,15 @@ class TestMake(TestCase):
 
         self.assertEqual(expected, actual)
 
-    def test_make_tables(self) -> None:
-        """Test the make-tables sub-command."""
+    def test_make_tables_file(self) -> None:
+        """Test the make_tables_file function."""
 
         with patch("sqlsynthgen.make.run") as mock_run, patch(
-            "sys.stdout", new_callable=StringIO
-        ) as mock_stdout:
+            "sqlsynthgen.make.Path", spec=True
+        ) as mock_path:
+            mock_run.return_value.stdout = "some output"
+            mock_path.return_value.exists.return_value = False
+
             make_tables_file("my:postgres/db", None)
 
             self.assertEqual(
@@ -116,13 +119,18 @@ class TestMake(TestCase):
                 ),
                 mock_run.call_args_list[0],
             )
-        self.assertNotEqual("", mock_stdout.getvalue())
+            mock_path.assert_called_once_with("orm.py")
+            mock_path.return_value.write_text.assert_called_once_with(
+                "some output", encoding="utf-8"
+            )
 
-    def test_make_tables_with_schema(self) -> None:
-        """Test the make-tables sub-command handles the schema setting."""
+    def test_make_tables_file_with_schema(self) -> None:
+        """Check that the function handles the schema setting."""
         with patch("sqlsynthgen.make.run") as mock_run, patch(
-            "sys.stdout", new_callable=StringIO
-        ) as mock_stdout:
+            "sqlsynthgen.make.Path"
+        ) as mock_path:
+            mock_path.return_value.exists.return_value = False
+
             make_tables_file("my:postgres/db", "my_schema")
 
             self.assertEqual(
@@ -138,7 +146,6 @@ class TestMake(TestCase):
                 ),
                 mock_run.call_args_list[0],
             )
-        self.assertNotEqual("", mock_stdout.getvalue())
 
     def test_make_tables_handles_errors(self) -> None:
         """Test the make-tables sub-command handles sqlacodegen errors."""
@@ -148,7 +155,10 @@ class TestMake(TestCase):
 
         with patch("sqlsynthgen.make.run") as mock_run, patch(
             "sqlsynthgen.make.stderr", new_callable=StringIO
-        ) as mock_stderr, patch("sys.exit") as mock_exit:
+        ) as mock_stderr, patch("sys.exit") as mock_exit, patch(
+            "sqlsynthgen.make.Path"
+        ) as mock_path:
+            mock_path.return_value.exists.return_value = False
             mock_run.side_effect = CalledProcessError(
                 returncode=99, cmd="some-cmd", stderr="some-error-output"
             )
@@ -167,23 +177,37 @@ class TestMake(TestCase):
 
         with patch("sqlsynthgen.make.run") as mock_run, patch(
             "sqlsynthgen.make.stderr", new_callable=StringIO
-        ) as mock_stderr:
+        ) as mock_stderr, patch("sqlsynthgen.make.Path") as mock_path:
+            mock_path.return_value.exists.return_value = False
             mock_run.return_value.stdout = "t_nopk_table = Table("
             make_tables_file("my:postgres/db", None)
 
-            self.assertEqual(
-                call(
-                    [
-                        "sqlacodegen",
-                        "my:postgres/db",
-                    ],
-                    capture_output=True,
-                    encoding="utf-8",
-                    check=True,
-                ),
-                mock_run.call_args_list[0],
-            )
         self.assertEqual(
             "WARNING: Table without PK detected. sqlsynthgen may not be able to continue.\n",
             mock_stderr.getvalue(),
         )
+
+    def test_make_tables_errors_if_file_exists(self) -> None:
+        """Test that we abort if an orm file already exists."""
+
+        class SysExit(Exception):
+            """To force the function to exit as sys.exit() would."""
+
+        with patch(
+            "sqlsynthgen.make.stderr", new_callable=StringIO
+        ) as mock_stderr, patch("sys.exit") as mock_exit, patch(
+            "sqlsynthgen.make.Path", spec=True
+        ) as mock_path:
+            mock_path.return_value.exists.return_value = True
+
+            mock_exit.side_effect = SysExit
+
+            try:
+                make_tables_file("my:postgres/db", None)
+            except SysExit:
+                pass
+
+            mock_exit.assert_called_once_with(1)
+            self.assertEqual(
+                "orm.py should not already exist. Exiting...\n", mock_stderr.getvalue()
+            )
