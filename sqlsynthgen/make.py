@@ -210,6 +210,12 @@ def make_tables_file(db_dsn: str, schema_name: Optional[str]) -> None:
 
     Exists with an error if sqlacodegen is unsuccessful.
     """
+    output_file_name = "orm.py"
+    output_file_path = Path(output_file_name)
+    if output_file_path.exists():
+        print(f"{output_file_name} should not already exist. Exiting...", file=stderr)
+        sys.exit(1)
+
     command = ["sqlacodegen"]
 
     if schema_name:
@@ -233,4 +239,4 @@ def make_tables_file(db_dsn: str, schema_name: Optional[str]) -> None:
             file=stderr,
         )
 
-    print(completed_process.stdout)
+    output_file_path.write_text(completed_process.stdout, encoding="utf-8")
