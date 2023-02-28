@@ -77,6 +77,7 @@ CREATE TABLE public.hospital_visit (
     hospital_visit_id bigint NOT NULL PRIMARY KEY,
     person_id integer NOT NULL references public.person(person_id),
     visit_start date NOT NULL,
+    visit_end date NOT NULL,
     visit_duration_seconds real NOT NULL,
     visit_image bytea NOT NULL,
     visit_type_concept_id integer NOT NULL references public.concept(concept_id)
@@ -95,19 +96,11 @@ CREATE TABLE public.no_pk_test (
 ALTER TABLE public.no_pk_test OWNER TO postgres;
 
 --
--- Data for Name: hospital_visit; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: concept; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.hospital_visit (hospital_visit_id, person_id, visit_start, visit_duration_seconds, visit_image) FROM stdin;
-\.
+insert into public.concept values (1, 'some concept name');
 
-
---
--- Data for Name: person; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public.person (person_id, name, research_opt_out, stored_from) FROM stdin;
-\.
 
 --
 -- PostgreSQL database dump complete

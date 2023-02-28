@@ -1,66 +1,166 @@
 """Tests for the CLI."""
 import os
 from pathlib import Path
-from subprocess import DEVNULL, run
+from subprocess import run
 
 from tests.utils import RequiresDBTestCase, run_psql
+
+# pylint: disable=subprocess-run-check
 
 
 class FunctionalTestCase(RequiresDBTestCase):
     """End-to-end tests."""
 
-    orm_file_path = Path("tests/tmp/orm.py")
-    ssg_file_path = Path("tests/tmp/ssg.py")
+    orm_file_path = Path("orm.py")
+    ssg_file_path = Path("ssg.py")
+
+    alt_orm_file_path = Path("my_orm.py")
+    alt_ssg_file_path = Path("my_ssg.py")
+
+    concept_file_path = Path("concept.csv")
+
+    env = os.environ.copy()
+    env = {
+        **env,
+        "src_host_name": "localhost",
+        "src_user_name": "postgres",
+        "src_password": "password",
+        "src_db_name": "src",
+        "src_schema": "",
+        "dst_host_name": "localhost",
+        "dst_user_name": "postgres",
+        "dst_password": "password",
+        "dst_db_name": "dst",
+    }
 
     def setUp(self) -> None:
         """Pre-test setup."""
-        self.orm_file_path.unlink(missing_ok=True)
-        self.ssg_file_path.unlink(missing_ok=True)
 
+        # Create a blank destination database
         run_psql("dst.dump")
 
-    def test_workflow(self) -> None:
+        os.chdir("tests/workspace")
+
+        for file_path in (
+            self.orm_file_path,
+            self.ssg_file_path,
+            self.alt_orm_file_path,
+            self.alt_ssg_file_path,
+            self.concept_file_path,
+        ):
+            file_path.unlink(missing_ok=True)
+
+    def tearDown(self) -> None:
+        os.chdir("../../")
+
+    def test_workflow_minimal_args(self) -> None:
         """Test the recommended CLI workflow runs without errors."""
 
-        env = os.environ.copy()
-        env = {
-            **env,
-            "src_host_name": "localhost",
-            "src_user_name": "postgres",
-            "src_password": "password",
-            "src_db_name": "src",
-            "src_schema": "",
-            "dst_host_name": "localhost",
-            "dst_user_name": "postgres",
-            "dst_password": "password",
-            "dst_db_name": "dst",
-        }
-
-        with open(self.orm_file_path, "wb") as file:
-            run(
-                ["sqlsynthgen", "make-tables"],
-                stdout=file,
-                stderr=DEVNULL,
-                env=env,
-                check=True,
-            )
-
-        with open(self.ssg_file_path, "wb") as file:
-            run(
-                ["sqlsynthgen", "make-generators", self.orm_file_path],
-                stdout=file,
-                env=env,
-                check=True,
-            )
-
-        run(["sqlsynthgen", "create-tables", self.orm_file_path], env=env, check=True)
-        run(
-            ["sqlsynthgen", "create-vocab", self.ssg_file_path],
-            env=env,
-            check=True,
+        completed_process = run(
+            ["sqlsynthgen", "make-tables"],
+            capture_output=True,
+            env=self.env,
         )
-        run(
-            ["sqlsynthgen", "create-data", self.orm_file_path, self.ssg_file_path, "1"],
-            env=env,
-            check=True,
+        self.assertEqual(0, completed_process.returncode)
+
+        completed_process = run(
+            ["sqlsynthgen", "make-generators"],
+            capture_output=True,
+            env=self.env,
         )
+        self.assertEqual("", completed_process.stderr.decode("utf-8"))
+        self.assertEqual(0, completed_process.returncode)
+
+        completed_process = run(
+            ["sqlsynthgen", "create-tables"],
+            capture_output=True,
+            env=self.env,
+        )
+        self.assertEqual("", completed_process.stderr.decode("utf-8"))
+        self.assertEqual(0, completed_process.returncode)
+
+        completed_process = run(
+            ["sqlsynthgen", "create-vocab"],
+            capture_output=True,
+            env=self.env,
+        )
+        self.assertEqual("", completed_process.stderr.decode("utf-8"))
+        self.assertEqual(0, completed_process.returncode)
+
+        completed_process = run(
+            ["sqlsynthgen", "create-data"],
+            capture_output=True,
+            env=self.env,
+        )
+        self.assertEqual("", completed_process.stderr.decode("utf-8"))
+        self.assertEqual(0, completed_process.returncode)
+
+    def test_workflow_maximal_args(self) -> None:
+        """Test the CLI workflow runs with optional arguments."""
+
+        completed_process = run(
+            [
+                "sqlsynthgen",
+                "make-tables",
+                f"--orm-file={self.alt_orm_file_path}",
+            ],
+            capture_output=True,
+            env=self.env,
+        )
+        self.assertEqual(
+            "WARNING: Table without PK detected. sqlsynthgen may not be able to continue.\n",
+            completed_process.stderr.decode("utf-8"),
+        )
+        self.assertEqual(0, completed_process.returncode)
+
+        completed_process = run(
+            [
+                "sqlsynthgen",
+                "make-generators",
+                f"--orm-file={self.alt_orm_file_path}",
+                f"--ssg-file={self.alt_ssg_file_path}",
+                "../examples/functional_conf.yaml",
+            ],
+            capture_output=True,
+            env=self.env,
+        )
+        self.assertEqual("", completed_process.stderr.decode("utf-8"))
+        self.assertEqual(0, completed_process.returncode)
+
+        completed_process = run(
+            [
+                "sqlsynthgen",
+                "create-tables",
+                f"--orm-file={self.alt_orm_file_path}",
+            ],
+            capture_output=True,
+            env=self.env,
+        )
+        self.assertEqual("", completed_process.stderr.decode("utf-8"))
+        self.assertEqual(0, completed_process.returncode)
+
+        completed_process = run(
+            [
+                "sqlsynthgen",
+                "create-vocab",
+                f"--ssg-file={self.alt_ssg_file_path}",
+            ],
+            capture_output=True,
+            env=self.env,
+        )
+        self.assertEqual("", completed_process.stderr.decode("utf-8"))
+        self.assertEqual(0, completed_process.returncode)
+
+        completed_process = run(
+            [
+                "sqlsynthgen",
+                "create-data",
+                f"--orm-file={self.alt_orm_file_path}",
+                f"--ssg-file={self.alt_ssg_file_path}",
+                "--num-passes=2",
+            ],
+            capture_output=True,
+            env=self.env,
+        )
+        self.assertEqual("", completed_process.stderr.decode("utf-8"))
+        self.assertEqual(0, completed_process.returncode)

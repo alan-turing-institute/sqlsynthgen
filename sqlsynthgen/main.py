@@ -1,48 +1,27 @@
 """Entrypoint for the SQLSynthGen package."""
-from importlib import import_module
+import sys
 from pathlib import Path
-from types import ModuleType
-from typing import Any, Optional
+from sys import stderr
+from typing import Final, Optional
 
 import typer
-import yaml
 
 from sqlsynthgen.create import create_db_data, create_db_tables, create_db_vocab
 from sqlsynthgen.make import make_generators_from_tables, make_tables_file
 from sqlsynthgen.settings import get_settings
+from sqlsynthgen.utils import import_file, read_yaml_file
+
+ORM_FILENAME: Final[str] = "orm.py"
+SSG_FILENAME: Final[str] = "ssg.py"
 
 app = typer.Typer()
 
 
-def import_file(file_path: str) -> ModuleType:
-    """Import a file.
-
-    This utility function returns
-    the file at file_path as a module
-
-    Args:
-        file_path (str): Path to file to be imported
-
-    Returns:
-        ModuleType
-    """
-    file_path_path = Path(file_path)
-    module_path = ".".join(file_path_path.parts[:-1] + (file_path_path.stem,))
-    return import_module(module_path)
-
-
-def read_yaml_file(path: str) -> Any:
-    """Read a yaml file in to dictionary, given a path."""
-    with open(path, "r", encoding="utf8") as f:
-        config = yaml.safe_load(f)
-    return config
-
-
 @app.command()
 def create_data(
-    orm_file: str = typer.Argument(...),
-    ssg_file: str = typer.Argument(...),
-    num_passes: int = typer.Argument(...),
+    orm_file: str = typer.Option(ORM_FILENAME),
+    ssg_file: str = typer.Option(SSG_FILENAME),
+    num_passes: int = typer.Option(1),
 ) -> None:
     """Populate schema with synthetic data.
 
@@ -60,15 +39,14 @@ def create_data(
     Final input is the number of rows required.
 
     Example:
-        $ sqlsynthgen create-data example_orm.py expected_ssg.py 100
+        $ sqlsynthgen create-data
 
     Args:
-        orm_file (str): Path to object relational model.
-        ssg_file (str): Path to sqlsynthgen output.
+        orm_file (str): Name of Python ORM file.
+          Must be in the current working directory.
+        ssg_file (str): Name of generators file.
+          Must be in the current working directory.
         num_passes (int): Number of passes to make.
-
-    Returns:
-        None
     """
     orm_module = import_file(orm_file)
     ssg_module = import_file(ssg_file)
@@ -78,28 +56,33 @@ def create_data(
 
 
 @app.command()
-def create_vocab(ssg_file: str = typer.Argument(...)) -> None:
-    """Create tables using the SQLAlchemy file."""
+def create_vocab(ssg_file: str = typer.Option(SSG_FILENAME)) -> None:
+    """Create tables using the SQLAlchemy file.
+
+    Example:
+        $ sqlsynthgen create-vocab
+
+    Args:
+        ssg_file (str): Name of generators file.
+          Must be in the current working directory.
+    """
     ssg_module = import_file(ssg_file)
     create_db_vocab(ssg_module.sorted_vocab)
 
 
 @app.command()
-def create_tables(orm_file: str = typer.Argument(...)) -> None:
+def create_tables(orm_file: str = typer.Option(ORM_FILENAME)) -> None:
     """Create schema from Python classes.
 
     This CLI command creates Postgresql schema using object relational model
     declared as Python tables. (eg.)
 
     Example:
-        $ sqlsynthgen create-tables example_orm.py
+        $ sqlsynthgen create-tables
 
     Args:
-        orm_file (str): Path to Python tables file.
-
-    Returns:
-        None
-
+        orm_file (str): Name of Python ORM file.
+          Must be in the current working directory.
     """
     orm_module = import_file(orm_file)
     create_db_tables(orm_module.Base.metadata)
@@ -107,7 +90,8 @@ def create_tables(orm_file: str = typer.Argument(...)) -> None:
 
 @app.command()
 def make_generators(
-    orm_file: str = typer.Argument(...),
+    orm_file: str = typer.Option(ORM_FILENAME),
+    ssg_file: str = typer.Option(SSG_FILENAME),
     config_file: Optional[str] = typer.Argument(None),
 ) -> None:
     """Make a SQLSynthGen file of generator classes.
@@ -116,20 +100,30 @@ def make_generators(
     returns a set of synthetic data generators for each attribute
 
     Example:
-        $ sqlsynthgen make-generators example_orm.py
+        $ sqlsynthgen make-generators
 
     Args:
-        orm_file (str): Path to Python tables file.
+        orm_file (str): Name of Python ORM file.
+          Must be in the current working directory.
+        ssg_file (str): Path to write the generators file to.
         config_file (str): Path to configuration file.
     """
+    ssg_file_path = Path(ssg_file)
+    if ssg_file_path.exists():
+        print(f"{ssg_file} should not already exist. Exiting...", file=stderr)
+        sys.exit(1)
+
     orm_module = import_file(orm_file)
     generator_config = read_yaml_file(config_file) if config_file is not None else {}
     result = make_generators_from_tables(orm_module, generator_config)
-    print(result)
+
+    ssg_file_path.write_text(result, encoding="utf-8")
 
 
 @app.command()
-def make_tables() -> None:
+def make_tables(
+    orm_file: str = typer.Option(ORM_FILENAME),
+) -> None:
     """Make a SQLAlchemy file of Table classes.
 
     This CLI command deploys sqlacodegen to discover a
@@ -138,10 +132,19 @@ def make_tables() -> None:
 
     Example:
         $ sqlsynthgen make_tables
+
+    Args:
+        orm_file (str): Path to write the Python ORM file.
     """
+    orm_file_path = Path(orm_file)
+    if orm_file_path.exists():
+        print(f"{orm_file} should not already exist. Exiting...", file=stderr)
+        sys.exit(1)
+
     settings = get_settings()
 
-    make_tables_file(str(settings.src_postgres_dsn), settings.src_schema)
+    content = make_tables_file(str(settings.src_postgres_dsn), settings.src_schema)
+    orm_file_path.write_text(content, encoding="utf-8")
 
 
 if __name__ == "__main__":

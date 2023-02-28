@@ -27,8 +27,8 @@ repos:
         language: system
         types: ['python']
         exclude: (?x)(
-          star|
-          tests/examples
+          tests/examples|
+          tests/workspace
           )
       - id: isort
         name: isort
@@ -36,8 +36,8 @@ repos:
         language: system
         types: ['python']
         exclude: (?x)(
-          star|
-          tests/examples
+          tests/examples|
+          tests/workspace
           )
       - id: pylint
         name: Pylint
@@ -50,15 +50,15 @@ repos:
         language: system
         types: ['python']
         exclude: (?x)(
-          tests/|
-          docs/
+          docs/|
+          tests/
           )
       - id: mypy
         name: mypy
         entry: poetry run mypy --follow-imports=silent
         language: system
         exclude: (?x)(
-          star|
-          tests/examples
+          tests/examples|
+          tests/workspace
           )
         types: ['python']

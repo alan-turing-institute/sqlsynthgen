@@ -1,19 +1,18 @@
 """Functions to make a module of generator classes."""
-import csv
 import inspect
 import sys
-from pathlib import Path
 from subprocess import CalledProcessError, run
 from sys import stderr
 from types import ModuleType
 from typing import Any, Final, Optional
 
 from mimesis.providers.base import BaseProvider
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine
 from sqlalchemy.sql import sqltypes
 
 from sqlsynthgen import providers
 from sqlsynthgen.settings import get_settings
+from sqlsynthgen.utils import download_table
 
 HEADER_TEXT: str = "\n".join(
     (
@@ -135,20 +134,6 @@ def _add_generator_for_table(
     return content, new_class_name
 
 
-def _download_table(table: Any, engine: Any) -> None:
-    """Download a table and store it as a .csv file."""
-    stmt = select([table])
-    with engine.connect() as conn:
-        result = list(conn.execute(stmt))
-    with Path(table.fullname + ".csv").open(
-        "w", newline="", encoding="utf-8"
-    ) as csvfile:
-        writer = csv.writer(csvfile, delimiter=",")
-        writer.writerow([x.name for x in table.columns])
-        for row in result:
-            writer.writerow(row)
-
-
 def make_generators_from_tables(
     tables_module: ModuleType, generator_config: dict
 ) -> str:
@@ -165,7 +150,7 @@ def make_generators_from_tables(
     new_content += f"\nimport {tables_module.__name__}"
     generator_module_name = generator_config.get("custom_generators_module", None)
     if generator_module_name is not None:
-        new_content += f"\nfrom . import {generator_module_name}"
+        new_content += f"\nimport {generator_module_name}"
 
     sorted_generators = "[\n"
     sorted_vocab = "[\n"
@@ -188,7 +173,7 @@ def make_generators_from_tables(
             )
             sorted_vocab += f"{INDENTATION}{class_name.lower()}_vocab,\n"
 
-            _download_table(table, engine)
+            download_table(table, engine)
 
         else:
             new_content, new_generator_name = _add_generator_for_table(
@@ -205,17 +190,11 @@ def make_generators_from_tables(
     return new_content
 
 
-def make_tables_file(db_dsn: str, schema_name: Optional[str]) -> None:
+def make_tables_file(db_dsn: str, schema_name: Optional[str]) -> str:
     """Write a file with the SQLAlchemy ORM classes.
 
     Exists with an error if sqlacodegen is unsuccessful.
     """
-    output_file_name = "orm.py"
-    output_file_path = Path(output_file_name)
-    if output_file_path.exists():
-        print(f"{output_file_name} should not already exist. Exiting...", file=stderr)
-        sys.exit(1)
-
     command = ["sqlacodegen"]
 
     if schema_name:
@@ -239,4 +218,4 @@ def make_tables_file(db_dsn: str, schema_name: Optional[str]) -> None:
             file=stderr,
         )
 
-    output_file_path.write_text(completed_process.stdout, encoding="utf-8")
+    return completed_process.stdout
