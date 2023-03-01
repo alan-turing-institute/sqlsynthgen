@@ -18,6 +18,8 @@ class FunctionalTestCase(RequiresDBTestCase):
     alt_ssg_file_path = Path("my_ssg.py")
 
     concept_file_path = Path("concept.csv")
+    config_file_path = Path("../examples/functional_conf.yaml")
+    stats_file_path = Path("../examples/example_stats.yaml")
 
     test_dir = Path("tests/workspace")
     start_dir = os.getcwd()
@@ -58,7 +60,6 @@ class FunctionalTestCase(RequiresDBTestCase):
 
     def test_workflow_minimal_args(self) -> None:
         """Test the recommended CLI workflow runs without errors."""
-
         completed_process = run(
             ["sqlsynthgen", "make-tables"],
             capture_output=True,
@@ -119,10 +120,24 @@ class FunctionalTestCase(RequiresDBTestCase):
         completed_process = run(
             [
                 "sqlsynthgen",
+                "make-stats",
+                f"--stats-file={self.stats_file_path}",
+                f"--config-file={self.config_file_path}",
+            ],
+            capture_output=True,
+            env=self.env,
+        )
+        self.assertEqual("", completed_process.stderr.decode("utf-8"))
+        self.assertEqual(0, completed_process.returncode)
+
+        completed_process = run(
+            [
+                "sqlsynthgen",
                 "make-generators",
                 f"--orm-file={self.alt_orm_file_path}",
                 f"--ssg-file={self.alt_ssg_file_path}",
-                "../examples/functional_conf.yaml",
+                f"--config-file={self.config_file_path}",
+                f"--stats-file={self.stats_file_path}",
             ],
             capture_output=True,
             env=self.env,

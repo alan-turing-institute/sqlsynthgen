@@ -7,12 +7,17 @@ from typing import Final, Optional
 import typer
 
 from sqlsynthgen.create import create_db_data, create_db_tables, create_db_vocab
-from sqlsynthgen.make import make_generators_from_tables, make_tables_file
+from sqlsynthgen.make import (
+    make_generators_from_tables,
+    make_src_stats,
+    make_tables_file,
+)
 from sqlsynthgen.settings import get_settings
 from sqlsynthgen.utils import import_file, read_yaml_file
 
 ORM_FILENAME: Final[str] = "orm.py"
 SSG_FILENAME: Final[str] = "ssg.py"
+STATS_FILENAME: Final[str] = "src-stats.yaml"
 
 app = typer.Typer()
 
@@ -92,7 +97,8 @@ def create_tables(orm_file: str = typer.Option(ORM_FILENAME)) -> None:
 def make_generators(
     orm_file: str = typer.Option(ORM_FILENAME),
     ssg_file: str = typer.Option(SSG_FILENAME),
-    config_file: Optional[str] = typer.Argument(None),
+    config_file: Optional[str] = typer.Option(None),
+    stats_file: Optional[str] = typer.Option(None),
 ) -> None:
     """Make a SQLSynthGen file of generator classes.
 
@@ -115,9 +121,27 @@ def make_generators(
 
     orm_module = import_file(orm_file)
     generator_config = read_yaml_file(config_file) if config_file is not None else {}
-    result = make_generators_from_tables(orm_module, generator_config)
+    result = make_generators_from_tables(orm_module, generator_config, stats_file)
 
     ssg_file_path.write_text(result, encoding="utf-8")
+
+
+@app.command()
+def make_stats(
+    config_file: str = typer.Option(None),
+    stats_file: str = typer.Option(STATS_FILENAME),
+) -> None:
+    """Compute summary statistics from the source database, write them to a YAML file.
+
+    Example:
+        $ sqlsynthgen make_stats --config-file=generator_conf.yaml
+    """
+    settings = get_settings()
+    generator_config = read_yaml_file(config_file) if config_file is not None else {}
+    src_dsn = settings.src_postgres_dsn
+    if src_dsn is None:
+        raise ValueError("Missing source database connection details.")
+    make_src_stats(src_dsn, generator_config, stats_file)
 
 
 @app.command()

@@ -5,11 +5,16 @@ from unittest.mock import MagicMock, call, patch
 
 from click.testing import Result
 from typer.testing import CliRunner
+import yaml
 
 from sqlsynthgen.main import app
 from tests.utils import get_test_settings
 
 runner = CliRunner(mix_stderr=False)
+
+EXAMPLE_ORM_PATH = "tests/examples/example_orm.py"
+EXAMPLE_CONF_PATH = "tests/examples/generator_conf.yaml"
+EXPECTED_SSG_PATH = "tests/examples/expected_ssg.py"
 
 
 class TestCLI(TestCase):
@@ -55,7 +60,7 @@ class TestCLI(TestCase):
             catch_exceptions=False,
         )
 
-        mock_make.assert_called_once_with(mock_import.return_value, {})
+        mock_make.assert_called_once_with(mock_import.return_value, {}, None)
         mock_path.return_value.write_text.assert_called_once_with(
             "some text", encoding="utf-8"
         )
@@ -178,3 +183,27 @@ class TestCLI(TestCase):
             "orm.py should not already exist. Exiting...\n", mock_stderr.getvalue()
         )
         self.assertEqual(1, result.exit_code)
+
+    def test_make_stats(self) -> None:
+        """Test the make-stats sub-command."""
+
+        with patch("sqlsynthgen.main.make_src_stats") as mock_make, patch(
+            "sqlsynthgen.main.get_settings"
+        ) as mock_get_settings:
+            mock_get_settings.return_value = get_test_settings()
+            output_path = "make_stats_output.yaml"
+            result = runner.invoke(
+                app,
+                [
+                    "make-stats",
+                    f"--stats-file={output_path}",
+                    f"--config-file={EXAMPLE_CONF_PATH}",
+                ],
+                catch_exceptions=False,
+            )
+            self.assertSuccess(result)
+            with open(EXAMPLE_CONF_PATH, "r", encoding="utf8") as f:
+                config = yaml.safe_load(f)
+            mock_make.assert_called_once_with(
+                get_test_settings().src_postgres_dsn, config, output_path
+            )

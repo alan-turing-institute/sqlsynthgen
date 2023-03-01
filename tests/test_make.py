@@ -41,10 +41,11 @@ class TestMake(TestCase):
         conf_path = "generator_conf.yaml"
         with open(conf_path, "r", encoding="utf8") as f:
             config = yaml.safe_load(f)
+        stats_path = "example_stats.yaml"
 
-            actual = make.make_generators_from_tables(example_orm, config)
-            mock_download.assert_called_once()
-            mock_create.assert_called_once()
+        actual = make.make_generators_from_tables(example_orm, config, stats_path)
+        mock_download.assert_called_once()
+        mock_create.assert_called_once()
 
         self.assertEqual(expected, actual)
 
@@ -124,3 +125,23 @@ class TestMake(TestCase):
             "WARNING: Table without PK detected. sqlsynthgen may not be able to continue.\n",
             mock_stderr.getvalue(),
         )
+
+    def test_make_stats(self) -> None:
+        """Test the make_src_stats function."""
+        conf_path = "generator_conf.yaml"
+        with open(conf_path, "r", encoding="utf8") as f:
+            config = yaml.safe_load(f)
+
+        with patch("sqlsynthgen.make.yaml") as mock_yaml:
+            connection_string = "postgresql://postgres:password@localhost:5432/src"
+            src_stats = make.make_src_stats(
+                connection_string, config, "/tmp/tmp_test_file.yaml"
+            )
+            mock_yaml.dump.assert_called_once()
+            assert set(src_stats.keys()) == set(["count_opt_outs"])
+            count_opt_outs = src_stats["count_opt_outs"]
+            assert len(count_opt_outs) == 2
+            assert isinstance(count_opt_outs[0][0], int)
+            assert count_opt_outs[0][1] is False
+            assert isinstance(count_opt_outs[1][0], int)
+            assert count_opt_outs[1][1] is True

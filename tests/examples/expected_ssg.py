@@ -18,6 +18,9 @@ generic.add_provider(WeightedBooleanProvider)
 
 import tests.examples.example_orm
 import custom_generators
+import yaml
+with open("tests/examples/example_stats.yaml", "r", encoding="utf-8") as f:
+    SRC_STATS = yaml.load(f, Loader=yaml.FullLoader)
 
 concept_vocab = FileUploader(tests.examples.example_orm.Concept.__table__)
 
@@ -34,9 +37,9 @@ class personGenerator:
     def __init__(self, src_db_conn, dst_db_conn):
         self.name = generic.person.full_name()
         self.stored_from = generic.datetime.datetime(start=2022, end=2022)
+        self.research_opt_out = custom_generators.boolean_from_src_stats_generator(src_stats=SRC_STATS.count_opt_outs)
         pass
         self.nhs_number = generic.text.color()
-        self.research_opt_out = generic.development.boolean()
         self.source_system = generic.text.color()
 
 

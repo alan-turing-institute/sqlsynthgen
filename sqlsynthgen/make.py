@@ -4,9 +4,12 @@ import sys
 from subprocess import CalledProcessError, run
 from sys import stderr
 from types import ModuleType
-from typing import Any, Final, Optional
+from typing import Any, Final, Optional, Union
 
+import snsql
+import yaml
 from mimesis.providers.base import BaseProvider
+from pydantic import PostgresDsn  # pylint: disable=no-name-in-module
 from sqlalchemy import create_engine
 from sqlalchemy.sql import sqltypes
 
@@ -135,7 +138,7 @@ def _add_generator_for_table(
 
 
 def make_generators_from_tables(
-    tables_module: ModuleType, generator_config: dict
+    tables_module: ModuleType, generator_config: dict, src_stats_filename: Optional[str]
 ) -> str:
     """Create sqlsynthgen generator classes from a sqlacodegen-generated file.
 
@@ -151,6 +154,14 @@ def make_generators_from_tables(
     generator_module_name = generator_config.get("custom_generators_module", None)
     if generator_module_name is not None:
         new_content += f"\nimport {generator_module_name}"
+    if src_stats_filename:
+        new_content += "\nimport yaml"
+        new_content += (
+            f'\nwith open("{src_stats_filename}", "r", encoding="utf-8") as f:'
+        )
+        new_content += (
+            f"\n{INDENTATION}SRC_STATS = yaml.load(f, Loader=yaml.FullLoader)"
+        )
 
     sorted_generators = "[\n"
     sorted_vocab = "[\n"
@@ -190,7 +201,9 @@ def make_generators_from_tables(
     return new_content
 
 
-def make_tables_file(db_dsn: str, schema_name: Optional[str]) -> str:
+def make_tables_file(
+    db_dsn: Union[PostgresDsn, str], schema_name: Optional[str]
+) -> str:
     """Write a file with the SQLAlchemy ORM classes.
 
     Exists with an error if sqlacodegen is unsuccessful.
@@ -219,3 +232,41 @@ def make_tables_file(db_dsn: str, schema_name: Optional[str]) -> str:
         )
 
     return completed_process.stdout
+
+
+def make_src_stats(
+    dsn: Union[PostgresDsn, str], config: dict, stats_filename: str
+) -> dict:
+    """Run the src-stats queries specified by the configuration.
+
+    Query the src database with the queries in the src-stats block of the `config`
+    dictionary, using the differential privacy parameters set in the `opendp` block of
+    `config`. Record the results in a dictionary and return it, but also write them to a
+    YAML file called `stats_filename`.
+
+    Args:
+        dsn: postgres connection string
+        config: a dictionary with the necessary configuration
+        stats_filename: path to the YAML file to write the output to
+
+    Returns:
+        The dictionary of src-stats, thats is also written to `stats_filename`.
+    """
+    engine = create_engine(dsn, echo=False, future=True)
+    dp_config = config.get("opendp", {})
+    snsql_metadata = {"": dp_config}
+    src_stats = {}
+    for stat_data in config.get("src-stats", []):
+        privacy = snsql.Privacy(epsilon=stat_data["epsilon"], delta=stat_data["delta"])
+        with engine.connect() as conn:
+            reader = snsql.from_connection(
+                conn.connection,
+                engine="postgres",
+                privacy=privacy,
+                metadata=snsql_metadata,
+            )
+            private_result = reader.execute(stat_data["query"])
+            src_stats[stat_data["name"]] = private_result[1:]
+    with open(stats_filename, "w", encoding="utf-8") as f:
+        yaml.dump(src_stats, f)
+    return src_stats
