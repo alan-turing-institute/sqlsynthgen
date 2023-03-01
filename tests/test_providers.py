@@ -92,3 +92,22 @@ class TimespanProvider(TestCase):
         assert earliest_start_year <= start.year <= last_start_year
         assert min_dt <= delta <= max_dt
         assert end - start == delta
+
+
+class TestWeightedBooleanProvider(TestCase):
+    """Tests for WeightedBooleanProvider."""
+
+    def test_bool(self) -> None:
+        """Test the bool method"""
+        assert not providers.WeightedBooleanProvider().bool(0.0)
+        assert providers.WeightedBooleanProvider().bool(1.0)
+        seed = 0
+        num_repeats = 10000
+        prov = providers.WeightedBooleanProvider(seed)
+        for probability in (0.1, 0.5, 0.9):
+            bools = [prov.bool(probability) for _ in range(num_repeats)]
+            trues = sum(bools)
+            falses = sum(not x for x in bools)
+            expected_odds = probability / (1 - probability)
+            observed_odds = trues / falses
+            assert abs(observed_odds / expected_odds - 1.0) < 0.1

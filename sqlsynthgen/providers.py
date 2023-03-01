@@ -1,9 +1,10 @@
 """This module contains Mimesis Provider sub-classes."""
 import datetime as dt
 import random
-from typing import Any
+from typing import Any, Optional
 
 from mimesis import Datetime, Text
+from mimesis import random as mimesis_random
 from mimesis.providers.base import BaseDataProvider, BaseProvider
 from sqlalchemy.sql import func, select
 
@@ -82,3 +83,24 @@ class TimespanProvider(BaseProvider):
         start = Datetime().datetime(start=earliest_start_year, end=last_start_year)
         end = start + delta
         return start, end, delta
+
+
+class WeightedBooleanProvider(BaseProvider):
+    """A Mimesis provider for booleans with a given probability for True."""
+
+    def __init__(self, seed: Optional[int] = None) -> None:
+        """Initialize a WeightedBooleanProvider. Optionally a seed can be provided."""
+        if seed is not None:
+            self.rand = mimesis_random.Random(seed)
+        else:
+            self.rand = mimesis_random.Random()
+        super().__init__()
+
+    class Meta:
+        """Meta-class for WeightedBooleanProvider settings."""
+
+        name = "weighted_boolean_provider"
+
+    def bool(self, probability: float) -> bool:
+        """Return True with given `probability`, otherwise False."""
+        return self.rand.uniform(0, 1) < probability

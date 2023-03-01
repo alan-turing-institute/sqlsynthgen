@@ -13,6 +13,8 @@ from sqlsynthgen.providers import TimedeltaProvider
 generic.add_provider(TimedeltaProvider)
 from sqlsynthgen.providers import TimespanProvider
 generic.add_provider(TimespanProvider)
+from sqlsynthgen.providers import WeightedBooleanProvider
+generic.add_provider(WeightedBooleanProvider)
 
 import tests.examples.example_orm
 import custom_generators
