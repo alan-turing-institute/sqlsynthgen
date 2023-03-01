@@ -8,6 +8,10 @@ from unittest import TestCase, skipUnless
 from sqlsynthgen import settings
 
 
+class SysExit(Exception):
+    """To force the function to exit as sys.exit() would."""
+
+
 @lru_cache(1)
 def get_test_settings() -> settings.Settings:
     """Get a Settings object that ignores .env files and environment variables."""
