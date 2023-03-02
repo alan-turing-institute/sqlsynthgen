@@ -124,22 +124,20 @@ class TestMake(SSGTestCase):
             mock_stderr.getvalue(),
         )
 
-    def test_make_stats(self) -> None:
+    @patch("sqlsynthgen.make.yaml")
+    def test_make_stats(self, mock_yaml: MagicMock) -> None:
         """Test the make_src_stats function."""
-        conf_path = "example_config.yaml"
+        connection_string = "postgresql://postgres:password@localhost:5432/src"
+        output_file = Path("/tmp/tmp_test_file.yaml")
+        conf_path = Path("example_config.yaml")
         with open(conf_path, "r", encoding="utf8") as f:
             config = yaml.safe_load(f)
-
-        with patch("sqlsynthgen.make.yaml") as mock_yaml:
-            connection_string = "postgresql://postgres:password@localhost:5432/src"
-            src_stats = make.make_src_stats(
-                connection_string, config, "/tmp/tmp_test_file.yaml"
-            )
-            mock_yaml.dump.assert_called_once()
-            assert set(src_stats.keys()) == set(["count_opt_outs"])
-            count_opt_outs = src_stats["count_opt_outs"]
-            assert len(count_opt_outs) == 2
-            assert isinstance(count_opt_outs[0][0], int)
-            assert count_opt_outs[0][1] is False
-            assert isinstance(count_opt_outs[1][0], int)
-            assert count_opt_outs[1][1] is True
+        src_stats = make.make_src_stats(connection_string, config, output_file)
+        mock_yaml.dump.assert_called_once()
+        assert set(src_stats.keys()) == set(["count_opt_outs"])
+        count_opt_outs = src_stats["count_opt_outs"]
+        assert len(count_opt_outs) == 2
+        assert isinstance(count_opt_outs[0][0], int)
+        assert count_opt_outs[0][1] is False
+        assert isinstance(count_opt_outs[1][0], int)
+        assert count_opt_outs[1][1] is True
