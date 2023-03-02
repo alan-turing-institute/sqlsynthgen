@@ -3,6 +3,7 @@ import os
 from functools import lru_cache
 from pathlib import Path
 from subprocess import run
+from typing import Any
 from unittest import TestCase, skipUnless
 
 from sqlsynthgen import settings
@@ -50,8 +51,25 @@ def run_psql(dump_file: Path) -> None:
     assert completed_process.stderr == b"", completed_process.stderr
 
 
+class SSGTestCase(TestCase):
+    """Parent class for all TestCases in SqlSynthGen."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize an instance of SSGTestCase."""
+        self.maxDiff = None  # pylint: disable=invalid-name
+        super().__init__(*args, **kwargs)
+
+    def assertSuccess(self, result: Any) -> None:  # pylint: disable=invalid-name
+        """Give details for a subprocess result and raise if the result isn't good."""
+        code = result.exit_code if hasattr(result, "exit_code") else result.returncode
+        if code != 0:
+            print(result.stdout)
+            print(result.stderr)
+            self.assertEqual(0, code)
+
+
 @skipUnless(os.environ.get("REQUIRES_DB") == "1", "Set 'REQUIRES_DB=1' to enable.")
-class RequiresDBTestCase(TestCase):
+class RequiresDBTestCase(SSGTestCase):
     """A test case that only runs if REQUIRES_DB has been set to 1."""
 
     def setUp(self) -> None:

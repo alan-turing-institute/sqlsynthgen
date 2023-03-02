@@ -3,7 +3,6 @@ import os
 from io import StringIO
 from pathlib import Path
 from subprocess import CalledProcessError
-from unittest import TestCase
 from unittest.mock import MagicMock, call, patch
 
 import yaml
@@ -11,10 +10,10 @@ import yaml
 from sqlsynthgen import make
 from sqlsynthgen.make import make_tables_file
 from tests.examples import example_orm
-from tests.utils import SysExit
+from tests.utils import SSGTestCase, SysExit
 
 
-class TestMake(TestCase):
+class TestMake(SSGTestCase):
     """Tests that don't require a database."""
 
     test_dir = Path("tests/examples")
@@ -35,7 +34,6 @@ class TestMake(TestCase):
         self, mock_download: MagicMock, mock_create: MagicMock, _: MagicMock
     ) -> None:
         """Check that we can make a generators file from a tables module."""
-        self.maxDiff = None  # pylint: disable=invalid-name
         with open("expected_ssg.py", encoding="utf-8") as expected_output:
             expected = expected_output.read()
         conf_path = "generator_conf.yaml"

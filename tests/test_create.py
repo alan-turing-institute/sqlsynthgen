@@ -1,5 +1,4 @@
 """Tests for the create module."""
-from unittest import TestCase
 from unittest.mock import MagicMock, call, patch
 
 from sqlsynthgen.create import (
@@ -8,10 +7,10 @@ from sqlsynthgen.create import (
     create_db_vocab,
     populate,
 )
-from tests.utils import get_test_settings
+from tests.utils import SSGTestCase, get_test_settings
 
 
-class MyTestCase(TestCase):
+class MyTestCase(SSGTestCase):
     """Module test case."""
 
     @patch("sqlsynthgen.create.create_engine")

@@ -1,27 +1,18 @@
 """Tests for the main module."""
 from io import StringIO
-from unittest import TestCase
 from unittest.mock import MagicMock, call, patch
 
 import yaml
-from click.testing import Result
 from typer.testing import CliRunner
 
 from sqlsynthgen.main import app
-from tests.utils import get_test_settings
+from tests.utils import SSGTestCase, get_test_settings
 
 runner = CliRunner(mix_stderr=False)
 
 
-class TestCLI(TestCase):
+class TestCLI(SSGTestCase):
     """Tests for the command-line interface."""
-
-    def assertSuccess(self, result: Result) -> None:
-        """Give details and raise if the result isn't good."""
-        # pylint: disable=invalid-name
-        if result.exit_code != 0:
-            print(result.stdout)
-            self.assertEqual(0, result.exit_code)
 
     @patch("sqlsynthgen.main.import_file")
     @patch("sqlsynthgen.main.create_db_vocab")

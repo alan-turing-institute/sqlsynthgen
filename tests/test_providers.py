@@ -1,13 +1,12 @@
 """Tests for the providers module."""
 import datetime as dt
 from pathlib import Path
-from unittest import TestCase
 
 from sqlalchemy import Column, Integer, Text, create_engine, insert
 from sqlalchemy.ext.declarative import declarative_base
 
 from sqlsynthgen import providers
-from tests.utils import RequiresDBTestCase, run_psql
+from tests.utils import RequiresDBTestCase, SSGTestCase, run_psql
 
 # pylint: disable=invalid-name
 Base = declarative_base()
@@ -27,7 +26,7 @@ class Person(Base):  # type: ignore
     sex = Column(Text)
 
 
-class BinaryProviderTestCase(TestCase):
+class BinaryProviderTestCase(SSGTestCase):
     """Tests for the BytesProvider class."""
 
     def test_bytes(self) -> None:
@@ -62,7 +61,7 @@ class ColumnValueProviderTestCase(RequiresDBTestCase):
         self.assertEqual("M", key)
 
 
-class TimedeltaProvider(TestCase):
+class TimedeltaProvider(SSGTestCase):
     """Tests for TimedeltaProvider"""
 
     def test_timedelta(self) -> None:
@@ -74,7 +73,7 @@ class TimedeltaProvider(TestCase):
         assert min_dt <= delta <= max_dt
 
 
-class TimespanProvider(TestCase):
+class TimespanProvider(SSGTestCase):
     """Tests for TimespanProvider."""
 
     def test_timespan(self) -> None:
@@ -94,7 +93,7 @@ class TimespanProvider(TestCase):
         assert end - start == delta
 
 
-class TestWeightedBooleanProvider(TestCase):
+class TestWeightedBooleanProvider(SSGTestCase):
     """Tests for WeightedBooleanProvider."""
 
     def test_bool(self) -> None:
