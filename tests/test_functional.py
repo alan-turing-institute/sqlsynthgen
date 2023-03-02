@@ -19,6 +19,9 @@ class FunctionalTestCase(RequiresDBTestCase):
 
     concept_file_path = Path("concept.csv")
 
+    test_dir = Path("tests/workspace")
+    start_dir = os.getcwd()
+
     env = os.environ.copy()
     env = {
         **env,
@@ -37,9 +40,9 @@ class FunctionalTestCase(RequiresDBTestCase):
         """Pre-test setup."""
 
         # Create a blank destination database
-        run_psql("dst.dump")
+        run_psql(Path("tests/examples/dst.dump"))
 
-        os.chdir("tests/workspace")
+        os.chdir(self.test_dir)
 
         for file_path in (
             self.orm_file_path,
@@ -51,7 +54,7 @@ class FunctionalTestCase(RequiresDBTestCase):
             file_path.unlink(missing_ok=True)
 
     def tearDown(self) -> None:
-        os.chdir("../../")
+        os.chdir(self.start_dir)
 
     def test_workflow_minimal_args(self) -> None:
         """Test the recommended CLI workflow runs without errors."""

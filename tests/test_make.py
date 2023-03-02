@@ -1,6 +1,7 @@
 """Tests for the main module."""
 import os
 from io import StringIO
+from pathlib import Path
 from subprocess import CalledProcessError
 from unittest import TestCase
 from unittest.mock import MagicMock, call, patch
@@ -16,14 +17,16 @@ from tests.utils import SysExit
 class TestMake(TestCase):
     """Tests that don't require a database."""
 
+    test_dir = Path("tests/examples")
+    start_dir = os.getcwd()
+
     def setUp(self) -> None:
         """Pre-test setup."""
-
-        os.chdir("tests/examples")
+        os.chdir(self.test_dir)
 
     def tearDown(self) -> None:
         """Post-test cleanup."""
-        os.chdir("../..")
+        os.chdir(self.start_dir)
 
     @patch("sqlsynthgen.make.get_settings")
     @patch("sqlsynthgen.make.create_engine")

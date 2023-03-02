@@ -31,13 +31,16 @@ class MyTable(Base):  # type: ignore
 class TestImport(TestCase):
     """Tests for the import_file function."""
 
+    test_dir = Path("tests/examples")
+    start_dir = os.getcwd()
+
     def setUp(self) -> None:
         """Pre-test setup."""
-
-        os.chdir("tests/examples")
+        os.chdir(self.test_dir)
 
     def tearDown(self) -> None:
-        os.chdir("../../")
+        """Post-test cleanup."""
+        os.chdir(self.start_dir)
 
     def test_import_file(self) -> None:
         """Test that we can import an example module."""
@@ -53,10 +56,13 @@ class TestDownload(RequiresDBTestCase):
 
     mytable_file_path = Path("mytable.csv")
 
+    test_dir = Path("tests/workspace")
+    start_dir = os.getcwd()
+
     def setUp(self) -> None:
         """Pre-test setup."""
 
-        run_psql("providers.dump")
+        run_psql(Path("tests/examples/providers.dump"))
 
         self.engine = create_engine(
             "postgresql://postgres:password@localhost:5432/providers",
@@ -64,12 +70,12 @@ class TestDownload(RequiresDBTestCase):
         )
         metadata.create_all(self.engine)
 
-        os.chdir("tests/workspace")
+        os.chdir(self.test_dir)
         self.mytable_file_path.unlink(missing_ok=True)
 
     def tearDown(self) -> None:
         """Post-test cleanup."""
-        os.chdir("../..")
+        os.chdir(self.start_dir)
 
     def test_download_table(self) -> None:
         """Test the download_table function."""

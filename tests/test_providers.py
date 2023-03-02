@@ -1,5 +1,6 @@
 """Tests for the providers module."""
 import datetime as dt
+from pathlib import Path
 from unittest import TestCase
 
 from sqlalchemy import Column, Integer, Text, create_engine, insert
@@ -40,7 +41,7 @@ class ColumnValueProviderTestCase(RequiresDBTestCase):
     def setUp(self) -> None:
         """Pre-test setup."""
 
-        run_psql("providers.dump")
+        run_psql(Path("tests/examples/providers.dump"))
 
         self.engine = create_engine(
             "postgresql://postgres:password@localhost:5432/providers",
