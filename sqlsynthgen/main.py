@@ -136,12 +136,16 @@ def make_stats(
     Example:
         $ sqlsynthgen make_stats --config-file=example_config.yaml
     """
+    stats_file_path = Path(stats_file)
+    if stats_file_path.exists():
+        print(f"{stats_file} should not already exist. Exiting...", file=stderr)
+        sys.exit(1)
     settings = get_settings()
     generator_config = read_yaml_file(config_file) if config_file is not None else {}
     src_dsn = settings.src_postgres_dsn
     if src_dsn is None:
         raise ValueError("Missing source database connection details.")
-    make_src_stats(src_dsn, generator_config, stats_file)
+    make_src_stats(src_dsn, generator_config, stats_file_path)
 
 
 @app.command()

@@ -52,6 +52,7 @@ class FunctionalTestCase(RequiresDBTestCase):
             self.alt_orm_file_path,
             self.alt_ssg_file_path,
             self.concept_file_path,
+            self.stats_file_path,
         ):
             file_path.unlink(missing_ok=True)
 

@@ -1,5 +1,6 @@
 """Tests for the main module."""
 from io import StringIO
+from pathlib import Path
 from unittest.mock import MagicMock, call, patch
 
 import yaml
@@ -171,26 +172,53 @@ class TestCLI(SSGTestCase):
         )
         self.assertEqual(1, result.exit_code)
 
-    def test_make_stats(self) -> None:
+    @patch("sqlsynthgen.main.Path")
+    @patch("sqlsynthgen.main.make_src_stats")
+    @patch("sqlsynthgen.main.get_settings")
+    def test_make_stats(
+        self, mock_get_settings: MagicMock, mock_make: MagicMock, mock_path: MagicMock
+    ) -> None:
         """Test the make-stats sub-command."""
         example_conf_path = "tests/examples/example_config.yaml"
-        with patch("sqlsynthgen.main.make_src_stats") as mock_make, patch(
-            "sqlsynthgen.main.get_settings"
-        ) as mock_get_settings:
-            mock_get_settings.return_value = get_test_settings()
-            output_path = "make_stats_output.yaml"
-            result = runner.invoke(
-                app,
-                [
-                    "make-stats",
-                    f"--stats-file={output_path}",
-                    f"--config-file={example_conf_path}",
-                ],
-                catch_exceptions=False,
-            )
-            self.assertSuccess(result)
-            with open(example_conf_path, "r", encoding="utf8") as f:
-                config = yaml.safe_load(f)
-            mock_make.assert_called_once_with(
-                get_test_settings().src_postgres_dsn, config, output_path
-            )
+        output_path = Path("make_stats_output.yaml")
+        mock_path.return_value.exists.return_value = False
+        mock_get_settings.return_value = get_test_settings()
+        result = runner.invoke(
+            app,
+            [
+                "make-stats",
+                f"--stats-file={output_path}",
+                f"--config-file={example_conf_path}",
+            ],
+            catch_exceptions=False,
+        )
+        self.assertSuccess(result)
+        with open(example_conf_path, "r", encoding="utf8") as f:
+            config = yaml.safe_load(f)
+        mock_make.assert_called_once_with(
+            get_test_settings().src_postgres_dsn, config, mock_path.return_value
+        )
+
+    @patch("sqlsynthgen.main.Path")
+    @patch("sqlsynthgen.main.stderr", new_callable=StringIO)
+    def test_make_stats_errors_if_file_exists(
+        self, mock_stderr: MagicMock, mock_path: MagicMock
+    ) -> None:
+        """Test the make-stats sub-command when the stats file already exists."""
+        mock_path.return_value.exists.return_value = True
+        example_conf_path = "tests/examples/example_config.yaml"
+        output_path = "make_stats_output.yaml"
+        result = runner.invoke(
+            app,
+            [
+                "make-stats",
+                f"--stats-file={output_path}",
+                f"--config-file={example_conf_path}",
+            ],
+            catch_exceptions=False,
+        )
+        self.assertEqual(
+            f"{output_path} should not already exist. Exiting...\n",
+            mock_stderr.getvalue(),
+        )
+        self.assertEqual(1, result.exit_code)

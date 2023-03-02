@@ -1,6 +1,7 @@
 """Functions to make a module of generator classes."""
 import inspect
 import sys
+from pathlib import Path
 from subprocess import CalledProcessError, run
 from sys import stderr
 from types import ModuleType
@@ -237,7 +238,7 @@ def make_tables_file(
 
 
 def make_src_stats(
-    dsn: Union[PostgresDsn, str], config: dict, stats_filename: str
+    dsn: Union[PostgresDsn, str], config: dict, stats_filename: Path
 ) -> dict:
     """Run the src-stats queries specified by the configuration.
 
