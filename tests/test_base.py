@@ -1,5 +1,6 @@
 """Tests for the base module."""
 import os
+from pathlib import Path
 
 from sqlalchemy import Column, Integer, create_engine, select
 from sqlalchemy.orm import declarative_base
@@ -26,6 +27,9 @@ class BaseTable(Base):  # type: ignore
 class VocabTests(RequiresDBTestCase):
     """Module test case."""
 
+    test_dir = Path("tests/examples")
+    start_dir = os.getcwd()
+
     def setUp(self) -> None:
         """Pre-test setup."""
 
@@ -35,10 +39,10 @@ class VocabTests(RequiresDBTestCase):
             "postgresql://postgres:password@localhost:5432/providers"
         )
         metadata.create_all(self.engine)
-        os.chdir("tests/examples")
+        os.chdir(self.test_dir)
 
     def tearDown(self) -> None:
-        os.chdir("../..")
+        os.chdir(self.start_dir)
 
     def test_load(self) -> None:
         """Test the load method."""
