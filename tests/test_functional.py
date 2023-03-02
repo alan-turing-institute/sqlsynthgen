@@ -19,7 +19,7 @@ class FunctionalTestCase(RequiresDBTestCase):
 
     concept_file_path = Path("concept.csv")
     config_file_path = Path("../examples/functional_conf.yaml")
-    stats_file_path = Path("../examples/example_stats.yaml")
+    stats_file_path = Path("example_stats.yaml")
 
     test_dir = Path("tests/workspace")
     start_dir = os.getcwd()
