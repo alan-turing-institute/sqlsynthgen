@@ -62,7 +62,7 @@ class TestDownload(RequiresDBTestCase):
     def setUp(self) -> None:
         """Pre-test setup."""
 
-        run_psql("providers.dump")
+        run_psql(Path("tests/examples/providers.dump"))
 
         self.engine = create_engine(
             "postgresql://postgres:password@localhost:5432/providers",

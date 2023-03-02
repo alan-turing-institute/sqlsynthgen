@@ -30,7 +30,7 @@ def get_test_settings() -> settings.Settings:
     )
 
 
-def run_psql(dump_file_name: str) -> None:
+def run_psql(dump_file: Path) -> None:
     """Run psql and pass dump_file_name as the --file option."""
 
     # If you need to update a .dump file, use
@@ -41,12 +41,7 @@ def run_psql(dump_file_name: str) -> None:
 
     # Clear and re-create the test database
     completed_process = run(
-        [
-            "psql",
-            "--host=localhost",
-            "--username=postgres",
-            "--file=" + str(Path(f"tests/examples/{dump_file_name}")),
-        ],
+        ["psql", "--host=localhost", "--username=postgres", f"--file={dump_file}"],
         capture_output=True,
         env=env,
         check=True,
@@ -57,7 +52,7 @@ def run_psql(dump_file_name: str) -> None:
 
 @skipUnless(os.environ.get("REQUIRES_DB") == "1", "Set 'REQUIRES_DB=1' to enable.")
 class RequiresDBTestCase(TestCase):
-    """A test case that only runs if REQUIRES_DB has been set to true."""
+    """A test case that only runs if REQUIRES_DB has been set to 1."""
 
     def setUp(self) -> None:
         pass

@@ -40,7 +40,7 @@ class FunctionalTestCase(RequiresDBTestCase):
         """Pre-test setup."""
 
         # Create a blank destination database
-        run_psql("dst.dump")
+        run_psql(Path("tests/examples/dst.dump"))
 
         os.chdir(self.test_dir)
 
