@@ -18,7 +18,7 @@ class FunctionalTestCase(RequiresDBTestCase):
     alt_ssg_file_path = Path("my_ssg.py")
 
     concept_file_path = Path("concept.csv")
-    config_file_path = Path("../examples/functional_conf.yaml")
+    config_file_path = Path("../examples/example_config.yaml")
     stats_file_path = Path("example_stats.yaml")
 
     test_dir = Path("tests/workspace")
@@ -65,7 +65,7 @@ class FunctionalTestCase(RequiresDBTestCase):
             capture_output=True,
             env=self.env,
         )
-        self.assertSuccess(completed_process.returncode)
+        self.assertSuccess(completed_process)
 
         completed_process = run(
             ["sqlsynthgen", "make-generators"],

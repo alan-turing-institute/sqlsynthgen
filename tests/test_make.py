@@ -36,7 +36,7 @@ class TestMake(SSGTestCase):
         """Check that we can make a generators file from a tables module."""
         with open("expected_ssg.py", encoding="utf-8") as expected_output:
             expected = expected_output.read()
-        conf_path = "generator_conf.yaml"
+        conf_path = "example_config.yaml"
         with open(conf_path, "r", encoding="utf8") as f:
             config = yaml.safe_load(f)
         stats_path = "example_stats.yaml"
@@ -126,7 +126,7 @@ class TestMake(SSGTestCase):
 
     def test_make_stats(self) -> None:
         """Test the make_src_stats function."""
-        conf_path = "generator_conf.yaml"
+        conf_path = "example_config.yaml"
         with open(conf_path, "r", encoding="utf8") as f:
             config = yaml.safe_load(f)
 

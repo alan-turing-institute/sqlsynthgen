@@ -134,7 +134,7 @@ def make_stats(
     """Compute summary statistics from the source database, write them to a YAML file.
 
     Example:
-        $ sqlsynthgen make_stats --config-file=generator_conf.yaml
+        $ sqlsynthgen make_stats --config-file=example_config.yaml
     """
     settings = get_settings()
     generator_config = read_yaml_file(config_file) if config_file is not None else {}

@@ -173,7 +173,7 @@ class TestCLI(SSGTestCase):
 
     def test_make_stats(self) -> None:
         """Test the make-stats sub-command."""
-        example_conf_path = "tests/examples/generator_conf.yaml"
+        example_conf_path = "tests/examples/example_config.yaml"
         with patch("sqlsynthgen.main.make_src_stats") as mock_make, patch(
             "sqlsynthgen.main.get_settings"
         ) as mock_get_settings:
