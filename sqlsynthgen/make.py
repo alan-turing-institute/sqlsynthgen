@@ -145,6 +145,8 @@ def make_generators_from_tables(
     Args:
       tables_module: A sqlacodegen-generated module.
       generator_config: Configuration to control the generator creation.
+      src_stats_file_name: A filename for where to read src stats from. Optional, if
+          `None` this feature will be skipped
 
     Returns:
       A string that is a valid Python module, once written to file.
@@ -266,6 +268,7 @@ def make_src_stats(
                 metadata=snsql_metadata,
             )
             private_result = reader.execute(stat_data["query"])
+            # The first entry in the list names the columns, skip that.
             src_stats[stat_data["name"]] = private_result[1:]
     with open(stats_filename, "w", encoding="utf-8") as f:
         yaml.dump(src_stats, f)

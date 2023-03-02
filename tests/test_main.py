@@ -3,18 +3,14 @@ from io import StringIO
 from unittest import TestCase
 from unittest.mock import MagicMock, call, patch
 
+import yaml
 from click.testing import Result
 from typer.testing import CliRunner
-import yaml
 
 from sqlsynthgen.main import app
 from tests.utils import get_test_settings
 
 runner = CliRunner(mix_stderr=False)
-
-EXAMPLE_ORM_PATH = "tests/examples/example_orm.py"
-EXAMPLE_CONF_PATH = "tests/examples/generator_conf.yaml"
-EXPECTED_SSG_PATH = "tests/examples/expected_ssg.py"
 
 
 class TestCLI(TestCase):
@@ -186,7 +182,7 @@ class TestCLI(TestCase):
 
     def test_make_stats(self) -> None:
         """Test the make-stats sub-command."""
-
+        example_conf_path = "tests/examples/generator_conf.yaml"
         with patch("sqlsynthgen.main.make_src_stats") as mock_make, patch(
             "sqlsynthgen.main.get_settings"
         ) as mock_get_settings:
@@ -197,12 +193,12 @@ class TestCLI(TestCase):
                 [
                     "make-stats",
                     f"--stats-file={output_path}",
-                    f"--config-file={EXAMPLE_CONF_PATH}",
+                    f"--config-file={example_conf_path}",
                 ],
                 catch_exceptions=False,
             )
             self.assertSuccess(result)
-            with open(EXAMPLE_CONF_PATH, "r", encoding="utf8") as f:
+            with open(example_conf_path, "r", encoding="utf8") as f:
                 config = yaml.safe_load(f)
             mock_make.assert_called_once_with(
                 get_test_settings().src_postgres_dsn, config, output_path
