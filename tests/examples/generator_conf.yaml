@@ -29,7 +29,8 @@ tables:
         columns_assigned: stored_from
       - name: custom_generators.boolean_from_src_stats_generator
         args:
-          src_stats: SRC_STATS.count_opt_outs
+          generic: generic
+          src_stats: SRC_STATS["count_opt_outs"]
         columns_assigned: research_opt_out
 
   hospital_visit:
