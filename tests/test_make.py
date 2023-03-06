@@ -134,10 +134,10 @@ class TestMake(SSGTestCase):
             config = yaml.safe_load(f)
         src_stats = make.make_src_stats(connection_string, config, output_file)
         mock_yaml.dump.assert_called_once()
-        self.assertSetEqual({"count_opt_outs"},  set(src_stats.keys())
+        self.assertSetEqual({"count_opt_outs"}, set(src_stats.keys()))
         count_opt_outs = src_stats["count_opt_outs"]
-        assert len(count_opt_outs) == 2
-        assert isinstance(count_opt_outs[0][0], int)
-        assert count_opt_outs[0][1] is False
-        assert isinstance(count_opt_outs[1][0], int)
-        assert count_opt_outs[1][1] is True
+        self.assertEqual(len(count_opt_outs), 2)
+        self.assertIsInstance(count_opt_outs[0][0], int)
+        self.assertIs(count_opt_outs[0][1], False)
+        self.assertIsInstance(count_opt_outs[1][0], int)
+        self.assertIs(count_opt_outs[1][1], True)

@@ -69,8 +69,9 @@ class TimedeltaProvider(SSGTestCase):
         min_dt = dt.timedelta(days=1)
         max_dt = dt.timedelta(days=2)
         delta = providers.TimedeltaProvider().timedelta(min_dt=min_dt, max_dt=max_dt)
-        assert isinstance(delta, dt.timedelta)
-        assert min_dt <= delta <= max_dt
+        self.assertIsInstance(delta, dt.timedelta)
+        self.assertLessEqual(min_dt, delta)
+        self.assertLessEqual(delta, max_dt)
 
 
 class TimespanProvider(SSGTestCase):
@@ -85,12 +86,14 @@ class TimespanProvider(SSGTestCase):
         start, end, delta = providers.TimespanProvider().timespan(
             earliest_start_year, last_start_year, min_dt, max_dt
         )
-        assert isinstance(start, dt.datetime)
-        assert isinstance(end, dt.datetime)
-        assert isinstance(delta, dt.timedelta)
-        assert earliest_start_year <= start.year <= last_start_year
-        assert min_dt <= delta <= max_dt
-        assert end - start == delta
+        self.assertIsInstance(start, dt.datetime)
+        self.assertIsInstance(end, dt.datetime)
+        self.assertIsInstance(delta, dt.timedelta)
+        self.assertLessEqual(earliest_start_year, start.year)
+        self.assertLessEqual(start.year, last_start_year)
+        self.assertLessEqual(min_dt, delta)
+        self.assertLessEqual(delta, max_dt)
+        self.assertEqual(end - start, delta)
 
 
 class TestWeightedBooleanProvider(SSGTestCase):
@@ -98,15 +101,15 @@ class TestWeightedBooleanProvider(SSGTestCase):
 
     def test_bool(self) -> None:
         """Test the bool method"""
-        assert not providers.WeightedBooleanProvider().bool(0.0)
-        assert providers.WeightedBooleanProvider().bool(1.0)
+        self.assertFalse(providers.WeightedBooleanProvider().bool(0.0))
+        self.assertTrue(providers.WeightedBooleanProvider().bool(1.0))
         seed = 0
         num_repeats = 10000
-        prov = providers.WeightedBooleanProvider(seed)
+        prov = providers.WeightedBooleanProvider(seed=seed)
         for probability in (0.1, 0.5, 0.9):
             bools = [prov.bool(probability) for _ in range(num_repeats)]
             trues = sum(bools)
             falses = sum(not x for x in bools)
             expected_odds = probability / (1 - probability)
             observed_odds = trues / falses
-            assert abs(observed_odds / expected_odds - 1.0) < 0.1
+            self.assertLess(abs(observed_odds / expected_odds - 1.0), 0.1)
