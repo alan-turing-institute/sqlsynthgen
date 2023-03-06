@@ -128,7 +128,7 @@ def make_generators(
 
 @app.command()
 def make_stats(
-    config_file: str = typer.Option(None),
+    config_file: str = typer.Option(...),
     stats_file: str = typer.Option(STATS_FILENAME),
 ) -> None:
     """Compute summary statistics from the source database, write them to a YAML file.
