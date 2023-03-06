@@ -146,7 +146,7 @@ def make_generators_from_tables(
     Args:
       tables_module: A sqlacodegen-generated module.
       generator_config: Configuration to control the generator creation.
-      src_stats_file_name: A filename for where to read src stats from. Optional, if
+      src_stats_filename: A filename for where to read src stats from. Optional, if
           `None` this feature will be skipped
 
     Returns:
