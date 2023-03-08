@@ -1,6 +1,9 @@
 smartnoise-sql:
   public:
     person:
+      # You may well want censor_dims to be on, but we turn it off for the
+      # tests to silence a smartnoise-sql nag warning.
+      censor_dims: False
       person_id:
         name: person_id
         type: int
