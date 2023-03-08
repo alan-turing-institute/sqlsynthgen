@@ -3,7 +3,6 @@ import os
 from io import StringIO
 from pathlib import Path
 from subprocess import CalledProcessError
-from unittest import TestCase
 from unittest.mock import MagicMock, call, patch
 
 import yaml
@@ -11,10 +10,10 @@ import yaml
 from sqlsynthgen import make
 from sqlsynthgen.make import make_tables_file
 from tests.examples import example_orm
-from tests.utils import SysExit
+from tests.utils import SSGTestCase, SysExit
 
 
-class TestMake(TestCase):
+class TestMake(SSGTestCase):
     """Tests that don't require a database."""
 
     test_dir = Path("tests/examples")
@@ -35,16 +34,16 @@ class TestMake(TestCase):
         self, mock_download: MagicMock, mock_create: MagicMock, _: MagicMock
     ) -> None:
         """Check that we can make a generators file from a tables module."""
-        self.maxDiff = None  # pylint: disable=invalid-name
         with open("expected_ssg.py", encoding="utf-8") as expected_output:
             expected = expected_output.read()
-        conf_path = "generator_conf.yaml"
+        conf_path = "example_config.yaml"
         with open(conf_path, "r", encoding="utf8") as f:
             config = yaml.safe_load(f)
+        stats_path = "example_stats.yaml"
 
-            actual = make.make_generators_from_tables(example_orm, config)
-            mock_download.assert_called_once()
-            mock_create.assert_called_once()
+        actual = make.make_generators_from_tables(example_orm, config, stats_path)
+        mock_download.assert_called_once()
+        mock_create.assert_called_once()
 
         self.assertEqual(expected, actual)
 
@@ -124,3 +123,18 @@ class TestMake(TestCase):
             "WARNING: Table without PK detected. sqlsynthgen may not be able to continue.\n",
             mock_stderr.getvalue(),
         )
+
+    def test_make_stats(self) -> None:
+        """Test the make_src_stats function."""
+        connection_string = "postgresql://postgres:password@localhost:5432/src"
+        conf_path = Path("example_config.yaml")
+        with open(conf_path, "r", encoding="utf8") as f:
+            config = yaml.safe_load(f)
+        src_stats = make.make_src_stats(connection_string, config)
+        self.assertSetEqual({"count_opt_outs"}, set(src_stats.keys()))
+        count_opt_outs = src_stats["count_opt_outs"]
+        self.assertEqual(len(count_opt_outs), 2)
+        self.assertIsInstance(count_opt_outs[0][0], int)
+        self.assertIs(count_opt_outs[0][1], False)
+        self.assertIsInstance(count_opt_outs[1][0], int)
+        self.assertIs(count_opt_outs[1][1], True)

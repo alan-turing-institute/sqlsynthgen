@@ -18,6 +18,8 @@ class FunctionalTestCase(RequiresDBTestCase):
     alt_ssg_file_path = Path("my_ssg.py")
 
     concept_file_path = Path("concept.csv")
+    config_file_path = Path("../examples/example_config.yaml")
+    stats_file_path = Path("example_stats.yaml")
 
     test_dir = Path("tests/workspace")
     start_dir = os.getcwd()
@@ -50,6 +52,7 @@ class FunctionalTestCase(RequiresDBTestCase):
             self.alt_orm_file_path,
             self.alt_ssg_file_path,
             self.concept_file_path,
+            self.stats_file_path,
         ):
             file_path.unlink(missing_ok=True)
 
@@ -58,13 +61,12 @@ class FunctionalTestCase(RequiresDBTestCase):
 
     def test_workflow_minimal_args(self) -> None:
         """Test the recommended CLI workflow runs without errors."""
-
         completed_process = run(
             ["sqlsynthgen", "make-tables"],
             capture_output=True,
             env=self.env,
         )
-        self.assertEqual(0, completed_process.returncode)
+        self.assertSuccess(completed_process)
 
         completed_process = run(
             ["sqlsynthgen", "make-generators"],
@@ -72,7 +74,7 @@ class FunctionalTestCase(RequiresDBTestCase):
             env=self.env,
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
-        self.assertEqual(0, completed_process.returncode)
+        self.assertSuccess(completed_process)
 
         completed_process = run(
             ["sqlsynthgen", "create-tables"],
@@ -80,7 +82,7 @@ class FunctionalTestCase(RequiresDBTestCase):
             env=self.env,
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
-        self.assertEqual(0, completed_process.returncode)
+        self.assertSuccess(completed_process)
 
         completed_process = run(
             ["sqlsynthgen", "create-vocab"],
@@ -88,7 +90,7 @@ class FunctionalTestCase(RequiresDBTestCase):
             env=self.env,
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
-        self.assertEqual(0, completed_process.returncode)
+        self.assertSuccess(completed_process)
 
         completed_process = run(
             ["sqlsynthgen", "create-data"],
@@ -96,7 +98,7 @@ class FunctionalTestCase(RequiresDBTestCase):
             env=self.env,
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
-        self.assertEqual(0, completed_process.returncode)
+        self.assertSuccess(completed_process)
 
     def test_workflow_maximal_args(self) -> None:
         """Test the CLI workflow runs with optional arguments."""
@@ -114,7 +116,19 @@ class FunctionalTestCase(RequiresDBTestCase):
             "WARNING: Table without PK detected. sqlsynthgen may not be able to continue.\n",
             completed_process.stderr.decode("utf-8"),
         )
-        self.assertEqual(0, completed_process.returncode)
+        self.assertSuccess(completed_process)
+
+        completed_process = run(
+            [
+                "sqlsynthgen",
+                "make-stats",
+                f"--stats-file={self.stats_file_path}",
+                f"--config-file={self.config_file_path}",
+            ],
+            capture_output=True,
+            env=self.env,
+        )
+        self.assertSuccess(completed_process)
 
         completed_process = run(
             [
@@ -122,13 +136,14 @@ class FunctionalTestCase(RequiresDBTestCase):
                 "make-generators",
                 f"--orm-file={self.alt_orm_file_path}",
                 f"--ssg-file={self.alt_ssg_file_path}",
-                "../examples/functional_conf.yaml",
+                f"--config-file={self.config_file_path}",
+                f"--stats-file={self.stats_file_path}",
             ],
             capture_output=True,
             env=self.env,
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
-        self.assertEqual(0, completed_process.returncode)
+        self.assertSuccess(completed_process)
 
         completed_process = run(
             [
@@ -140,7 +155,7 @@ class FunctionalTestCase(RequiresDBTestCase):
             env=self.env,
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
-        self.assertEqual(0, completed_process.returncode)
+        self.assertSuccess(completed_process)
 
         completed_process = run(
             [
@@ -152,7 +167,7 @@ class FunctionalTestCase(RequiresDBTestCase):
             env=self.env,
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
-        self.assertEqual(0, completed_process.returncode)
+        self.assertSuccess(completed_process)
 
         completed_process = run(
             [
@@ -166,4 +181,4 @@ class FunctionalTestCase(RequiresDBTestCase):
             env=self.env,
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
-        self.assertEqual(0, completed_process.returncode)
+        self.assertSuccess(completed_process)

@@ -82,3 +82,16 @@ class TimespanProvider(BaseProvider):
         start = Datetime().datetime(start=earliest_start_year, end=last_start_year)
         end = start + delta
         return start, end, delta
+
+
+class WeightedBooleanProvider(BaseProvider):
+    """A Mimesis provider for booleans with a given probability for True."""
+
+    class Meta:
+        """Meta-class for WeightedBooleanProvider settings."""
+
+        name = "weighted_boolean_provider"
+
+    def bool(self, probability: float) -> bool:
+        """Return True with given `probability`, otherwise False."""
+        return self.random.uniform(0, 1) < probability

@@ -3,14 +3,13 @@ import os
 import sys
 from io import StringIO
 from pathlib import Path
-from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 from sqlalchemy import Column, Integer, create_engine, insert
 from sqlalchemy.orm import declarative_base
 
 from sqlsynthgen.utils import download_table, import_file
-from tests.utils import RequiresDBTestCase, SysExit, run_psql
+from tests.utils import RequiresDBTestCase, SSGTestCase, SysExit, run_psql
 
 # pylint: disable=invalid-name
 Base = declarative_base()
@@ -28,7 +27,7 @@ class MyTable(Base):  # type: ignore
     )
 
 
-class TestImport(TestCase):
+class TestImport(SSGTestCase):
     """Tests for the import_file function."""
 
     test_dir = Path("tests/examples")

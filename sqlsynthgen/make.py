@@ -6,6 +6,7 @@ from sys import stderr
 from types import ModuleType
 from typing import Any, Final, Optional
 
+import snsql
 from mimesis.providers.base import BaseProvider
 from sqlalchemy import create_engine
 from sqlalchemy.sql import sqltypes
@@ -135,13 +136,15 @@ def _add_generator_for_table(
 
 
 def make_generators_from_tables(
-    tables_module: ModuleType, generator_config: dict
+    tables_module: ModuleType, generator_config: dict, src_stats_filename: Optional[str]
 ) -> str:
     """Create sqlsynthgen generator classes from a sqlacodegen-generated file.
 
     Args:
       tables_module: A sqlacodegen-generated module.
       generator_config: Configuration to control the generator creation.
+      src_stats_filename: A filename for where to read src stats from. Optional, if
+          `None` this feature will be skipped
 
     Returns:
       A string that is a valid Python module, once written to file.
@@ -151,6 +154,14 @@ def make_generators_from_tables(
     generator_module_name = generator_config.get("custom_generators_module", None)
     if generator_module_name is not None:
         new_content += f"\nimport {generator_module_name}"
+    if src_stats_filename:
+        new_content += "\nimport yaml"
+        new_content += (
+            f'\nwith open("{src_stats_filename}", "r", encoding="utf-8") as f:'
+        )
+        new_content += (
+            f"\n{INDENTATION}SRC_STATS = yaml.load(f, Loader=yaml.FullLoader)"
+        )
 
     sorted_generators = "[\n"
     sorted_vocab = "[\n"
@@ -219,3 +230,36 @@ def make_tables_file(db_dsn: str, schema_name: Optional[str]) -> str:
         )
 
     return completed_process.stdout
+
+
+def make_src_stats(dsn: str, config: dict) -> dict:
+    """Run the src-stats queries specified by the configuration.
+
+    Query the src database with the queries in the src-stats block of the `config`
+    dictionary, using the differential privacy parameters set in the `smartnoise-sql`
+    block of `config`. Record the results in a dictionary and returns it.
+    Args:
+        dsn: postgres connection string
+        config: a dictionary with the necessary configuration
+        stats_filename: path to the YAML file to write the output to
+
+    Returns:
+        The dictionary of src-stats.
+    """
+    engine = create_engine(dsn, echo=False, future=True)
+    dp_config = config.get("smartnoise-sql", {})
+    snsql_metadata = {"": dp_config}
+    src_stats = {}
+    for stat_data in config.get("src-stats", []):
+        privacy = snsql.Privacy(epsilon=stat_data["epsilon"], delta=stat_data["delta"])
+        with engine.connect() as conn:
+            reader = snsql.from_connection(
+                conn.connection,
+                engine="postgres",
+                privacy=privacy,
+                metadata=snsql_metadata,
+            )
+            private_result = reader.execute(stat_data["query"])
+            # The first entry in the list names the columns, skip that.
+            src_stats[stat_data["name"]] = private_result[1:]
+    return src_stats
