@@ -182,6 +182,7 @@ class TestCLI(SSGTestCase):
         example_conf_path = "tests/examples/example_config.yaml"
         output_path = Path("make_stats_output.yaml")
         mock_path.return_value.exists.return_value = False
+        mock_make.return_value = {"a": 1}
         mock_get_settings.return_value = get_test_settings()
         result = runner.invoke(
             app,
@@ -195,8 +196,9 @@ class TestCLI(SSGTestCase):
         self.assertSuccess(result)
         with open(example_conf_path, "r", encoding="utf8") as f:
             config = yaml.safe_load(f)
-        mock_make.assert_called_once_with(
-            get_test_settings().src_postgres_dsn, config, mock_path.return_value
+        mock_make.assert_called_once_with(get_test_settings().src_postgres_dsn, config)
+        mock_path.return_value.write_text.assert_called_once_with(
+            "a: 1\n", encoding="utf-8"
         )
 
     @patch("sqlsynthgen.main.Path")

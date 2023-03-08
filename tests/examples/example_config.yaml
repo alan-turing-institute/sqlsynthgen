@@ -1,4 +1,4 @@
-opendp:
+smartnoise-sql:
   public:
     person:
       person_id:

@@ -5,6 +5,7 @@ from sys import stderr
 from typing import Final, Optional
 
 import typer
+import yaml
 
 from sqlsynthgen.create import create_db_data, create_db_tables, create_db_vocab
 from sqlsynthgen.make import (
@@ -145,7 +146,8 @@ def make_stats(
     src_dsn = settings.src_postgres_dsn
     if src_dsn is None:
         raise ValueError("Missing source database connection details.")
-    make_src_stats(src_dsn, generator_config, stats_file_path)
+    src_stats = make_src_stats(src_dsn, generator_config)
+    stats_file_path.write_text(yaml.dump(src_stats), encoding="utf-8")
 
 
 @app.command()

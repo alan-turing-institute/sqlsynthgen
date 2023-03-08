@@ -124,16 +124,13 @@ class TestMake(SSGTestCase):
             mock_stderr.getvalue(),
         )
 
-    @patch("sqlsynthgen.make.yaml")
-    def test_make_stats(self, mock_yaml: MagicMock) -> None:
+    def test_make_stats(self) -> None:
         """Test the make_src_stats function."""
         connection_string = "postgresql://postgres:password@localhost:5432/src"
-        output_file = Path("/tmp/tmp_test_file.yaml")
         conf_path = Path("example_config.yaml")
         with open(conf_path, "r", encoding="utf8") as f:
             config = yaml.safe_load(f)
-        src_stats = make.make_src_stats(connection_string, config, output_file)
-        mock_yaml.dump.assert_called_once()
+        src_stats = make.make_src_stats(connection_string, config)
         self.assertSetEqual({"count_opt_outs"}, set(src_stats.keys()))
         count_opt_outs = src_stats["count_opt_outs"]
         self.assertEqual(len(count_opt_outs), 2)

@@ -1,16 +1,13 @@
 """Functions to make a module of generator classes."""
 import inspect
 import sys
-from pathlib import Path
 from subprocess import CalledProcessError, run
 from sys import stderr
 from types import ModuleType
-from typing import Any, Final, Optional, Union
+from typing import Any, Final, Optional
 
 import snsql
-import yaml
 from mimesis.providers.base import BaseProvider
-from pydantic import PostgresDsn  # pylint: disable=no-name-in-module
 from sqlalchemy import create_engine
 from sqlalchemy.sql import sqltypes
 
@@ -204,9 +201,7 @@ def make_generators_from_tables(
     return new_content
 
 
-def make_tables_file(
-    db_dsn: Union[PostgresDsn, str], schema_name: Optional[str]
-) -> str:
+def make_tables_file(db_dsn: str, schema_name: Optional[str]) -> str:
     """Write a file with the SQLAlchemy ORM classes.
 
     Exists with an error if sqlacodegen is unsuccessful.
@@ -237,26 +232,22 @@ def make_tables_file(
     return completed_process.stdout
 
 
-def make_src_stats(
-    dsn: Union[PostgresDsn, str], config: dict, stats_filename: Path
-) -> dict:
+def make_src_stats(dsn: str, config: dict) -> dict:
     """Run the src-stats queries specified by the configuration.
 
     Query the src database with the queries in the src-stats block of the `config`
-    dictionary, using the differential privacy parameters set in the `opendp` block of
-    `config`. Record the results in a dictionary and return it, but also write them to a
-    YAML file called `stats_filename`.
-
+    dictionary, using the differential privacy parameters set in the `smartnoise-sql`
+    block of `config`. Record the results in a dictionary and returns it.
     Args:
         dsn: postgres connection string
         config: a dictionary with the necessary configuration
         stats_filename: path to the YAML file to write the output to
 
     Returns:
-        The dictionary of src-stats, thats is also written to `stats_filename`.
+        The dictionary of src-stats.
     """
     engine = create_engine(dsn, echo=False, future=True)
-    dp_config = config.get("opendp", {})
+    dp_config = config.get("smartnoise-sql", {})
     snsql_metadata = {"": dp_config}
     src_stats = {}
     for stat_data in config.get("src-stats", []):
@@ -271,6 +262,4 @@ def make_src_stats(
             private_result = reader.execute(stat_data["query"])
             # The first entry in the list names the columns, skip that.
             src_stats[stat_data["name"]] = private_result[1:]
-    with open(stats_filename, "w", encoding="utf-8") as f:
-        yaml.dump(src_stats, f)
     return src_stats
