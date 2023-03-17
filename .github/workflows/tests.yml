@@ -46,7 +46,7 @@ jobs:
         shell: bash
         if: steps.poetry-cache.outputs.cache-hit != 'true'
         run: |
-          python -m poetry install
+          python -m poetry install --all-extras
       - name: Create src database
         shell: bash
         run: |
