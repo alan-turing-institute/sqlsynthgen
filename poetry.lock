@@ -400,7 +400,7 @@ name = "pygments"
 version = "2.14.0"
 description = "Pygments is a syntax highlighting package written in Python."
 category = "main"
-optional = true
+optional = false
 python-versions = ">=3.6"
 
 [package.extras]
@@ -839,7 +839,7 @@ docs = ["sphinx-rtd-theme", "sphinxcontrib-napoleon"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9,<3.11"
-content-hash = "a5ae68056630da895341960a523160e38833a47f86cee806493576b1c621eb24"
+content-hash = "45e19dfa0f1935a1bd3f3a5f6119adaa78eecdfb8c8e738bb3c1c4d36d59de7d"
 
 [metadata.files]
 alabaster = [
