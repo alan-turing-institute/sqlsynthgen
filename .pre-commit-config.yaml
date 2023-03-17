@@ -62,8 +62,3 @@ repos:
           tests/workspace
           )
         types: ['python']
-      - id: rst-lint
-        name: reStructuredText linter
-        entry: poetry run restructuredtext-lint
-        language: system
-        types: ['rst']
