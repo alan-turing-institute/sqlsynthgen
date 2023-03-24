@@ -2,6 +2,11 @@
 
 Synthetic data for SQL databases
 
+## Documentation
+
+Welcome to `sqlsynthgen`.
+Our full documentation is available on <https://sqlsynthgen.readthedocs.io/>.
+
 ## Development
 
 ### Setup
@@ -10,6 +15,7 @@ Synthetic data for SQL databases
 
 1. Install [Poetry](https://python-poetry.org/docs/#installation).
 1. Create a Poetry environment and install dependencies with `poetry install`.
+   Use `poetry install --all-extras`, if you want to be able to build the docs.
 1. Activate a Poetry shell with `poetry shell`.
    We will assume that this shell is active for the remainder of the instructions.
 

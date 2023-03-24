@@ -1,170 +1,226 @@
 """Tests for the main module."""
-from subprocess import CalledProcessError
-from unittest import TestCase
-from unittest.mock import call, patch
+from io import StringIO
+from pathlib import Path
+from unittest.mock import MagicMock, call, patch
 
 import yaml
-from click.testing import Result
 from typer.testing import CliRunner
 
 from sqlsynthgen.main import app
-from tests.examples import example_orm, expected_ssg
-from tests.utils import get_test_settings
+from tests.utils import SSGTestCase, get_test_settings
 
-runner = CliRunner()
+runner = CliRunner(mix_stderr=False)
 
 
-class TestCLI(TestCase):
+class TestCLI(SSGTestCase):
     """Tests for the command-line interface."""
 
-    def assertSuccess(self, result: Result) -> None:
-        """Give details and raise if the result isn't good."""
-        # pylint: disable=invalid-name
-        if result.exit_code != 0:
-            print(result.stdout)
-            self.assertEqual(0, result.exit_code)
+    @patch("sqlsynthgen.main.import_file")
+    @patch("sqlsynthgen.main.create_db_vocab")
+    def test_create_vocab(self, mock_create: MagicMock, mock_import: MagicMock) -> None:
+        """Test the create-vocab sub-command."""
+        result = runner.invoke(
+            app,
+            [
+                "create-vocab",
+            ],
+            catch_exceptions=False,
+        )
 
-    def test_make_tables(self) -> None:
-        """Test the make-tables sub-command."""
-
-        with patch("sqlsynthgen.main.run") as mock_run, patch(
-            "sqlsynthgen.main.get_settings"
-        ) as mock_get_settings:
-            mock_get_settings.return_value = get_test_settings()
-            mock_run.return_value.returncode = 0
-
-            result = runner.invoke(
-                app,
-                [
-                    "make-tables",
-                ],
-                catch_exceptions=False,
-            )
-
+        mock_create.assert_called_once_with(mock_import.return_value.sorted_vocab)
         self.assertSuccess(result)
 
-        mock_run.assert_has_calls(
-            [
-                call(
-                    [
-                        "sqlacodegen",
-                        get_test_settings().src_postgres_dsn,
-                    ],
-                    capture_output=True,
-                    encoding="utf-8",
-                    check=True,
-                ),
-            ]
-        )
-        self.assertNotEqual("", result.stdout)
-
-    def test_make_tables_with_schema(self) -> None:
-        """Test the make-tables sub-command handles the schema setting."""
-
-        with patch("sqlsynthgen.main.run") as mock_run, patch(
-            "sqlsynthgen.main.get_settings"
-        ) as mock_get_settings:
-            mock_get_settings.return_value = get_test_settings()
-            mock_get_settings.return_value.src_schema = "sschema"
-
-            result = runner.invoke(
-                app,
-                [
-                    "make-tables",
-                ],
-                catch_exceptions=False,
-            )
-
-        self.assertSuccess(result)
-
-        mock_run.assert_has_calls(
-            [
-                call(
-                    [
-                        "sqlacodegen",
-                        "--schema=sschema",
-                        get_test_settings().src_postgres_dsn,
-                    ],
-                    capture_output=True,
-                    encoding="utf-8",
-                    check=True,
-                ),
-            ]
-        )
-        self.assertNotEqual("", result.stdout)
-
-    def test_make_tables_handles_errors(self) -> None:
-        """Test the make-tables sub-command handles sqlacodegen errors."""
-
-        with patch("sqlsynthgen.main.run") as mock_run, patch(
-            "sqlsynthgen.main.get_settings"
-        ) as mock_get_settings, patch("sqlsynthgen.main.stderr") as mock_stderr:
-            mock_run.side_effect = CalledProcessError(
-                returncode=99, cmd="some-cmd", stderr="some-error-output"
-            )
-            mock_get_settings.return_value = get_test_settings()
-
-            result = runner.invoke(
-                app,
-                [
-                    "make-tables",
-                ],
-                catch_exceptions=False,
-            )
-
-        self.assertEqual(99, result.exit_code)
-        mock_stderr.assert_has_calls(
-            [call.write("some-error-output"), call.write("\n")]
-        )
-
-    def test_make_generators(self) -> None:
+    @patch("sqlsynthgen.main.import_file")
+    @patch("sqlsynthgen.main.Path")
+    @patch("sqlsynthgen.main.make_generators_from_tables")
+    def test_make_generators(
+        self, mock_make: MagicMock, mock_path: MagicMock, mock_import: MagicMock
+    ) -> None:
         """Test the make-generators sub-command."""
-        with patch("sqlsynthgen.main.make_generators_from_tables") as mock_make:
-            conf_path = "tests/examples/generator_conf.yaml"
-            with open(conf_path, "r", encoding="utf8") as f:
-                config = yaml.safe_load(f)
-            result = runner.invoke(
-                app,
-                [
-                    "make-generators",
-                    "tests/examples/example_orm.py",
-                    conf_path,
-                ],
-                catch_exceptions=False,
-            )
+        mock_path.return_value.exists.return_value = False
+        mock_make.return_value = "some text"
 
+        result = runner.invoke(
+            app,
+            [
+                "make-generators",
+            ],
+            catch_exceptions=False,
+        )
+
+        mock_make.assert_called_once_with(mock_import.return_value, {}, None)
+        mock_path.return_value.write_text.assert_called_once_with(
+            "some text", encoding="utf-8"
+        )
         self.assertSuccess(result)
-        mock_make.assert_called_once_with(example_orm, config)
 
-    def test_create_tables(self) -> None:
+    @patch("sqlsynthgen.main.Path")
+    @patch("sqlsynthgen.main.stderr", new_callable=StringIO)
+    def test_make_generators_errors_if_file_exists(
+        self, mock_stderr: MagicMock, mock_path: MagicMock
+    ) -> None:
+        """Test the make-tables sub-command doesn't overwrite."""
+
+        mock_path.return_value.exists.return_value = True
+
+        result = runner.invoke(
+            app,
+            [
+                "make-generators",
+            ],
+            catch_exceptions=False,
+        )
+        self.assertEqual(
+            "ssg.py should not already exist. Exiting...\n", mock_stderr.getvalue()
+        )
+        self.assertEqual(1, result.exit_code)
+
+    @patch("sqlsynthgen.main.create_db_tables")
+    @patch("sqlsynthgen.main.import_file")
+    def test_create_tables(
+        self, mock_import: MagicMock, mock_create: MagicMock
+    ) -> None:
         """Test the create-tables sub-command."""
 
-        with patch("sqlsynthgen.main.create_db_tables") as mock_create:
-            result = runner.invoke(
-                app,
-                ["create-tables", "tests/examples/example_orm.py"],
-                catch_exceptions=False,
-            )
+        result = runner.invoke(
+            app,
+            [
+                "create-tables",
+            ],
+            catch_exceptions=False,
+        )
 
+        mock_create.assert_called_once_with(mock_import.return_value.Base.metadata)
         self.assertSuccess(result)
-        mock_create.assert_called_once_with(example_orm.metadata)
 
-    def test_create_data(self) -> None:
+    @patch("sqlsynthgen.main.import_file")
+    @patch("sqlsynthgen.main.create_db_data")
+    def test_create_data(self, mock_create: MagicMock, mock_import: MagicMock) -> None:
         """Test the create-data sub-command."""
 
-        with patch("sqlsynthgen.main.create_db_data") as mock_create_db_data:
-            result = runner.invoke(
-                app,
-                [
-                    "create-data",
-                    "tests/examples/example_orm.py",
-                    "tests/examples/expected_ssg.py",
-                    "10",
-                ],
-                catch_exceptions=False,
-            )
-
-        self.assertSuccess(result)
-        mock_create_db_data.assert_called_once_with(
-            example_orm.metadata.sorted_tables, expected_ssg.sorted_generators, 10
+        result = runner.invoke(
+            app,
+            [
+                "create-data",
+            ],
+            catch_exceptions=False,
         )
+        self.assertListEqual(
+            [
+                call("orm.py"),
+                call("ssg.py"),
+            ],
+            mock_import.call_args_list,
+        )
+
+        mock_create.assert_called_once_with(
+            mock_import.return_value.Base.metadata.sorted_tables,
+            mock_import.return_value.sorted_generators,
+            1,
+        )
+        self.assertSuccess(result)
+
+    @patch("sqlsynthgen.main.Path")
+    @patch("sqlsynthgen.main.make_tables_file")
+    @patch("sqlsynthgen.main.get_settings")
+    def test_make_tables(
+        self,
+        mock_get_settings: MagicMock,
+        mock_make_tables_file: MagicMock,
+        mock_path: MagicMock,
+    ) -> None:
+        """Test the make-tables sub-command."""
+
+        mock_path.return_value.exists.return_value = False
+        mock_get_settings.return_value = get_test_settings()
+        mock_make_tables_file.return_value = "some text"
+
+        result = runner.invoke(
+            app,
+            [
+                "make-tables",
+            ],
+            catch_exceptions=False,
+        )
+
+        mock_make_tables_file.assert_called_once_with(
+            "postgresql://suser:spassword@shost:5432/sdbname", None
+        )
+        mock_path.return_value.write_text.assert_called_once_with(
+            "some text", encoding="utf-8"
+        )
+        self.assertSuccess(result)
+
+    @patch("sqlsynthgen.main.stderr", new_callable=StringIO)
+    @patch("sqlsynthgen.main.Path")
+    def test_make_tables_errors_if_file_exists(
+        self, mock_path: MagicMock, mock_stderr: MagicMock
+    ) -> None:
+        """Test the make-tables sub-command doesn't overwrite."""
+
+        mock_path.return_value.exists.return_value = True
+
+        result = runner.invoke(
+            app,
+            [
+                "make-tables",
+            ],
+            catch_exceptions=False,
+        )
+        self.assertEqual(
+            "orm.py should not already exist. Exiting...\n", mock_stderr.getvalue()
+        )
+        self.assertEqual(1, result.exit_code)
+
+    @patch("sqlsynthgen.main.Path")
+    @patch("sqlsynthgen.main.make_src_stats")
+    @patch("sqlsynthgen.main.get_settings")
+    def test_make_stats(
+        self, mock_get_settings: MagicMock, mock_make: MagicMock, mock_path: MagicMock
+    ) -> None:
+        """Test the make-stats sub-command."""
+        example_conf_path = "tests/examples/example_config.yaml"
+        output_path = Path("make_stats_output.yaml")
+        mock_path.return_value.exists.return_value = False
+        mock_make.return_value = {"a": 1}
+        mock_get_settings.return_value = get_test_settings()
+        result = runner.invoke(
+            app,
+            [
+                "make-stats",
+                f"--stats-file={output_path}",
+                f"--config-file={example_conf_path}",
+            ],
+            catch_exceptions=False,
+        )
+        self.assertSuccess(result)
+        with open(example_conf_path, "r", encoding="utf8") as f:
+            config = yaml.safe_load(f)
+        mock_make.assert_called_once_with(get_test_settings().src_postgres_dsn, config)
+        mock_path.return_value.write_text.assert_called_once_with(
+            "a: 1\n", encoding="utf-8"
+        )
+
+    @patch("sqlsynthgen.main.Path")
+    @patch("sqlsynthgen.main.stderr", new_callable=StringIO)
+    def test_make_stats_errors_if_file_exists(
+        self, mock_stderr: MagicMock, mock_path: MagicMock
+    ) -> None:
+        """Test the make-stats sub-command when the stats file already exists."""
+        mock_path.return_value.exists.return_value = True
+        example_conf_path = "tests/examples/example_config.yaml"
+        output_path = "make_stats_output.yaml"
+        result = runner.invoke(
+            app,
+            [
+                "make-stats",
+                f"--stats-file={output_path}",
+                f"--config-file={example_conf_path}",
+            ],
+            catch_exceptions=False,
+        )
+        self.assertEqual(
+            f"{output_path} should not already exist. Exiting...\n",
+            mock_stderr.getvalue(),
+        )
+        self.assertEqual(1, result.exit_code)

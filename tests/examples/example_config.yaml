@@ -1,3 +1,22 @@
+smartnoise-sql:
+  public:
+    person:
+      # You may well want censor_dims to be on, but we turn it off for the
+      # tests to silence a smartnoise-sql nag warning.
+      censor_dims: False
+      person_id:
+        name: person_id
+        type: int
+        private_id: True
+      research_opt_out:
+        name: research_opt_out
+        type: boolean
+        private_id: False
+src-stats:
+  - name: count_opt_outs
+    query: SELECT count(*) AS num, research_opt_out FROM person GROUP BY research_opt_out
+    epsilon: 0.1
+    delta: 0.0001
 custom_generators_module: custom_generators
 tables:
   person:
@@ -11,6 +30,11 @@ tables:
           start: 2022
           end: 2022
         columns_assigned: stored_from
+      - name: custom_generators.boolean_from_src_stats_generator
+        args:
+          generic: generic
+          src_stats: SRC_STATS["count_opt_outs"]
+        columns_assigned: research_opt_out
 
   hospital_visit:
     num_rows_per_pass: 3

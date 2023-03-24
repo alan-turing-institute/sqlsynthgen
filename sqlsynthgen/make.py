@@ -1,16 +1,19 @@
 """Functions to make a module of generator classes."""
-import csv
 import inspect
-from pathlib import Path
+import sys
+from subprocess import CalledProcessError, run
+from sys import stderr
 from types import ModuleType
 from typing import Any, Final, Optional
 
+import snsql
 from mimesis.providers.base import BaseProvider
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine
 from sqlalchemy.sql import sqltypes
 
 from sqlsynthgen import providers
 from sqlsynthgen.settings import get_settings
+from sqlsynthgen.utils import download_table
 
 HEADER_TEXT: str = "\n".join(
     (
@@ -121,44 +124,27 @@ def _add_generator_for_table(
 ) -> tuple[str, str]:
     """Add to the generator file `content` a generator for the given table."""
     new_class_name = table.name + "Generator"
-    if table_config.get("vocabulary_table", False):
-        raise NotImplementedError("Vocabulary tables currently unimplemented.")
-
-    content += (
-        f"\n\nclass {new_class_name}:\n"
-        f"{INDENTATION}def __init__(self, src_db_conn, dst_db_conn):\n"
-    )
+    content += f"\n\nclass {new_class_name}:\n"
+    content += f"{INDENTATION}num_rows_per_pass = {table_config.get('num_rows_per_pass', 1)}\n\n"
+    content += f"{INDENTATION}def __init__(self, src_db_conn, dst_db_conn):\n"
     content, columns_covered = _add_custom_generators(content, table_config)
     for column in table.columns:
-        if column.name in columns_covered:
-            # A generator for this column was already covered in the user config.
-            continue
-        content = _add_default_generator(content, tables_module, column)
+        if column.name not in columns_covered:
+            # No generator for this column in the user config.
+            content = _add_default_generator(content, tables_module, column)
     return content, new_class_name
 
 
-def _download_table(table: Any, engine: Any) -> None:
-    """Download a table and store it as a .csv file."""
-    stmt = select([table])
-    with engine.connect() as conn:
-        result = list(conn.execute(stmt))
-    with Path(table.fullname + ".csv").open(
-        "w", newline="", encoding="utf-8"
-    ) as csvfile:
-        writer = csv.writer(csvfile, delimiter=",")
-        writer.writerow([x.name for x in table.columns])
-        for row in result:
-            writer.writerow(row)
-
-
 def make_generators_from_tables(
-    tables_module: ModuleType, generator_config: dict
+    tables_module: ModuleType, generator_config: dict, src_stats_filename: Optional[str]
 ) -> str:
     """Create sqlsynthgen generator classes from a sqlacodegen-generated file.
 
     Args:
       tables_module: A sqlacodegen-generated module.
       generator_config: Configuration to control the generator creation.
+      src_stats_filename: A filename for where to read src stats from. Optional, if
+          `None` this feature will be skipped
 
     Returns:
       A string that is a valid Python module, once written to file.
@@ -167,7 +153,15 @@ def make_generators_from_tables(
     new_content += f"\nimport {tables_module.__name__}"
     generator_module_name = generator_config.get("custom_generators_module", None)
     if generator_module_name is not None:
-        new_content += f"\nfrom . import {generator_module_name}"
+        new_content += f"\nimport {generator_module_name}"
+    if src_stats_filename:
+        new_content += "\nimport yaml"
+        new_content += (
+            f'\nwith open("{src_stats_filename}", "r", encoding="utf-8") as f:'
+        )
+        new_content += (
+            f"\n{INDENTATION}SRC_STATS = yaml.load(f, Loader=yaml.FullLoader)"
+        )
 
     sorted_generators = "[\n"
     sorted_vocab = "[\n"
@@ -176,11 +170,9 @@ def make_generators_from_tables(
     engine = create_engine(settings.src_postgres_dsn)
 
     for table in tables_module.Base.metadata.sorted_tables:
-        if table.name in [
-            x
-            for x in generator_config.get("tables", {}).keys()
-            if generator_config["tables"][x].get("vocabulary_table")
-        ]:
+        table_config = generator_config.get("tables", {}).get(table.name, {})
+
+        if table_config.get("vocabulary_table") is True:
 
             orm_class = _orm_class_from_table_name(tables_module, table.fullname)
             if not orm_class:
@@ -192,15 +184,13 @@ def make_generators_from_tables(
             )
             sorted_vocab += f"{INDENTATION}{class_name.lower()}_vocab,\n"
 
-            _download_table(table, engine)
+            download_table(table, engine)
 
-            continue
-
-        table_config = generator_config.get("tables", {}).get(table.name, {})
-        new_content, new_generator_name = _add_generator_for_table(
-            new_content, tables_module, table_config, table
-        )
-        sorted_generators += f"{INDENTATION}{new_generator_name},\n"
+        else:
+            new_content, new_generator_name = _add_generator_for_table(
+                new_content, tables_module, table_config, table
+            )
+            sorted_generators += f"{INDENTATION}{new_generator_name},\n"
 
     sorted_generators += "]"
     sorted_vocab += "]"
@@ -209,3 +199,67 @@ def make_generators_from_tables(
     new_content += "\n\n" + "sorted_vocab = " + sorted_vocab + "\n"
 
     return new_content
+
+
+def make_tables_file(db_dsn: str, schema_name: Optional[str]) -> str:
+    """Write a file with the SQLAlchemy ORM classes.
+
+    Exists with an error if sqlacodegen is unsuccessful.
+    """
+    command = ["sqlacodegen"]
+
+    if schema_name:
+        command.append(f"--schema={schema_name}")
+
+    command.append(db_dsn)
+
+    try:
+        completed_process = run(
+            command, capture_output=True, encoding="utf-8", check=True
+        )
+    except CalledProcessError as e:
+        print(e.stderr, file=stderr)
+        sys.exit(e.returncode)
+
+    # sqlacodegen falls back on Tables() for tables without PKs,
+    # but we don't explicitly support Tables and behaviour is unpredictable.
+    if " = Table(" in completed_process.stdout:
+        print(
+            "WARNING: Table without PK detected. sqlsynthgen may not be able to continue.",
+            file=stderr,
+        )
+
+    return completed_process.stdout
+
+
+def make_src_stats(dsn: str, config: dict) -> dict:
+    """Run the src-stats queries specified by the configuration.
+
+    Query the src database with the queries in the src-stats block of the `config`
+    dictionary, using the differential privacy parameters set in the `smartnoise-sql`
+    block of `config`. Record the results in a dictionary and returns it.
+    Args:
+        dsn: postgres connection string
+        config: a dictionary with the necessary configuration
+        stats_filename: path to the YAML file to write the output to
+
+    Returns:
+        The dictionary of src-stats.
+    """
+    engine = create_engine(dsn, echo=False, future=True)
+    dp_config = config.get("smartnoise-sql", {})
+    snsql_metadata = {"": dp_config}
+    src_stats = {}
+    for stat_data in config.get("src-stats", []):
+        privacy = snsql.Privacy(epsilon=stat_data["epsilon"], delta=stat_data["delta"])
+        with engine.connect() as conn:
+            reader = snsql.from_connection(
+                conn.connection,
+                engine="postgres",
+                privacy=privacy,
+                metadata=snsql_metadata,
+            )
+            private_result = reader.execute(stat_data["query"])
+            # The first entry in the list names the columns, skip that.
+            src_stats[stat_data["name"]] = private_result[1:]
+    return src_stats

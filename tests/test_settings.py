@@ -1,10 +1,9 @@
 """Tests for the settings module."""
-from unittest import TestCase
-
 from sqlsynthgen.settings import Settings
+from tests.utils import SSGTestCase
 
 
-class TestSettings(TestCase):
+class TestSettings(SSGTestCase):
     """Tests for the Settings class."""
 
     def test_default_settings(self) -> None:
