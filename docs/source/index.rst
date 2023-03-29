@@ -27,6 +27,7 @@ Contents:
 
    installation
    sqlsynthgen
+   faq
    changelog
 
 
