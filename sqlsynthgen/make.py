@@ -1,19 +1,23 @@
 """Functions to make a module of generator classes."""
 import inspect
 import sys
-from subprocess import CalledProcessError, run
 from sys import stderr
 from types import ModuleType
 from typing import Any, Final, Optional
 
 import snsql
 from mimesis.providers.base import BaseProvider
-from sqlalchemy import create_engine
+from sqlalchemy import MetaData, create_engine, event
 from sqlalchemy.sql import sqltypes
 
 from sqlsynthgen import providers
 from sqlsynthgen.settings import get_settings
-from sqlsynthgen.utils import download_table
+from sqlsynthgen.utils import download_table, set_search_path
+
+if sys.version_info < (3, 10):
+    from importlib_metadata import entry_points
+else:
+    from importlib.metadata import entry_points
 
 HEADER_TEXT: str = "\n".join(
     (
@@ -169,7 +173,7 @@ def make_generators_from_tables(
     settings = get_settings()
     engine = create_engine(settings.src_postgres_dsn)
 
-    for table in tables_module.Base.metadata.sorted_tables:
+    for table in tables_module.metadata.sorted_tables:
         table_config = generator_config.get("tables", {}).get(table.name, {})
 
         if table_config.get("vocabulary_table") is True:
@@ -184,7 +188,7 @@ def make_generators_from_tables(
             )
             sorted_vocab += f"{INDENTATION}{class_name.lower()}_vocab,\n"
 
-            download_table(table, engine)
+            download_table(table, engine, settings.src_schema)
 
         else:
             new_content, new_generator_name = _add_generator_for_table(
@@ -206,30 +210,37 @@ def make_tables_file(db_dsn: str, schema_name: Optional[str]) -> str:
 
     Exists with an error if sqlacodegen is unsuccessful.
     """
-    command = ["sqlacodegen"]
+    generators = {ep.name: ep for ep in entry_points(group="sqlacodegen.generators")}
+
+    # Use reflection to fill in the metadata
+    engine = create_engine(db_dsn)
 
     if schema_name:
-        command.append(f"--schema={schema_name}")
 
-    command.append(db_dsn)
+        @event.listens_for(engine, "connect", insert=True)
+        def connect(dbapi_connection: Any, _: Any) -> None:
+            set_search_path(
+                dbapi_connection, schema_name or ""  # purely for type checking
+            )
 
-    try:
-        completed_process = run(
-            command, capture_output=True, encoding="utf-8", check=True
-        )
-    except CalledProcessError as e:
-        print(e.stderr, file=stderr)
-        sys.exit(e.returncode)
+    metadata = MetaData()
+    metadata.reflect(engine)
+
+    # Instantiate the generator
+    generator_class = generators["declarative"].load()
+    generator = generator_class(metadata, engine, options=())
+
+    code = str(generator.generate())
 
     # sqlacodegen falls back on Tables() for tables without PKs,
     # but we don't explicitly support Tables and behaviour is unpredictable.
-    if " = Table(" in completed_process.stdout:
+    if " = Table(" in code:
         print(
             "WARNING: Table without PK detected. sqlsynthgen may not be able to continue.",
             file=stderr,
         )
 
-    return completed_process.stdout
+    return code
 
 
 def make_src_stats(dsn: str, config: dict) -> dict:

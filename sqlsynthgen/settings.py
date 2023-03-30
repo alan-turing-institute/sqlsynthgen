@@ -76,6 +76,7 @@ class Settings(BaseSettings):
     dst_user_name: str  # e.g. "postgres" or "myuser@mydb"
     dst_password: str
     dst_db_name: str
+    dst_schema: Optional[str]
     dst_ssl_required: bool = False  # whether the db requires SSL
 
     # These are calculated so do not provide them explicitly
