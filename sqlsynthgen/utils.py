@@ -6,7 +6,7 @@ from importlib import import_module
 from pathlib import Path
 from sys import stderr
 from types import ModuleType
-from typing import Any
+from typing import Any, Optional
 
 import yaml
 from sqlalchemy import select
@@ -42,7 +42,7 @@ def import_file(file_name: str) -> ModuleType:
     return module
 
 
-def download_table(table: Any, engine: Any) -> None:
+def download_table(table: Any, engine: Any, schema: Optional[Any] = None) -> None:
     """Download a Table and store it as a .csv file."""
     csv_file_name = table.fullname + ".csv"
     csv_file_path = Path(csv_file_name)
@@ -52,6 +52,8 @@ def download_table(table: Any, engine: Any) -> None:
 
     stmt = select([table])
     with engine.connect() as conn:
+        if schema:
+            conn.execute(f"SET SEARCH_PATH TO {schema}")
         result = list(conn.execute(stmt))
 
     with csv_file_path.open("w", newline="", encoding="utf-8") as csvfile:
@@ -59,3 +61,16 @@ def download_table(table: Any, engine: Any) -> None:
         writer.writerow([x.name for x in table.columns])
         for row in result:
             writer.writerow(row)
+
+
+def set_search_path(connection: Any, schema: str) -> None:
+    """Set the SEARCH_PATH for a PostgreSQL connection."""
+    # https://docs.sqlalchemy.org/en/20/dialects/postgresql.html#remote-schema-table-introspection-and-postgresql-search-path
+    existing_autocommit = connection.autocommit
+    connection.autocommit = True
+
+    cursor = connection.cursor()
+    cursor.execute(f"SET search_path to {schema};")
+    cursor.close()
+
+    connection.autocommit = existing_autocommit
