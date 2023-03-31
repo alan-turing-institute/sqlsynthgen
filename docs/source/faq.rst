@@ -1,17 +1,7 @@
 FAQ
 ===
 
-How can you choose a different destination schema name
-******************************************************
+Can sqlsynthgen work with two different schemas
+***********************************************
 
-If you want the destination schema to have a different name to the source schema, you will need to open the SQLAlchemy ORM file you created with the `make-tables` command and replace all instances of
-
-.. code-block:: python
-
-    __table_args__ = {"schema": "source-schema-name"}
-
-with
-
-.. code-block:: python
-
-    __table_args__ = {"schema": "destination-schema-name"}
+sqlsynthgen can only work with a single source schema and a single destination schema at a time. However, you can choose for the destination schema to have a different name to the source schema by setting the DST_SCHEMA environment variable.
