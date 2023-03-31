@@ -26,6 +26,7 @@ class TestSettings(SSGTestCase):
             str(settings.src_postgres_dsn),
         )
         self.assertIsNone(settings.src_schema)
+        self.assertIsNone(settings.dst_schema)
 
         self.assertEqual(
             "postgresql://duser:dpassword@dhost:5432/ddbname",
@@ -46,6 +47,7 @@ class TestSettings(SSGTestCase):
             dst_user_name="duser",
             dst_password="dpassword",
             dst_db_name="ddbname",
+            dst_schema="dschema",
             dst_ssl_required=True,
             # To stop any local .env files influencing the test
             _env_file=None,
