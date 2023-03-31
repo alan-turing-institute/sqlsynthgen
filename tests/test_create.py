@@ -36,13 +36,14 @@ class MyTestCase(SSGTestCase):
         self, mock_create_engine: MagicMock, mock_get_settings: MagicMock
     ) -> None:
         """Test the create_tables function."""
+        mock_get_settings.return_value.dst_schema = None
         mock_meta = MagicMock()
 
         create_db_tables(mock_meta)
-        mock_get_settings.assert_called_once()
         mock_create_engine.assert_called_once_with(
             mock_get_settings.return_value.dst_postgres_dsn
         )
+        mock_meta.create_all.assert_called_once_with(mock_create_engine.return_value)
 
     @patch("sqlsynthgen.create.insert")
     def test_populate(self, mock_insert: MagicMock) -> None:

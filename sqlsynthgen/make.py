@@ -243,7 +243,7 @@ def make_tables_file(db_dsn: str, schema_name: Optional[str]) -> str:
     return code
 
 
-def make_src_stats(dsn: str, config: dict) -> dict:
+def make_src_stats(dsn: str, config: dict, schema_name: Optional[str] = None) -> dict:
     """Run the src-stats queries specified by the configuration.
 
     Query the src database with the queries in the src-stats block of the `config`
@@ -252,12 +252,19 @@ def make_src_stats(dsn: str, config: dict) -> dict:
     Args:
         dsn: postgres connection string
         config: a dictionary with the necessary configuration
-        stats_filename: path to the YAML file to write the output to
+        schema_name: name of the database schema
 
     Returns:
         The dictionary of src-stats.
     """
     engine = create_engine(dsn, echo=False, future=True)
+
+    if schema_name:
+
+        @event.listens_for(engine, "connect", insert=True)
+        def connect(dbapi_connection: Any, _: Any) -> None:
+            set_search_path(dbapi_connection, schema_name or "")
+
     dp_config = config.get("smartnoise-sql", {})
     snsql_metadata = {"": dp_config}
     src_stats = {}
