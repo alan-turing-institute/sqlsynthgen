@@ -263,7 +263,9 @@ def make_src_stats(dsn: str, config: dict, schema_name: Optional[str] = None) ->
 
         @event.listens_for(engine, "connect", insert=True)
         def connect(dbapi_connection: Any, _: Any) -> None:
-            set_search_path(dbapi_connection, schema_name or "")
+            set_search_path(
+                dbapi_connection, schema_name or ""  # purely for type checking
+            )
 
     dp_config = config.get("smartnoise-sql", {})
     snsql_metadata = {"": dp_config}
