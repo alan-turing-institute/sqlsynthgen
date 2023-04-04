@@ -62,11 +62,9 @@ def download_table(table: Any, engine: Any) -> None:
             writer.writerow(row)
 
 
-def create_engine_with_search_path(
-    postgres_dsn: PostgresDsn, schema_name: str, **create_engine_options: Any
-) -> Any:
+def create_engine_with_search_path(postgres_dsn: PostgresDsn, schema_name: str) -> Any:
     """Create a SQLAlchemy Engine with an explicitly set schema."""
-    engine = create_engine(postgres_dsn, **create_engine_options)
+    engine = create_engine(postgres_dsn)
 
     @event.listens_for(engine, "connect", insert=True)
     def connect(dbapi_connection: Any, _: Any) -> None:
