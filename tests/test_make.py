@@ -5,6 +5,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import yaml
+from pydantic import PostgresDsn
 
 from sqlsynthgen.make import (
     make_generators_from_tables,
@@ -77,7 +78,7 @@ class TestMakeTables(SSGTestCase):
 
         self.assertEqual(
             "some generated code",
-            make_tables_file("postgresql://postgres@1.2.3.4/db", None),
+            make_tables_file(PostgresDsn("postgresql://postgres@1.2.3.4/db"), None),
         )
 
     @patch("sqlsynthgen.make.MetaData")
@@ -96,7 +97,9 @@ class TestMakeTables(SSGTestCase):
 
         self.assertEqual(
             "some generated code",
-            make_tables_file("postgresql://postgres@1.2.3.4/db", "myschema"),
+            make_tables_file(
+                PostgresDsn("postgresql://postgres@1.2.3.4/db"), "myschema"
+            ),
         )
 
     @patch("sqlsynthgen.make.MetaData")
@@ -115,7 +118,7 @@ class TestMakeTables(SSGTestCase):
             "t_nopk_table = Table("
         )
 
-        make_tables_file("postgresql://postgres@127.0.0.1:5432", None)
+        make_tables_file(PostgresDsn("postgresql://postgres@127.0.0.1:5432"), None)
 
         self.assertEqual(
             "WARNING: Table without PK detected. sqlsynthgen may not be able to continue.\n",
