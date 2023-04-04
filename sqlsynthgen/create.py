@@ -1,11 +1,11 @@
 """Functions and classes to create and populate the target database."""
 from typing import Any, List
 
-from sqlalchemy import create_engine, event, insert
+from sqlalchemy import create_engine, insert
 from sqlalchemy.schema import CreateSchema
 
 from sqlsynthgen.settings import get_settings
-from sqlsynthgen.utils import set_search_path
+from sqlsynthgen.utils import create_engine_with_search_path
 
 
 def create_db_tables(metadata: Any) -> Any:
@@ -20,14 +20,10 @@ def create_db_tables(metadata: Any) -> Any:
         if not engine.dialect.has_schema(engine, schema=schema_name):
             engine.execute(CreateSchema(schema_name, if_not_exists=True))
 
-        # Recreate the engine and, this time, set a connection callback
-        engine = create_engine(settings.dst_postgres_dsn)
-
-        if schema_name:
-
-            @event.listens_for(engine, "connect", insert=True)
-            def connect(dbapi_connection: Any, _: Any) -> None:
-                set_search_path(dbapi_connection, schema_name)
+        # Recreate the engine, this time with a schema specified
+        engine = create_engine_with_search_path(
+            settings.dst_postgres_dsn, schema_name  # type: ignore
+        )
 
     metadata.create_all(engine)
 
@@ -35,12 +31,16 @@ def create_db_tables(metadata: Any) -> Any:
 def create_db_vocab(sorted_vocab: List[Any]) -> None:
     """Load vocabulary tables from files."""
     settings = get_settings()
-    dst_engine = create_engine(settings.dst_postgres_dsn)
+
+    dst_engine = (
+        create_engine_with_search_path(
+            settings.dst_postgres_dsn, settings.dst_schema  # type: ignore
+        )
+        if settings.dst_schema
+        else create_engine(settings.src_postgres_dsn)
+    )
 
     with dst_engine.connect() as dst_conn:
-        if settings.dst_schema:
-            set_search_path(dst_conn, settings.dst_schema)
-
         for vocab_table in sorted_vocab:
             vocab_table.load(dst_conn)
 
@@ -50,18 +50,23 @@ def create_db_data(
 ) -> None:
     """Connect to a database and populate it with data."""
     settings = get_settings()
-    engine = create_engine(settings.dst_postgres_dsn)
 
-    if settings.dst_schema:
-        schema_name = settings.dst_schema
+    dst_engine = (
+        create_engine_with_search_path(
+            settings.dst_postgres_dsn, settings.dst_schema  # type: ignore
+        )
+        if settings.dst_schema
+        else create_engine(settings.src_postgres_dsn)
+    )
+    src_engine = (
+        create_engine_with_search_path(
+            settings.src_postgres_dsn, settings.src_schema  # type: ignore
+        )
+        if settings.src_schema is not None
+        else create_engine(settings.src_postgres_dsn)
+    )
 
-        @event.listens_for(engine, "connect", insert=True)
-        def connect(dbapi_connection: Any, _: Any) -> None:
-            set_search_path(dbapi_connection, schema_name)
-
-    src_engine = create_engine(settings.src_postgres_dsn)
-
-    with engine.connect() as dst_conn:
+    with dst_engine.connect() as dst_conn:
         with src_engine.connect() as src_conn:
             populate(src_conn, dst_conn, sorted_tables, sorted_generators, num_passes)
 
