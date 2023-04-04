@@ -85,6 +85,7 @@ class MyTestCase(SSGTestCase):
         self, mock_get_settings: MagicMock, mock_create_engine: MagicMock
     ) -> None:
         """Test the create_db_vocab function."""
+        mock_get_settings.return_value = get_test_settings()
         vocab_list = [MagicMock()]
         create_db_vocab(vocab_list)
         vocab_list[0].load.assert_called_once_with(

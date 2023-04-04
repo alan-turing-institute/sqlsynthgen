@@ -37,7 +37,7 @@ def create_db_vocab(sorted_vocab: List[Any]) -> None:
             settings.dst_postgres_dsn, settings.dst_schema  # type: ignore
         )
         if settings.dst_schema
-        else create_engine(settings.src_postgres_dsn)
+        else create_engine(settings.dst_postgres_dsn)
     )
 
     with dst_engine.connect() as dst_conn:
@@ -56,7 +56,7 @@ def create_db_data(
             settings.dst_postgres_dsn, settings.dst_schema  # type: ignore
         )
         if settings.dst_schema
-        else create_engine(settings.src_postgres_dsn)
+        else create_engine(settings.dst_postgres_dsn)
     )
     src_engine = (
         create_engine_with_search_path(

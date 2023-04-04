@@ -31,7 +31,6 @@ class FunctionalTestCase(RequiresDBTestCase):
         "src_user_name": "postgres",
         "src_password": "password",
         "src_db_name": "src",
-        "src_schema": "",
         "dst_host_name": "localhost",
         "dst_user_name": "postgres",
         "dst_password": "password",
