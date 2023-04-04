@@ -1,6 +1,5 @@
 """Functions to make a module of generator classes."""
 import inspect
-import sys
 from sys import stderr
 from types import ModuleType
 from typing import Any, Final, Optional
@@ -8,17 +7,13 @@ from typing import Any, Final, Optional
 import snsql
 from mimesis.providers.base import BaseProvider
 from pydantic import PostgresDsn
+from sqlacodegen.generators import DeclarativeGenerator
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.sql import sqltypes
 
 from sqlsynthgen import providers
 from sqlsynthgen.settings import get_settings
 from sqlsynthgen.utils import create_engine_with_search_path, download_table
-
-if sys.version_info < (3, 10):
-    from importlib_metadata import entry_points
-else:
-    from importlib.metadata import entry_points
 
 HEADER_TEXT: str = "\n".join(
     (
@@ -217,8 +212,6 @@ def make_tables_file(db_dsn: PostgresDsn, schema_name: Optional[str]) -> str:
 
     Exists with an error if sqlacodegen is unsuccessful.
     """
-    generators = {ep.name: ep for ep in entry_points(group="sqlacodegen.generators")}
-
     engine = (
         create_engine_with_search_path(db_dsn, schema_name)
         if schema_name
@@ -228,10 +221,7 @@ def make_tables_file(db_dsn: PostgresDsn, schema_name: Optional[str]) -> str:
     metadata = MetaData()
     metadata.reflect(engine)
 
-    # Instantiate the generator
-    generator_class = generators["declarative"].load()
-    generator = generator_class(metadata, engine, options=())
-
+    generator = DeclarativeGenerator(metadata, engine, options=())
     code = str(generator.generate())
 
     # sqlacodegen falls back on Tables() for tables without PKs,

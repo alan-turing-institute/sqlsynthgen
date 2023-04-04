@@ -71,15 +71,10 @@ class TestMakeTables(SSGTestCase):
         os.chdir(self.start_dir)
 
     @patch("sqlsynthgen.make.MetaData")
-    @patch("sqlsynthgen.make.entry_points")
-    def test_make_tables_file(self, mock_entry: MagicMock, _: MagicMock) -> None:
+    @patch("sqlsynthgen.make.DeclarativeGenerator")
+    def test_make_tables_file(self, mock_declarative: MagicMock, _: MagicMock) -> None:
         """Test the make_tables_file function."""
-        mock_ep = MagicMock()
-        mock_ep.name = "declarative"
-        mock_ep.load.return_value.return_value.generate.return_value = (
-            "some generated code"
-        )
-        mock_entry.return_value = [mock_ep]
+        mock_declarative.return_value.generate.return_value = "some generated code"
 
         self.assertEqual(
             "some generated code",
@@ -89,18 +84,12 @@ class TestMakeTables(SSGTestCase):
         )
 
     @patch("sqlsynthgen.make.MetaData")
-    @patch("sqlsynthgen.make.entry_points")
+    @patch("sqlsynthgen.make.DeclarativeGenerator")
     def test_make_tables_file_with_schema(
-        self, mock_entry: MagicMock, _: MagicMock
+        self, mock_declarative: MagicMock, _: MagicMock
     ) -> None:
         """Check that the function handles the schema setting."""
-
-        mock_ep = MagicMock()
-        mock_ep.name = "declarative"
-        mock_ep.load.return_value.return_value.generate.return_value = (
-            "some generated code"
-        )
-        mock_entry.return_value = [mock_ep]
+        mock_declarative.return_value.generate.return_value = "some generated code"
 
         self.assertEqual(
             "some generated code",
@@ -112,19 +101,12 @@ class TestMakeTables(SSGTestCase):
 
     @patch("sqlsynthgen.make.MetaData")
     @patch("sqlsynthgen.make.stderr", new_callable=StringIO)
-    @patch("sqlsynthgen.make.entry_points")
+    @patch("sqlsynthgen.make.DeclarativeGenerator")
     def test_make_tables_warns_no_pk(
-        self, mock_entry: MagicMock, mock_stderr: MagicMock, _: MagicMock
+        self, mock_declarative: MagicMock, mock_stderr: MagicMock, _: MagicMock
     ) -> None:
         """Test the make-tables sub-command warns about Tables()."""
-
-        mock_ep = MagicMock()
-        mock_ep.name = "declarative"
-        mock_entry.return_value = [mock_ep]
-
-        mock_ep.load.return_value.return_value.generate.return_value = (
-            "t_nopk_table = Table("
-        )
+        mock_declarative.return_value.generate.return_value = "t_nopk_table = Table("
 
         make_tables_file(
             parse_obj_as(PostgresDsn, "postgresql://postgres@127.0.0.1:5432"), None
