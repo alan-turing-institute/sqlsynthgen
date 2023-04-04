@@ -173,7 +173,7 @@ def make_tables(
 
     settings = get_settings()
 
-    content = make_tables_file(str(settings.src_postgres_dsn), settings.src_schema)
+    content = make_tables_file(settings.src_postgres_dsn, settings.src_schema)  # type: ignore
     orm_file_path.write_text(content, encoding="utf-8")
 
 

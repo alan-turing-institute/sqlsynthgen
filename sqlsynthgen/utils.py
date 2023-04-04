@@ -6,10 +6,15 @@ from importlib import import_module
 from pathlib import Path
 from sys import stderr
 from types import ModuleType
-from typing import Any, Optional
+from typing import Any
 
 import yaml
-from sqlalchemy import select
+
+# pylint: disable=no-name-in-module
+from pydantic import PostgresDsn
+
+# pylint: enable=no-name-in-module
+from sqlalchemy import create_engine, event, select
 
 
 def read_yaml_file(path: str) -> Any:
@@ -42,7 +47,7 @@ def import_file(file_name: str) -> ModuleType:
     return module
 
 
-def download_table(table: Any, engine: Any, schema: Optional[Any] = None) -> None:
+def download_table(table: Any, engine: Any) -> None:
     """Download a Table and store it as a .csv file."""
     csv_file_name = table.fullname + ".csv"
     csv_file_path = Path(csv_file_name)
@@ -52,16 +57,26 @@ def download_table(table: Any, engine: Any, schema: Optional[Any] = None) -> Non
 
     stmt = select([table])
     with engine.connect() as conn:
-        if schema:
-            conn.execute(f'SET SEARCH_PATH TO "{schema}"')
-
-    result = list(conn.execute(stmt))
+        result = list(conn.execute(stmt))
 
     with csv_file_path.open("w", newline="", encoding="utf-8") as csvfile:
         writer = csv.writer(csvfile, delimiter=",")
         writer.writerow([x.name for x in table.columns])
         for row in result:
             writer.writerow(row)
+
+
+def create_engine_with_search_path(
+    postgres_dsn: PostgresDsn, schema_name: str, **create_engine_options: Any
+) -> Any:
+    """Create a SQLAlchemy Engine with an explicitly set schema."""
+    engine = create_engine(postgres_dsn, **create_engine_options)
+
+    @event.listens_for(engine, "connect", insert=True)
+    def connect(dbapi_connection: Any, _: Any) -> None:
+        set_search_path(dbapi_connection, schema_name)
+
+    return engine
 
 
 def set_search_path(connection: Any, schema: str) -> None:

@@ -7,12 +7,17 @@ from typing import Any, Final, Optional
 
 import snsql
 from mimesis.providers.base import BaseProvider
-from sqlalchemy import MetaData, create_engine, event
+
+# pylint: disable=no-name-in-module
+from pydantic import PostgresDsn
+
+# pylint: enable=no-name-in-module
+from sqlalchemy import MetaData, create_engine
 from sqlalchemy.sql import sqltypes
 
 from sqlsynthgen import providers
 from sqlsynthgen.settings import get_settings
-from sqlsynthgen.utils import download_table, set_search_path
+from sqlsynthgen.utils import create_engine_with_search_path, download_table
 
 if sys.version_info < (3, 10):
     from importlib_metadata import entry_points
@@ -171,7 +176,13 @@ def make_generators_from_tables(
     sorted_vocab = "[\n"
 
     settings = get_settings()
-    engine = create_engine(settings.src_postgres_dsn)
+    engine = (
+        create_engine_with_search_path(
+            settings.src_postgres_dsn, settings.src_schema  # type: ignore
+        )
+        if settings.src_schema
+        else create_engine(settings.src_postgres_dsn)
+    )
 
     for table in tables_module.Base.metadata.sorted_tables:
         table_config = generator_config.get("tables", {}).get(table.name, {})
@@ -188,7 +199,7 @@ def make_generators_from_tables(
             )
             sorted_vocab += f"{INDENTATION}{class_name.lower()}_vocab,\n"
 
-            download_table(table, engine, settings.src_schema)
+            download_table(table, engine)
 
         else:
             new_content, new_generator_name = _add_generator_for_table(
@@ -205,23 +216,18 @@ def make_generators_from_tables(
     return new_content
 
 
-def make_tables_file(db_dsn: str, schema_name: Optional[str]) -> str:
+def make_tables_file(db_dsn: PostgresDsn, schema_name: Optional[str]) -> str:
     """Write a file with the SQLAlchemy ORM classes.
 
     Exists with an error if sqlacodegen is unsuccessful.
     """
     generators = {ep.name: ep for ep in entry_points(group="sqlacodegen.generators")}
 
-    # Use reflection to fill in the metadata
-    engine = create_engine(db_dsn)
-
-    if schema_name:
-
-        @event.listens_for(engine, "connect", insert=True)
-        def connect(dbapi_connection: Any, _: Any) -> None:
-            set_search_path(
-                dbapi_connection, schema_name or ""  # purely for type checking
-            )
+    engine = (
+        create_engine_with_search_path(db_dsn, schema_name)
+        if schema_name
+        else create_engine(db_dsn)
+    )
 
     metadata = MetaData()
     metadata.reflect(engine)
@@ -243,7 +249,9 @@ def make_tables_file(db_dsn: str, schema_name: Optional[str]) -> str:
     return code
 
 
-def make_src_stats(dsn: str, config: dict, schema_name: Optional[str] = None) -> dict:
+def make_src_stats(
+    dsn: PostgresDsn, config: dict, schema_name: Optional[str] = None
+) -> dict:
     """Run the src-stats queries specified by the configuration.
 
     Query the src database with the queries in the src-stats block of the `config`
@@ -257,15 +265,12 @@ def make_src_stats(dsn: str, config: dict, schema_name: Optional[str] = None) ->
     Returns:
         The dictionary of src-stats.
     """
-    engine = create_engine(dsn, echo=False, future=True)
-
     if schema_name:
-
-        @event.listens_for(engine, "connect", insert=True)
-        def connect(dbapi_connection: Any, _: Any) -> None:
-            set_search_path(
-                dbapi_connection, schema_name or ""  # purely for type checking
-            )
+        engine = create_engine_with_search_path(
+            dsn, schema_name, echo=False, future=True
+        )
+    else:
+        engine = create_engine(dsn, echo=False, future=True)
 
     dp_config = config.get("smartnoise-sql", {})
     snsql_metadata = {"": dp_config}
