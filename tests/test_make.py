@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import yaml
 from pydantic import PostgresDsn
+from pydantic.tools import parse_obj_as
 
 from sqlsynthgen.make import (
     make_generators_from_tables,
@@ -13,7 +14,7 @@ from sqlsynthgen.make import (
     make_tables_file,
 )
 from tests.examples import example_orm
-from tests.utils import RequiresDBTestCase, SSGTestCase
+from tests.utils import RequiresDBTestCase, SSGTestCase, get_test_settings
 
 
 class TestMakeGenerators(SSGTestCase):
@@ -34,9 +35,13 @@ class TestMakeGenerators(SSGTestCase):
     @patch("sqlsynthgen.make.create_engine")
     @patch("sqlsynthgen.make.download_table")
     def test_make_generators_from_tables(
-        self, mock_download: MagicMock, mock_create: MagicMock, _: MagicMock
+        self,
+        mock_download: MagicMock,
+        mock_create: MagicMock,
+        mock_get_settings: MagicMock,
     ) -> None:
         """Check that we can make a generators file from a tables module."""
+        mock_get_settings.return_value = get_test_settings()
         with open("expected_ssg.py", encoding="utf-8") as expected_output:
             expected = expected_output.read()
         conf_path = "example_config.yaml"
@@ -78,7 +83,9 @@ class TestMakeTables(SSGTestCase):
 
         self.assertEqual(
             "some generated code",
-            make_tables_file(PostgresDsn("postgresql://postgres@1.2.3.4/db"), None),
+            make_tables_file(
+                parse_obj_as(PostgresDsn, "postgresql://postgres@1.2.3.4/db"), None
+            ),
         )
 
     @patch("sqlsynthgen.make.MetaData")
@@ -98,7 +105,8 @@ class TestMakeTables(SSGTestCase):
         self.assertEqual(
             "some generated code",
             make_tables_file(
-                PostgresDsn("postgresql://postgres@1.2.3.4/db"), "myschema"
+                parse_obj_as(PostgresDsn, "postgresql://postgres@1.2.3.4/db"),
+                "myschema",
             ),
         )
 
@@ -118,7 +126,9 @@ class TestMakeTables(SSGTestCase):
             "t_nopk_table = Table("
         )
 
-        make_tables_file(PostgresDsn("postgresql://postgres@127.0.0.1:5432"), None)
+        make_tables_file(
+            parse_obj_as(PostgresDsn, "postgresql://postgres@127.0.0.1:5432"), None
+        )
 
         self.assertEqual(
             "WARNING: Table without PK detected. sqlsynthgen may not be able to continue.\n",
