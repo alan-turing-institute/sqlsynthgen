@@ -262,9 +262,7 @@ def make_src_stats(
         The dictionary of src-stats.
     """
     if schema_name:
-        engine = create_engine_with_search_path(
-            dsn, schema_name, echo=False, future=True
-        )
+        engine = create_engine_with_search_path(dsn, schema_name)
     else:
         engine = create_engine(dsn, echo=False, future=True)
 
