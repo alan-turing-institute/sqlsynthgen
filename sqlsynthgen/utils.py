@@ -54,7 +54,8 @@ def download_table(table: Any, engine: Any, schema: Optional[Any] = None) -> Non
     with engine.connect() as conn:
         if schema:
             conn.execute(f'SET SEARCH_PATH TO "{schema}"')
-        result = list(conn.execute(stmt))
+
+    result = list(conn.execute(stmt))
 
     with csv_file_path.open("w", newline="", encoding="utf-8") as csvfile:
         writer = csv.writer(csvfile, delimiter=",")
