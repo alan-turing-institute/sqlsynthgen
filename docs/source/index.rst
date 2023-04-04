@@ -26,6 +26,7 @@ Contents:
    :maxdepth: 2
 
    installation
+   quickstart
    sqlsynthgen
    faq
    changelog
