@@ -39,7 +39,7 @@ def create_db_vocab(sorted_vocab: List[Any]) -> None:
 
     with dst_engine.connect() as dst_conn:
         if settings.dst_schema:
-            dst_conn.execute(f"SET SEARCH_PATH TO {settings.dst_schema}")
+            dst_conn.execute(f'SET SEARCH_PATH TO "{settings.dst_schema}"')
 
         for vocab_table in sorted_vocab:
             vocab_table.load(dst_conn)
