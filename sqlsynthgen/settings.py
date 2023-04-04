@@ -18,7 +18,6 @@ from dataclasses import dataclass
 from functools import lru_cache
 from typing import Any, Optional
 
-# pylint: disable=no-name-in-module
 # pylint: disable=no-self-argument
 from pydantic import BaseSettings, PostgresDsn, validator
 

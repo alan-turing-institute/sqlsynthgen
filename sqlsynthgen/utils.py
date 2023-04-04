@@ -9,11 +9,7 @@ from types import ModuleType
 from typing import Any
 
 import yaml
-
-# pylint: disable=no-name-in-module
 from pydantic import PostgresDsn
-
-# pylint: enable=no-name-in-module
 from sqlalchemy import create_engine, event, select
 
 

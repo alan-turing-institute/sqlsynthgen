@@ -7,11 +7,7 @@ from typing import Any, Final, Optional
 
 import snsql
 from mimesis.providers.base import BaseProvider
-
-# pylint: disable=no-name-in-module
 from pydantic import PostgresDsn
-
-# pylint: enable=no-name-in-module
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.sql import sqltypes
 
