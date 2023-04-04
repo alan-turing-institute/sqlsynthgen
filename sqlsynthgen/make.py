@@ -173,7 +173,7 @@ def make_generators_from_tables(
     settings = get_settings()
     engine = create_engine(settings.src_postgres_dsn)
 
-    for table in tables_module.metadata.sorted_tables:
+    for table in tables_module.Base.metadata.sorted_tables:
         table_config = generator_config.get("tables", {}).get(table.name, {})
 
         if table_config.get("vocabulary_table") is True:

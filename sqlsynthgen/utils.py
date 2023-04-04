@@ -53,7 +53,7 @@ def download_table(table: Any, engine: Any, schema: Optional[Any] = None) -> Non
     stmt = select([table])
     with engine.connect() as conn:
         if schema:
-            conn.execute(f"SET SEARCH_PATH TO {schema}")
+            conn.execute(f'SET SEARCH_PATH TO "{schema}"')
         result = list(conn.execute(stmt))
 
     with csv_file_path.open("w", newline="", encoding="utf-8") as csvfile:
@@ -70,7 +70,7 @@ def set_search_path(connection: Any, schema: str) -> None:
     connection.autocommit = True
 
     cursor = connection.cursor()
-    cursor.execute(f"SET search_path to {schema};")
+    cursor.execute(f'SET search_path to "{schema}";')
     cursor.close()
 
     connection.autocommit = existing_autocommit
