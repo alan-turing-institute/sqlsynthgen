@@ -163,8 +163,8 @@ def make_generators_from_tables(
             f"\n{INDENTATION}SRC_STATS = yaml.load(f, Loader=yaml.FullLoader)"
         )
 
-    sorted_generators = "[\n"
-    sorted_vocab = "[\n"
+    generator_dict = "{\n"
+    vocab_dict = "{\n"
 
     settings = get_settings()
     engine = (
@@ -188,7 +188,7 @@ def make_generators_from_tables(
                 f"\n\n{class_name.lower()}_vocab "
                 f"= FileUploader({tables_module.__name__}.{class_name}.__table__)"
             )
-            sorted_vocab += f"{INDENTATION}{class_name.lower()}_vocab,\n"
+            vocab_dict += f'{INDENTATION}"{table.name}": {class_name.lower()}_vocab,\n'
 
             download_table(table, engine)
 
@@ -196,13 +196,13 @@ def make_generators_from_tables(
             new_content, new_generator_name = _add_generator_for_table(
                 new_content, tables_module, table_config, table
             )
-            sorted_generators += f"{INDENTATION}{new_generator_name},\n"
+            generator_dict += f'{INDENTATION}"{table.name}": {new_generator_name},\n'
 
-    sorted_generators += "]"
-    sorted_vocab += "]"
+    generator_dict += "}"
+    vocab_dict += "}"
 
-    new_content += "\n\n" + "sorted_generators = " + sorted_generators + "\n"
-    new_content += "\n\n" + "sorted_vocab = " + sorted_vocab + "\n"
+    new_content += "\n\n" + "generator_dict = " + generator_dict + "\n"
+    new_content += "\n\n" + "vocab_dict = " + vocab_dict + "\n"
 
     return new_content
 

@@ -1,5 +1,5 @@
 """Functions and classes to create and populate the target database."""
-from typing import Any, List
+from typing import Any, Dict
 
 from sqlalchemy import create_engine, insert
 from sqlalchemy.schema import CreateSchema
@@ -28,7 +28,7 @@ def create_db_tables(metadata: Any) -> Any:
     metadata.create_all(engine)
 
 
-def create_db_vocab(sorted_vocab: List[Any]) -> None:
+def create_db_vocab(vocab_dict: Dict[str, Any]) -> None:
     """Load vocabulary tables from files."""
     settings = get_settings()
 
@@ -41,13 +41,11 @@ def create_db_vocab(sorted_vocab: List[Any]) -> None:
     )
 
     with dst_engine.connect() as dst_conn:
-        for vocab_table in sorted_vocab:
+        for vocab_table in vocab_dict.values():
             vocab_table.load(dst_conn)
 
 
-def create_db_data(
-    sorted_tables: list, sorted_generators: list, num_passes: int
-) -> None:
+def create_db_data(sorted_tables: list, generator_dict: dict, num_passes: int) -> None:
     """Connect to a database and populate it with data."""
     settings = get_settings()
 
@@ -68,16 +66,20 @@ def create_db_data(
 
     with dst_engine.connect() as dst_conn:
         with src_engine.connect() as src_conn:
-            populate(src_conn, dst_conn, sorted_tables, sorted_generators, num_passes)
+            populate(src_conn, dst_conn, sorted_tables, generator_dict, num_passes)
 
 
 def populate(
-    src_conn: Any, dst_conn: Any, tables: list, generators: list, num_passes: int
+    src_conn: Any, dst_conn: Any, tables: list, generator_dict: dict, num_passes: int
 ) -> None:
     """Populate a database schema with dummy data."""
-    for table, generator in reversed(
-        list(zip(reversed(tables), reversed(generators)))
-    ):  # Run all the inserts for one table in a transaction
+    for table in tables:
+        if table.name not in generator_dict:
+            # We don't have a generator for this table, probably because it's a
+            # vocabulary table.
+            continue
+        generator = generator_dict[table.name]
+        # Run all the inserts for one table in a transaction
         with dst_conn.begin():
             for _ in range(num_passes):
                 for __ in range(generator.num_rows_per_pass):

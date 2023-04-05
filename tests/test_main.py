@@ -27,7 +27,7 @@ class TestCLI(SSGTestCase):
             catch_exceptions=False,
         )
 
-        mock_create.assert_called_once_with(mock_import.return_value.sorted_vocab)
+        mock_create.assert_called_once_with(mock_import.return_value.vocab_dict)
         self.assertSuccess(result)
 
     @patch("sqlsynthgen.main.import_file")
@@ -115,7 +115,7 @@ class TestCLI(SSGTestCase):
 
         mock_create.assert_called_once_with(
             mock_import.return_value.Base.metadata.sorted_tables,
-            mock_import.return_value.sorted_generators,
+            mock_import.return_value.generator_dict,
             1,
         )
         self.assertSuccess(result)
