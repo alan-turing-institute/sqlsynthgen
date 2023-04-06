@@ -85,11 +85,12 @@ class TestDownload(RequiresDBTestCase):
 
         download_table(MyTable.__table__, self.engine)
 
+        # The .strip() gets rid of any possible empty lines at the end of the file.
         with Path("../examples/expected.json").open(encoding="utf-8") as jsonfile:
-            expected = jsonfile.read()
+            expected = jsonfile.read().strip()
 
         with self.mytable_file_path.open(encoding="utf-8") as jsonfile:
-            actual = jsonfile.read()
+            actual = jsonfile.read().strip()
 
         self.assertEqual(expected, actual)
 
