@@ -1,5 +1,5 @@
 """Base generator classes."""
-import csv
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -15,9 +15,9 @@ class FileUploader:
 
     def load(self, connection: Any) -> None:
         """Load the data from file."""
-        with Path(self.table.fullname + ".csv").open(
+        with Path(self.table.fullname + ".json").open(
             "r", newline="", encoding="utf-8"
-        ) as csvfile:
-            reader = csv.DictReader(csvfile)
-            stmt = insert(self.table).values(list(reader))
+        ) as jsonfile:
+            rows = json.load(jsonfile)
+            stmt = insert(self.table).values(list(rows))
         connection.execute(stmt)
