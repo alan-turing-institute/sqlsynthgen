@@ -53,7 +53,7 @@ class TestImport(SSGTestCase):
 class TestDownload(RequiresDBTestCase):
     """Tests for the download_table function."""
 
-    mytable_file_path = Path("mytable.json")
+    mytable_file_path = Path("mytable.yaml")
 
     test_dir = Path("tests/workspace")
     start_dir = os.getcwd()
@@ -86,11 +86,11 @@ class TestDownload(RequiresDBTestCase):
         download_table(MyTable.__table__, self.engine)
 
         # The .strip() gets rid of any possible empty lines at the end of the file.
-        with Path("../examples/expected.json").open(encoding="utf-8") as jsonfile:
-            expected = jsonfile.read().strip()
+        with Path("../examples/expected.yaml").open(encoding="utf-8") as yamlfile:
+            expected = yamlfile.read().strip()
 
-        with self.mytable_file_path.open(encoding="utf-8") as jsonfile:
-            actual = jsonfile.read().strip()
+        with self.mytable_file_path.open(encoding="utf-8") as yamlfile:
+            actual = yamlfile.read().strip()
 
         self.assertEqual(expected, actual)
 
@@ -112,6 +112,6 @@ class TestDownload(RequiresDBTestCase):
             pass
 
         self.assertEqual(
-            "mytable.json already exists. Exiting...\n", mock_stderr.getvalue()
+            "mytable.yaml already exists. Exiting...\n", mock_stderr.getvalue()
         )
         mock_exit.assert_called_once_with(1)

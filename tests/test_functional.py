@@ -18,7 +18,7 @@ class FunctionalTestCase(RequiresDBTestCase):
     alt_ssg_file_path = Path("my_ssg.py")
 
     vocabulary_file_paths = tuple(
-        map(Path, ("concept.json", "concept_type.json", "mitigation_type.json"))
+        map(Path, ("concept.yaml", "concept_type.yaml", "mitigation_type.yaml"))
     )
     config_file_path = Path("../examples/example_config.yaml")
     stats_file_path = Path("example_stats.yaml")

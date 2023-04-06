@@ -1,5 +1,4 @@
 """Utility functions."""
-import json
 import os
 import sys
 from importlib import import_module
@@ -44,19 +43,19 @@ def import_file(file_name: str) -> ModuleType:
 
 
 def download_table(table: Any, engine: Any) -> None:
-    """Download a Table and store it as a .json file."""
-    json_file_name = table.fullname + ".json"
-    json_file_path = Path(json_file_name)
-    if json_file_path.exists():
-        print(f"{str(json_file_name)} already exists. Exiting...", file=stderr)
+    """Download a Table and store it as a .yaml file."""
+    yaml_file_name = table.fullname + ".yaml"
+    yaml_file_path = Path(yaml_file_name)
+    if yaml_file_path.exists():
+        print(f"{str(yaml_file_name)} already exists. Exiting...", file=stderr)
         sys.exit(1)
 
     stmt = select([table])
     with engine.connect() as conn:
         result = [dict(row.items()) for row in conn.execute(stmt)]
 
-    with json_file_path.open("w", newline="", encoding="utf-8") as jsonfile:
-        json.dump(result, jsonfile)
+    with yaml_file_path.open("w", newline="", encoding="utf-8") as yamlfile:
+        yamlfile.write(yaml.dump(result))
 
 
 def create_engine_with_search_path(postgres_dsn: PostgresDsn, schema_name: str) -> Any:

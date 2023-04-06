@@ -1,9 +1,9 @@
 """Base generator classes."""
-import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import yaml
 from sqlalchemy import insert
 
 
@@ -15,9 +15,9 @@ class FileUploader:
 
     def load(self, connection: Any) -> None:
         """Load the data from file."""
-        with Path(self.table.fullname + ".json").open(
+        with Path(self.table.fullname + ".yaml").open(
             "r", newline="", encoding="utf-8"
-        ) as jsonfile:
-            rows = json.load(jsonfile)
+        ) as yamlfile:
+            rows = yaml.load(yamlfile, Loader=yaml.Loader)
             stmt = insert(self.table).values(list(rows))
         connection.execute(stmt)
