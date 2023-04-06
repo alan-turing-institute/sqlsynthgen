@@ -104,3 +104,5 @@ class MyTestCase(SSGTestCase):
         mock_create_engine.assert_called_once_with(
             mock_get_settings.return_value.dst_postgres_dsn
         )
+        # Running the same insert twice should be fine.
+        create_db_vocab(vocab_list)
