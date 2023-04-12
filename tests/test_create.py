@@ -25,7 +25,7 @@ class MyTestCase(SSGTestCase):
         """Test the generate function."""
         mock_get_settings.return_value = get_test_settings()
 
-        create_db_data([], [], 0)
+        create_db_data([], {}, 0)
 
         mock_populate.assert_called_once()
         mock_create_engine.assert_called()
@@ -51,9 +51,11 @@ class MyTestCase(SSGTestCase):
         mock_src_conn = MagicMock()
         mock_dst_conn = MagicMock()
         mock_gen = MagicMock()
+        mock_table = MagicMock()
+        mock_table.name = "table_name"
         mock_gen.num_rows_per_pass = 2
-        tables = [None]
-        generators = [mock_gen]
+        tables = [mock_table]
+        generators = {"table_name": mock_gen}
         populate(mock_src_conn, mock_dst_conn, tables, generators, 1)
 
         mock_gen.assert_has_calls([call(mock_src_conn, mock_dst_conn)] * 2)
@@ -70,11 +72,19 @@ class MyTestCase(SSGTestCase):
         mock_dst_conn = MagicMock()
         mock_gen_two = MagicMock()
         mock_gen_three = MagicMock()
-        tables = [1, 2, 3]
-        generators = [mock_gen_two, mock_gen_three]
+        mock_table_one = MagicMock()
+        mock_table_one.name = "one"
+        mock_table_two = MagicMock()
+        mock_table_two.name = "two"
+        mock_table_three = MagicMock()
+        mock_table_three.name = "three"
+        tables = [mock_table_one, mock_table_two, mock_table_three]
+        generators = {"two": mock_gen_two, "three": mock_gen_three}
 
         populate(2, mock_dst_conn, tables, generators, 1)
-        self.assertListEqual([call(2), call(3)], mock_insert.call_args_list)
+        self.assertListEqual(
+            [call(mock_table_two), call(mock_table_three)], mock_insert.call_args_list
+        )
 
         mock_gen_two.assert_called_once()
         mock_gen_three.assert_called_once()
@@ -86,9 +96,9 @@ class MyTestCase(SSGTestCase):
     ) -> None:
         """Test the create_db_vocab function."""
         mock_get_settings.return_value = get_test_settings()
-        vocab_list = [MagicMock()]
+        vocab_list = {"table_name": MagicMock()}
         create_db_vocab(vocab_list)
-        vocab_list[0].load.assert_called_once_with(
+        vocab_list["table_name"].load.assert_called_once_with(
             mock_create_engine.return_value.connect.return_value.__enter__.return_value
         )
         mock_create_engine.assert_called_once_with(

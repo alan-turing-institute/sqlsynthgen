@@ -53,13 +53,13 @@ class hospital_visitGenerator:
         self.visit_image = generic.bytes_provider.bytes()
 
 
-sorted_generators = [
-    entityGenerator,
-    personGenerator,
-    hospital_visitGenerator,
-]
+generator_dict = {
+    "entity": entityGenerator,
+    "person": personGenerator,
+    "hospital_visit": hospital_visitGenerator,
+}
 
 
-sorted_vocab = [
-    concept_vocab,
-]
+vocab_dict = {
+    "concept": concept_vocab,
+}

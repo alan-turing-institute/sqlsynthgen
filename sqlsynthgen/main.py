@@ -57,7 +57,7 @@ def create_data(
     orm_module = import_file(orm_file)
     ssg_module = import_file(ssg_file)
     create_db_data(
-        orm_module.Base.metadata.sorted_tables, ssg_module.sorted_generators, num_passes
+        orm_module.Base.metadata.sorted_tables, ssg_module.generator_dict, num_passes
     )
 
 
@@ -73,7 +73,7 @@ def create_vocab(ssg_file: str = typer.Option(SSG_FILENAME)) -> None:
           Must be in the current working directory.
     """
     ssg_module = import_file(ssg_file)
-    create_db_vocab(ssg_module.sorted_vocab)
+    create_db_vocab(ssg_module.vocab_dict)
 
 
 @app.command()
