@@ -1,8 +1,26 @@
 Quick Start
 ===========
 
+After :ref:`Installation <enduser>`, we can run sqlsynthgen with the `--help` option to see the available commands:
 
-After :ref:`Installation <enduser>`, we need to set an environment variables to tell sqlsynthgen how to access our source database (where the real data resides now) and destination database (where the synthetic data will go).
+.. code-block:: console
+
+   $ sqlsynthgen --help
+   Usage: sqlsynthgen [OPTIONS] COMMAND [ARGS]...
+
+   Options:
+     --help           Show this message and exit.
+
+   Commands:
+     create-data      Populate schema with synthetic data.
+     create-tables    Create schema from Python classes.
+     create-vocab     Create tables using the SQLAlchemy file.
+     make-generators  Make a SQLSynthGen file of generator classes.
+     make-stats       Compute summary statistics from the source database,...
+     make-tables      Make a SQLAlchemy file of Table classes.
+
+For the simplest case, we will need `make-tables`, `make-generators`, `create-tables` and `create-data` but, first,
+we need to set environment variables to tell sqlsynthgen how to access our source database (where the real data resides now) and destination database (where the synthetic data will go).
 We can do that in the terminal with the `export` keyword, as shown below, or in a file called `.env`.
 The source and destination may be on the same database server, as long as the database or schema names differ.
 
@@ -50,7 +68,7 @@ Now that we have created the schema that will hold synthetic data, we can use th
    $ sqlsynthgen create-data
 
 By default, `create-data` will have inserted one row per table and will have used the column data types to decide how to randomly generate data.
-To create more data each time we call `create-data`, we can provide an integer argument
+To create more data each time we call `create-data`, we can provide an integer argument:
 
 .. code-block:: console
 
