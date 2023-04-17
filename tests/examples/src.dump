@@ -50,7 +50,8 @@ SET default_table_access_method = heap;
 CREATE TABLE public.concept (
     concept_id integer NOT NULL,
     concept_name text NOT NULL,
-    concept_type_id integer
+    concept_type_id integer,
+    concept_valid_from timestamp with time zone not null
 );
 
 
@@ -129,8 +130,8 @@ ALTER TABLE public.person OWNER TO postgres;
 -- Data for Name: concept; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.concept VALUES (1, 'some concept name', 1);
-INSERT INTO public.concept VALUES (23, 'another concept', 2);
+INSERT INTO public.concept VALUES (1, 'some concept name', 1, 'January 8 04:05:06 1999 PST');
+INSERT INTO public.concept VALUES (23, 'another concept', 2, 'January 8 04:05:06 1999 PST');
 
 
 --
