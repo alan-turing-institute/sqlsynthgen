@@ -1,7 +1,9 @@
 """Functions and classes to create and populate the target database."""
+import logging
 from typing import Any, Dict
 
 from sqlalchemy import create_engine, insert
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.schema import CreateSchema
 
 from sqlsynthgen.settings import get_settings
@@ -42,7 +44,11 @@ def create_db_vocab(vocab_dict: Dict[str, Any]) -> None:
 
     with dst_engine.connect() as dst_conn:
         for vocab_table in vocab_dict.values():
-            vocab_table.load(dst_conn)
+            try:
+                vocab_table.load(dst_conn)
+            except IntegrityError as e:
+                logging.warning("Loading the vocabulary table %s failed:", vocab_table)
+                logging.warning(e)
 
 
 def create_db_data(sorted_tables: list, generator_dict: dict, num_passes: int) -> None:

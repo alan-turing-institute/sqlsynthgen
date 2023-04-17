@@ -114,6 +114,7 @@ def make_generators(
           Must be in the current working directory.
         ssg_file (str): Path to write the generators file to.
         config_file (str): Path to configuration file.
+        stats_file (str): Path to source stats file (output of make-stats).
     """
     ssg_file_path = Path(ssg_file)
     if ssg_file_path.exists():
