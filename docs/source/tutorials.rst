@@ -91,7 +91,7 @@ This will also create one `.csv` file for each of the vocabulary tables listed i
 
 
 Restore the circular foreign key
-+++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++
 
 If we deleted a foreign key constraint in the first step, we can now restore it
 
