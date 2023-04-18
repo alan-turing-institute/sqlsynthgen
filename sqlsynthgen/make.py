@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from sys import stderr
 from types import ModuleType
-from typing import Any, Final, Optional, Tuple, Type
+from typing import Any, Dict, Final, Optional, Tuple, Type
 
 import snsql
 from mimesis.providers.base import BaseProvider
@@ -283,12 +283,15 @@ def make_src_stats(
     else:
         engine = create_engine(dsn, echo=False, future=True)
 
-    dp_config = config.get("smartnoise-sql", {})
-    snsql_metadata = {"": dp_config}
-    src_stats = {}
-    for stat_data in config.get("src-stats", []):
-        privacy = snsql.Privacy(epsilon=stat_data["epsilon"], delta=stat_data["delta"])
-        with engine.connect() as conn:
+    use_smartnoise_sql = config.get("use-smartnoise-sql", True)
+    if use_smartnoise_sql:
+        dp_config = config.get("smartnoise-sql", {})
+        snsql_metadata = {"": dp_config}
+
+        def execute_query(conn: Any, stat_data: Dict[str, Any]) -> Any:
+            privacy = snsql.Privacy(
+                epsilon=stat_data["epsilon"], delta=stat_data["delta"]
+            )
             reader = snsql.from_connection(
                 conn.connection,
                 engine="postgres",
@@ -297,5 +300,16 @@ def make_src_stats(
             )
             private_result = reader.execute(stat_data["query"])
             # The first entry in the list names the columns, skip that.
-            src_stats[stat_data["name"]] = private_result[1:]
+            return private_result[1:]
+
+    else:
+
+        def execute_query(conn: Any, stat_data: Dict[str, Any]) -> Any:
+            return conn.execute(stat_data["query"]).fetch_all()
+
+    with engine.connect() as conn:
+        src_stats = {
+            stat_data["name"]: execute_query(conn, stat_data)
+            for stat_data in config.get("src-stats", [])
+        }
     return src_stats
