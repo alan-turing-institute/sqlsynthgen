@@ -47,8 +47,7 @@ def create_db_vocab(vocab_dict: Dict[str, Any]) -> None:
             try:
                 vocab_table.load(dst_conn)
             except IntegrityError as e:
-                logging.warning("Loading the vocabulary table %s failed:", vocab_table)
-                logging.warning(e)
+                logging.exception("Loading the vocabulary table %s failed:", vocab_table)
 
 
 def create_db_data(sorted_tables: list, generator_dict: dict, num_passes: int) -> None:

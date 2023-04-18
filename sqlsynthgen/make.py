@@ -22,7 +22,7 @@ HEADER_TEXT: str = "\n".join(
         "from mimesis.locales import Locale",
         "from sqlsynthgen.base import FileUploader",
         "",
-        "generic = Generic(locale=Locale.EN)",
+        "generic = Generic(locale=Locale.EN_GB)",
         "",
     )
 )

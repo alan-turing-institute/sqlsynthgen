@@ -139,3 +139,9 @@ sqlsynthgen/config.ini
 # sphinx
 docs/build/*
 docs/temp/*
+
+# vim swap files
+*.swp
+
+ssg.py
+orm.py

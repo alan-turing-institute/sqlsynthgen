@@ -53,7 +53,7 @@ class TestImport(SSGTestCase):
 class TestDownload(RequiresDBTestCase):
     """Tests for the download_table function."""
 
-    mytable_file_path = Path("mytable.csv")
+    mytable_file_path = Path("mytable.yaml")
 
     test_dir = Path("tests/workspace")
     start_dir = os.getcwd()
@@ -85,11 +85,12 @@ class TestDownload(RequiresDBTestCase):
 
         download_table(MyTable.__table__, self.engine)
 
-        with Path("../examples/expected.csv").open(encoding="utf-8") as csvfile:
-            expected = csvfile.read()
+        # The .strip() gets rid of any possible empty lines at the end of the file.
+        with Path("../examples/expected.yaml").open(encoding="utf-8") as yamlfile:
+            expected = yamlfile.read().strip()
 
-        with self.mytable_file_path.open(encoding="utf-8") as csvfile:
-            actual = csvfile.read()
+        with self.mytable_file_path.open(encoding="utf-8") as yamlfile:
+            actual = yamlfile.read().strip()
 
         self.assertEqual(expected, actual)
 
@@ -111,6 +112,6 @@ class TestDownload(RequiresDBTestCase):
             pass
 
         self.assertEqual(
-            "mytable.csv already exists. Exiting...\n", mock_stderr.getvalue()
+            "mytable.yaml already exists. Exiting...\n", mock_stderr.getvalue()
         )
         mock_exit.assert_called_once_with(1)

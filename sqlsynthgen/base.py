@@ -1,9 +1,9 @@
 """Base generator classes."""
-import csv
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import yaml
 from sqlalchemy import insert
 
 
@@ -15,9 +15,9 @@ class FileUploader:
 
     def load(self, connection: Any) -> None:
         """Load the data from file."""
-        with Path(self.table.fullname + ".csv").open(
+        with Path(self.table.fullname + ".yaml").open(
             "r", newline="", encoding="utf-8"
-        ) as csvfile:
-            reader = csv.DictReader(csvfile)
-            stmt = insert(self.table).values(list(reader))
+        ) as yamlfile:
+            rows = yaml.load(yamlfile, Loader=yaml.Loader)
+            stmt = insert(self.table).values(list(rows))
         connection.execute(stmt)

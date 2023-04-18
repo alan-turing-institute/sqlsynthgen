@@ -3,7 +3,7 @@ from mimesis import Generic
 from mimesis.locales import Locale
 from sqlsynthgen.base import FileUploader
 
-generic = Generic(locale=Locale.EN)
+generic = Generic(locale=Locale.EN_GB)
 
 from sqlsynthgen.providers import BytesProvider
 generic.add_provider(BytesProvider)

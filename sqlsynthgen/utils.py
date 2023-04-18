@@ -1,5 +1,4 @@
 """Utility functions."""
-import csv
 import os
 import sys
 from importlib import import_module
@@ -44,22 +43,19 @@ def import_file(file_name: str) -> ModuleType:
 
 
 def download_table(table: Any, engine: Any) -> None:
-    """Download a Table and store it as a .csv file."""
-    csv_file_name = table.fullname + ".csv"
-    csv_file_path = Path(csv_file_name)
-    if csv_file_path.exists():
-        print(f"{str(csv_file_name)} already exists. Exiting...", file=stderr)
+    """Download a Table and store it as a .yaml file."""
+    yaml_file_name = table.fullname + ".yaml"
+    yaml_file_path = Path(yaml_file_name)
+    if yaml_file_path.exists():
+        print(f"{str(yaml_file_name)} already exists. Exiting...", file=stderr)
         sys.exit(1)
 
     stmt = select([table])
     with engine.connect() as conn:
-        result = list(conn.execute(stmt))
+        result = [dict(row) for row in conn.execute(stmt)]
 
-    with csv_file_path.open("w", newline="", encoding="utf-8") as csvfile:
-        writer = csv.writer(csvfile, delimiter=",")
-        writer.writerow([x.name for x in table.columns])
-        for row in result:
-            writer.writerow(row)
+    with yaml_file_path.open("w", newline="", encoding="utf-8") as yamlfile:
+        yamlfile.write(yaml.dump(result))
 
 
 def create_engine_with_search_path(postgres_dsn: PostgresDsn, schema_name: str) -> Any:

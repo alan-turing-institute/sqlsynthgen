@@ -35,7 +35,16 @@ def run_psql(dump_file: Path) -> None:
     """Run psql and pass dump_file_name as the --file option."""
 
     # If you need to update a .dump file, use
-    # pg_dump -d DBNAME -h localhost -U postgres -C -c > tests/examples/FILENAME.dump
+    # PGPASSWORD=password pg_dump \
+    # --host=localhost \
+    # --port=5432 \
+    # --dbname=src \
+    # --username=postgres \
+    # --no-password \
+    # --clean \
+    # --create \
+    # --insert \
+    # --if-exists > tests/examples/FILENAME.dump
 
     env = os.environ.copy()
     env = {**env, "PGPASSWORD": "password"}

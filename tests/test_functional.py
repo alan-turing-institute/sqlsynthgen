@@ -17,7 +17,9 @@ class FunctionalTestCase(RequiresDBTestCase):
     alt_orm_file_path = Path("my_orm.py")
     alt_ssg_file_path = Path("my_ssg.py")
 
-    concept_file_path = Path("concept.csv")
+    vocabulary_file_paths = tuple(
+        map(Path, ("concept.yaml", "concept_type.yaml", "mitigation_type.yaml"))
+    )
     config_file_path = Path("../examples/example_config.yaml")
     stats_file_path = Path("example_stats.yaml")
 
@@ -50,9 +52,8 @@ class FunctionalTestCase(RequiresDBTestCase):
             self.ssg_file_path,
             self.alt_orm_file_path,
             self.alt_ssg_file_path,
-            self.concept_file_path,
             self.stats_file_path,
-        ):
+        ) + self.vocabulary_file_paths:
             file_path.unlink(missing_ok=True)
 
     def tearDown(self) -> None:
