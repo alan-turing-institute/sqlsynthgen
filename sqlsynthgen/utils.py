@@ -52,7 +52,7 @@ def download_table(table: Any, engine: Any) -> None:
 
     stmt = select([table])
     with engine.connect() as conn:
-        result = [dict(row.items()) for row in conn.execute(stmt)]
+        result = [dict(row) for row in conn.execute(stmt)]
 
     with yaml_file_path.open("w", newline="", encoding="utf-8") as yamlfile:
         yamlfile.write(yaml.dump(result))
