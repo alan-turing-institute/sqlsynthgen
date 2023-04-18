@@ -29,6 +29,7 @@ types-pyyaml = "^6.0.12.4"
 pydocstyle = "^6.3.0"
 restructuredtext-lint = "^1.4.0"
 pygments = "^2.14.0"
+rstcheck-core = {extras = ["sphinx"], version = "^1.0.3"}
 
 [tool.poetry.extras]
 docs = ["sphinx-rtd-theme", "sphinxcontrib-napoleon"]

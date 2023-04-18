@@ -1,6 +1,8 @@
 Installation
 ============
 
+.. _enduser:
+
 End User
 --------
 

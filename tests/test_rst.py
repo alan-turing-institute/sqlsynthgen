@@ -24,6 +24,7 @@ class RstTests(TestCase):
             'No role entry for "ref" in module',
             'No directive entry for "toctree"',
             'No directive entry for "automodule"',
+            'Hyperlink target "enduser" is not referenced',
         ]
         filtered_errors = []
         for file_errors in all_errors:
