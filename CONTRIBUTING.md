@@ -36,7 +36,7 @@ Please install the following software on your workstation:
 1. Finally, activate the Poetry shell. Now you're ready to play with the code:
 
     ```bash
-    cd poetry shell
+    poetry shell
     ```
 
 ## Running unit tests
