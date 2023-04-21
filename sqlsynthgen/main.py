@@ -57,7 +57,10 @@ def create_data(
     orm_module = import_file(orm_file)
     ssg_module = import_file(ssg_file)
     create_db_data(
-        orm_module.Base.metadata.sorted_tables, ssg_module.generator_dict, num_passes
+        orm_module.Base.metadata.sorted_tables,
+        ssg_module.generator_dict,
+        ssg_module.story_generator_list,
+        num_passes,
     )
 
 

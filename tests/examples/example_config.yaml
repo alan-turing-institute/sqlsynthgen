@@ -12,13 +12,16 @@ smartnoise-sql:
         name: research_opt_out
         type: boolean
         private_id: False
+
 src-stats:
   - name: count_opt_outs
     query: SELECT count(*) AS num, research_opt_out FROM person GROUP BY research_opt_out
     epsilon: 0.1
     delta: 0.0001
+
 custom_generators_module: custom_generators
 tables:
+
   person:
     num_rows_per_pass: 2
     custom_generators:
@@ -50,9 +53,23 @@ tables:
           - visit_start
           - visit_end
           - visit_duration_seconds
+
   concept:
     vocabulary_table: true
   concept_type:
     vocabulary_table: true
   mitigation_type:
     vocabulary_table: true
+
+story_generators_module: story_generators
+story_generators:
+  - name: story_generators.short_story
+    args:
+      generic: generic
+    num_stories_per_pass: 3
+  - name: story_generators.long_story
+    args:
+      dst_db_conn: dst_db_conn
+      generic: generic
+      count_opt_outs: 'SRC_STATS["count_opt_outs"]'
+    num_stories_per_pass: 2

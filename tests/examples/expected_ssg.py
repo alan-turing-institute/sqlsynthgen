@@ -18,6 +18,7 @@ generic.add_provider(WeightedBooleanProvider)
 
 import tests.examples.example_orm
 import custom_generators
+import story_generators
 import yaml
 with open("example_stats.yaml", "r", encoding="utf-8") as f:
     SRC_STATS = yaml.load(f, Loader=yaml.FullLoader)
@@ -63,3 +64,29 @@ generator_dict = {
 vocab_dict = {
     "concept": concept_vocab,
 }
+
+
+def run_story_generators_short_story(dst_db_conn):
+    return story_generators.short_story(
+        generic=generic,
+    )
+
+
+def run_story_generators_long_story(dst_db_conn):
+    return story_generators.long_story(
+        dst_db_conn=dst_db_conn,
+        generic=generic,
+        count_opt_outs=SRC_STATS["count_opt_outs"],
+    )
+
+
+story_generator_list = [
+    {
+        "name": run_story_generators_short_story,
+        "num_stories_per_pass": 3,
+    },
+    {
+        "name": run_story_generators_long_story,
+        "num_stories_per_pass": 2,
+    },
+]

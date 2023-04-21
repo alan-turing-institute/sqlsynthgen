@@ -125,7 +125,10 @@ def _add_generator_for_table(
     """Add to the generator file `content` a generator for the given table."""
     new_class_name = table.name + "Generator"
     content += f"\n\nclass {new_class_name}:\n"
-    content += f"{INDENTATION}num_rows_per_pass = {table_config.get('num_rows_per_pass', 1)}\n\n"
+    content += (
+        f"{INDENTATION}num_rows_per_pass = "
+        f"{table_config.get('num_rows_per_pass', 1)}\n\n"
+    )
     content += f"{INDENTATION}def __init__(self, src_db_conn, dst_db_conn):\n"
     content, columns_covered = _add_custom_generators(content, table_config)
     for column in table.columns:
@@ -133,6 +136,35 @@ def _add_generator_for_table(
             # No generator for this column in the user config.
             content = _add_default_generator(content, tables_module, column)
     return content, new_class_name
+
+
+def _add_story_generators(content: str, config: dict) -> str:
+    """Add story generators to the generator file `content`."""
+    generators = []
+    for gen in config.get("story_generators", []):
+        name = "run_" + gen["name"].replace(".", "_").lower()
+        content += f"\n\ndef {name}(dst_db_conn):\n"
+        content += f'{INDENTATION}return {gen["name"]}(\n'
+        for key, value in gen["args"].items():
+            content += f"{2*INDENTATION}{key}={value},\n"
+        content += f"{INDENTATION})\n"
+        generators.append(
+            {
+                "name": name,
+                "num_stories_per_pass": gen["num_stories_per_pass"],
+            }
+        )
+
+    content += "\n\nstory_generator_list = [\n"
+    for gen in generators:
+        content += f"{INDENTATION}{{\n"
+        content += f'{2*INDENTATION}"name": {gen["name"]},\n'
+        content += (
+            f'{2*INDENTATION}"num_stories_per_pass": {gen["num_stories_per_pass"]},\n'
+        )
+        content += f"{INDENTATION}}},\n"
+    content += "]\n"
+    return content
 
 
 def make_generators_from_tables(
@@ -154,6 +186,9 @@ def make_generators_from_tables(
     generator_module_name = generator_config.get("custom_generators_module", None)
     if generator_module_name is not None:
         new_content += f"\nimport {generator_module_name}"
+    story_module_name = generator_config.get("story_generators_module", None)
+    if story_module_name is not None:
+        new_content += f"\nimport {story_module_name}"
     if src_stats_filename:
         new_content += "\nimport yaml"
         new_content += (
@@ -204,6 +239,7 @@ def make_generators_from_tables(
     new_content += "\n\n" + "generator_dict = " + generator_dict + "\n"
     new_content += "\n\n" + "vocab_dict = " + vocab_dict + "\n"
 
+    new_content = _add_story_generators(new_content, generator_config)
     return new_content
 
 
