@@ -1,4 +1,5 @@
 """Tests for the create module."""
+import itertools as itt
 from unittest.mock import MagicMock, call, patch
 
 from sqlsynthgen.create import (
@@ -25,9 +26,10 @@ class MyTestCase(SSGTestCase):
         """Test the generate function."""
         mock_get_settings.return_value = get_test_settings()
 
-        create_db_data([], {}, 0)
+        num_passes = 23
+        create_db_data([], {}, [], num_passes)
 
-        mock_populate.assert_called_once()
+        self.assertEqual(len(mock_populate.call_args_list), num_passes)
         mock_create_engine.assert_called()
 
     @patch("sqlsynthgen.create.get_settings")
@@ -48,23 +50,43 @@ class MyTestCase(SSGTestCase):
     @patch("sqlsynthgen.create.insert")
     def test_populate(self, mock_insert: MagicMock) -> None:
         """Test the populate function."""
-        mock_src_conn = MagicMock()
-        mock_dst_conn = MagicMock()
-        mock_gen = MagicMock()
-        mock_table = MagicMock()
-        mock_table.name = "table_name"
-        mock_gen.num_rows_per_pass = 2
-        tables = [mock_table]
-        generators = {"table_name": mock_gen}
-        populate(mock_src_conn, mock_dst_conn, tables, generators, 1)
+        table_name = "table_name"
+        for num_stories_per_pass, num_rows_per_pass in itt.product([0, 2], [0, 3]):
+            mock_src_conn = MagicMock()
+            mock_dst_conn = MagicMock()
+            mock_dst_conn.execute.return_value.returned_defaults = {}
+            mock_table = MagicMock()
+            mock_table.name = table_name
+            mock_gen = MagicMock()
+            mock_gen.num_rows_per_pass = num_rows_per_pass
+            mock_gen.return_value.__dict__ = {}
+            mock_story_gen = MagicMock()
+            mock_story_gen.return_value = {table_name: [{}]}
 
-        mock_gen.assert_has_calls([call(mock_src_conn, mock_dst_conn)] * 2)
-        mock_insert.return_value.values.assert_has_calls(
-            [call(mock_gen.return_value.__dict__)] * 2
-        )
-        mock_dst_conn.execute.assert_has_calls(
-            [call(mock_insert.return_value.values.return_value)] * 2
-        )
+            tables = [mock_table]
+            generators = {table_name: mock_gen}
+            story_generators = (
+                [{"name": mock_story_gen, "num_stories_per_pass": num_stories_per_pass}]
+                if num_stories_per_pass > 0
+                else []
+            )
+            populate(mock_src_conn, mock_dst_conn, tables, generators, story_generators)
+
+            mock_story_gen.assert_has_calls(
+                [call(mock_dst_conn)] * num_stories_per_pass
+            )
+            mock_gen.assert_has_calls(
+                [call(mock_src_conn, mock_dst_conn)]
+                * (num_stories_per_pass + num_rows_per_pass)
+            )
+            mock_insert.return_value.values.assert_has_calls(
+                [call(mock_gen.return_value.__dict__)]
+                * (num_stories_per_pass + num_rows_per_pass)
+            )
+            mock_dst_conn.execute.assert_has_calls(
+                [call(mock_insert.return_value.values.return_value)]
+                * (num_stories_per_pass + num_rows_per_pass)
+            )
 
     @patch("sqlsynthgen.create.insert")
     def test_populate_diff_length(self, mock_insert: MagicMock) -> None:
@@ -81,7 +103,7 @@ class MyTestCase(SSGTestCase):
         tables = [mock_table_one, mock_table_two, mock_table_three]
         generators = {"two": mock_gen_two, "three": mock_gen_three}
 
-        populate(2, mock_dst_conn, tables, generators, 1)
+        populate(2, mock_dst_conn, tables, generators, [])
         self.assertListEqual(
             [call(mock_table_two), call(mock_table_three)], mock_insert.call_args_list
         )

@@ -147,6 +147,7 @@ class TestCLI(SSGTestCase):
         mock_create.assert_called_once_with(
             mock_import.return_value.Base.metadata.sorted_tables,
             mock_import.return_value.generator_dict,
+            mock_import.return_value.story_generator_list,
             1,
         )
         self.assertSuccess(result)
