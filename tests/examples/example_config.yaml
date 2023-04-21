@@ -19,12 +19,12 @@ src-stats:
     epsilon: 0.1
     delta: 0.0001
 
-custom_generators_module: custom_generators
+row_generators_module: row_generators
 tables:
 
   person:
     num_rows_per_pass: 2
-    custom_generators:
+    row_generators:
       - name: generic.person.full_name
         args: null
         columns_assigned: name
@@ -33,7 +33,7 @@ tables:
           start: 2022
           end: 2022
         columns_assigned: stored_from
-      - name: custom_generators.boolean_from_src_stats_generator
+      - name: row_generators.boolean_from_src_stats_generator
         args:
           generic: generic
           src_stats: SRC_STATS["count_opt_outs"]
@@ -41,8 +41,8 @@ tables:
 
   hospital_visit:
     num_rows_per_pass: 3
-    custom_generators:
-      - name: custom_generators.timespan_generator
+    row_generators:
+      - name: row_generators.timespan_generator
         args:
           generic: generic
           earliest_start_year: 2021

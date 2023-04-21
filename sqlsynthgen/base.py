@@ -1,4 +1,4 @@
-"""Base generator classes."""
+"""Base table generator classes."""
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any

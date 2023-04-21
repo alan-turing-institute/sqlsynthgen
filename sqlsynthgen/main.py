@@ -9,11 +9,7 @@ import typer
 import yaml
 
 from sqlsynthgen.create import create_db_data, create_db_tables, create_db_vocab
-from sqlsynthgen.make import (
-    make_generators_from_tables,
-    make_src_stats,
-    make_tables_file,
-)
+from sqlsynthgen.make import make_src_stats, make_table_generators, make_tables_file
 from sqlsynthgen.settings import get_settings
 from sqlsynthgen.utils import import_file, read_yaml_file
 
@@ -59,7 +55,7 @@ def create_data(
     ssg_module = import_file(ssg_file)
     create_db_data(
         orm_module.Base.metadata.sorted_tables,
-        ssg_module.generator_dict,
+        ssg_module.table_generator_dict,
         ssg_module.story_generator_list,
         num_passes,
     )
@@ -129,7 +125,7 @@ def make_generators(
 
     orm_module: ModuleType = import_file(orm_file)
     generator_config = read_yaml_file(config_file) if config_file is not None else {}
-    result: str = make_generators_from_tables(
+    result: str = make_table_generators(
         orm_module, generator_config, stats_file, overwrite_files=force
     )
 
@@ -152,11 +148,11 @@ def make_stats(
         print(f"{stats_file} should not already exist. Exiting...", file=stderr)
         sys.exit(1)
     settings = get_settings()
-    generator_config = read_yaml_file(config_file) if config_file is not None else {}
+    config = read_yaml_file(config_file) if config_file is not None else {}
     src_dsn = settings.src_postgres_dsn
     if src_dsn is None:
         raise ValueError("Missing source database connection details.")
-    src_stats = make_src_stats(src_dsn, generator_config)
+    src_stats = make_src_stats(src_dsn, config)
     stats_file_path.write_text(yaml.dump(src_stats), encoding="utf-8")
 
 
