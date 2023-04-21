@@ -57,9 +57,9 @@ def _orm_class_from_table_name(tables_module: Any, full_name: str) -> Optional[A
     return None
 
 
-def _add_custom_generators(content: str, table_config: dict) -> tuple[str, list[str]]:
-    """Append the custom generators to content, for the given table."""
-    generators_config = table_config.get("custom_generators", {})
+def _add_row_generators(content: str, table_config: dict) -> tuple[str, list[str]]:
+    """Append the row generators to content, for the given table."""
+    generators_config = table_config.get("row_generators", {})
     columns_covered = []
     for gen_conf in generators_config:
         name = gen_conf["name"]
@@ -130,10 +130,10 @@ def _add_generator_for_table(
         f"{table_config.get('num_rows_per_pass', 1)}\n\n"
     )
     content += f"{INDENTATION}def __init__(self, src_db_conn, dst_db_conn):\n"
-    content, columns_covered = _add_custom_generators(content, table_config)
+    content, columns_covered = _add_row_generators(content, table_config)
     for column in table.columns:
         if column.name not in columns_covered:
-            # No generator for this column in the user config.
+            # No row generator for this column in the user config, use the default.
             content = _add_default_generator(content, tables_module, column)
     return content, new_class_name
 
@@ -167,14 +167,14 @@ def _add_story_generators(content: str, config: dict) -> str:
     return content
 
 
-def make_generators_from_tables(
-    tables_module: ModuleType, generator_config: dict, src_stats_filename: Optional[str]
+def make_table_generators(
+    tables_module: ModuleType, config: dict, src_stats_filename: Optional[str]
 ) -> str:
     """Create sqlsynthgen generator classes from a sqlacodegen-generated file.
 
     Args:
       tables_module: A sqlacodegen-generated module.
-      generator_config: Configuration to control the generator creation.
+      config: Configuration to control the generator creation.
       src_stats_filename: A filename for where to read src stats from. Optional, if
           `None` this feature will be skipped
 
@@ -183,12 +183,12 @@ def make_generators_from_tables(
     """
     new_content = HEADER_TEXT
     new_content += f"\nimport {tables_module.__name__}"
-    generator_module_name = generator_config.get("custom_generators_module", None)
-    if generator_module_name is not None:
-        new_content += f"\nimport {generator_module_name}"
-    story_module_name = generator_config.get("story_generators_module", None)
-    if story_module_name is not None:
-        new_content += f"\nimport {story_module_name}"
+    row_generator_module_name = config.get("row_generators_module", None)
+    if row_generator_module_name is not None:
+        new_content += f"\nimport {row_generator_module_name}"
+    story_generator_module_name = config.get("story_generators_module", None)
+    if story_generator_module_name is not None:
+        new_content += f"\nimport {story_generator_module_name}"
     if src_stats_filename:
         new_content += "\nimport yaml"
         new_content += (
@@ -198,7 +198,7 @@ def make_generators_from_tables(
             f"\n{INDENTATION}SRC_STATS = yaml.load(f, Loader=yaml.FullLoader)"
         )
 
-    generator_dict = "{\n"
+    table_generator_dict = "{\n"
     vocab_dict = "{\n"
 
     settings = get_settings()
@@ -211,7 +211,7 @@ def make_generators_from_tables(
     )
 
     for table in tables_module.Base.metadata.sorted_tables:
-        table_config = generator_config.get("tables", {}).get(table.name, {})
+        table_config = config.get("tables", {}).get(table.name, {})
 
         if table_config.get("vocabulary_table") is True:
 
@@ -231,15 +231,17 @@ def make_generators_from_tables(
             new_content, new_generator_name = _add_generator_for_table(
                 new_content, tables_module, table_config, table
             )
-            generator_dict += f'{INDENTATION}"{table.name}": {new_generator_name},\n'
+            table_generator_dict += (
+                f'{INDENTATION}"{table.name}": {new_generator_name},\n'
+            )
 
-    generator_dict += "}"
+    table_generator_dict += "}"
     vocab_dict += "}"
 
-    new_content += "\n\n" + "generator_dict = " + generator_dict + "\n"
+    new_content += "\n\n" + "table_generator_dict = " + table_generator_dict + "\n"
     new_content += "\n\n" + "vocab_dict = " + vocab_dict + "\n"
 
-    new_content = _add_story_generators(new_content, generator_config)
+    new_content = _add_story_generators(new_content, config)
     return new_content
 
 
