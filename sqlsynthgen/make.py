@@ -8,7 +8,7 @@ import snsql
 from mimesis.providers.base import BaseProvider
 from pydantic import PostgresDsn
 from sqlacodegen.generators import DeclarativeGenerator
-from sqlalchemy import MetaData, create_engine
+from sqlalchemy import MetaData, create_engine, text
 from sqlalchemy.sql import sqltypes
 
 from sqlsynthgen import providers
@@ -278,7 +278,8 @@ def make_src_stats(
     else:
 
         def execute_query(conn: Any, stat_data: Dict[str, Any]) -> Any:
-            return conn.execute(stat_data["query"]).fetch_all()
+            result = conn.execute(text(stat_data["query"])).fetchall()
+            return [list(r) for r in result]
 
     with engine.connect() as conn:
         src_stats = {
