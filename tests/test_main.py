@@ -76,13 +76,25 @@ class TestCLI(SSGTestCase):
         )
         self.assertEqual(1, result.exit_code)
 
-    def test_make_generators_with_force_enabled(self) -> None:
+    @patch("sqlsynthgen.main.Path")
+    @patch("sqlsynthgen.main.import_file")
+    @patch("sqlsynthgen.main.make_generators_from_tables")
+    def test_make_generators_with_force_enabled(
+        self, mock_make: MagicMock, mock_import: MagicMock, mock_path: MagicMock
+    ) -> None:
         """Tests the make-generators sub-commands override files when instructed."""
 
-        result: Result = runner.invoke(app, ["make-generators", "--force"])
-        print(result)
+        mock_path.return_value.exists.return_value = True
+        mock_make.return_value = "make result"
 
-        self.assertEqual(1, result.exit_code)
+        result: Result = runner.invoke(app, ["make-generators", "--force"])
+
+        mock_make.assert_called_once_with(mock_import.return_value, {}, None)
+        mock_path.return_value.write_text.assert_called_once_with(
+            "make result", encoding="utf-8"
+        )
+
+        self.assertSuccess(result)
 
     @patch("sqlsynthgen.main.create_db_tables")
     @patch("sqlsynthgen.main.import_file")
