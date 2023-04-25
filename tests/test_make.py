@@ -138,7 +138,7 @@ class TestMakeStats(RequiresDBTestCase):
         conf_path = Path("example_config.yaml")
         with open(conf_path, "r", encoding="utf8") as f:
             config = yaml.safe_load(f)
-        config_no_snsql = {"use-smartnoisesql": False, **config}
+        config_no_snsql = {"use-smartnoise-sql": False, **config}
 
         # Check that make_src_stats works with, or without, a schema
         for args in (
