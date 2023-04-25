@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, call, patch
 
 import yaml
+from click.testing import Result
 from typer.testing import CliRunner
 
 from sqlsynthgen.main import app
@@ -73,6 +74,14 @@ class TestCLI(SSGTestCase):
         self.assertEqual(
             "ssg.py should not already exist. Exiting...\n", mock_stderr.getvalue()
         )
+        self.assertEqual(1, result.exit_code)
+
+    def test_make_generators_with_force_enabled(self) -> None:
+        """Tests the make-generators sub-commands override files when instructed."""
+
+        result: Result = runner.invoke(app, ["make-generators", "--force"])
+        print(result)
+
         self.assertEqual(1, result.exit_code)
 
     @patch("sqlsynthgen.main.create_db_tables")

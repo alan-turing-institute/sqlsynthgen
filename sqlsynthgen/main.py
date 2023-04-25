@@ -100,6 +100,7 @@ def make_generators(
     ssg_file: str = typer.Option(SSG_FILENAME),
     config_file: Optional[str] = typer.Option(None),
     stats_file: Optional[str] = typer.Option(None),
+    force: bool = typer.Option(False, "--force", "--f"),
 ) -> None:
     """Make a SQLSynthGen file of generator classes.
 
@@ -117,7 +118,7 @@ def make_generators(
         stats_file (str): Path to source stats file (output of make-stats).
     """
     ssg_file_path = Path(ssg_file)
-    if ssg_file_path.exists():
+    if ssg_file_path.exists() and not force:
         print(f"{ssg_file} should not already exist. Exiting...", file=stderr)
         sys.exit(1)
 
