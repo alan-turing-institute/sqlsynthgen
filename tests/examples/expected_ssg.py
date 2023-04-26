@@ -21,7 +21,7 @@ import row_generators
 import story_generators
 import yaml
 with open("example_stats.yaml", "r", encoding="utf-8") as f:
-    SRC_STATS = yaml.load(f, Loader=yaml.FullLoader)
+    SRC_STATS = yaml.unsafe_load(f)
 
 concept_vocab = FileUploader(tests.examples.example_orm.Concept.__table__)
 
