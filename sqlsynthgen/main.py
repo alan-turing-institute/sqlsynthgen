@@ -138,7 +138,7 @@ def make_stats(
 ) -> None:
     """Compute summary statistics from the source database, write them to a YAML file.
 
-    Example:ß
+    Example:
         $ sqlsynthgen make_stats --config-file=example_config.yaml
     """
     stats_file_path = Path(stats_file)
