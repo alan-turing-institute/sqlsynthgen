@@ -8,6 +8,7 @@ from click.testing import Result
 from typer.testing import CliRunner
 
 from sqlsynthgen.main import app
+from sqlsynthgen.settings import Settings
 from tests.utils import SSGTestCase, get_test_settings
 
 runner = CliRunner(mix_stderr=False)
@@ -60,7 +61,7 @@ class TestCLI(SSGTestCase):
     def test_make_generators_errors_if_file_exists(
         self, mock_stderr: MagicMock, mock_path: MagicMock
     ) -> None:
-        """Test the make-tables sub-command doesn't overwrite."""
+        """Test the make-generators sub-command doesn't overwrite."""
 
         mock_path.return_value.exists.return_value = True
 
@@ -192,6 +193,35 @@ class TestCLI(SSGTestCase):
             "orm.py should not already exist. Exiting...\n", mock_stderr.getvalue()
         )
         self.assertEqual(1, result.exit_code)
+
+    @patch("sqlsynthgen.main.make_tables_file")
+    @patch("sqlsynthgen.main.get_settings")
+    @patch("sqlsynthgen.main.Path")
+    def test_make_tables_with_force_enabled(
+        self,
+        mock_path: MagicMock,
+        mock_get_settings: MagicMock,
+        mock_make_tables: MagicMock,
+    ) -> None:
+        """Test the make-table sub-command, when the force option is activated."""
+
+        mock_path.return_value.exists.return_value = True
+
+        test_settings: Settings = get_test_settings()
+        mock_tables_output: str = "make_tables_file output"
+
+        mock_get_settings.return_value = test_settings
+        mock_make_tables.return_value = mock_tables_output
+
+        result: Result = runner.invoke(app, ["make-tables", "--force"])
+
+        mock_make_tables.assert_called_once_with(
+            test_settings.src_postgres_dsn, test_settings.src_schema
+        )
+        mock_path.return_value.write_text.assert_called_once_with(
+            mock_tables_output, encoding="utf-8"
+        )
+        self.assertSuccess(result)
 
     @patch("sqlsynthgen.main.Path")
     @patch("sqlsynthgen.main.make_src_stats")
