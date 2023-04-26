@@ -134,14 +134,15 @@ def make_generators(
 def make_stats(
     config_file: str = typer.Option(...),
     stats_file: str = typer.Option(STATS_FILENAME),
+    force: bool = typer.Option(False, "--force", "--f"),
 ) -> None:
     """Compute summary statistics from the source database, write them to a YAML file.
 
-    Example:
+    Example:ß
         $ sqlsynthgen make_stats --config-file=example_config.yaml
     """
     stats_file_path = Path(stats_file)
-    if stats_file_path.exists():
+    if stats_file_path.exists() and not force:
         print(f"{stats_file} should not already exist. Exiting...", file=stderr)
         sys.exit(1)
     settings = get_settings()

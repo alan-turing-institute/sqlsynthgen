@@ -1,6 +1,7 @@
 """Tests for the main module."""
 from io import StringIO
 from pathlib import Path
+from typing import Dict
 from unittest.mock import MagicMock, call, patch
 
 import yaml
@@ -83,7 +84,7 @@ class TestCLI(SSGTestCase):
     def test_make_generators_with_force_enabled(
         self, mock_make: MagicMock, mock_import: MagicMock, mock_path: MagicMock
     ) -> None:
-        """Tests the make-generators sub-commands override files when instructed."""
+        """Tests the make-generators sub-commands overwrite files when instructed."""
 
         mock_path.return_value.exists.return_value = True
         mock_make.return_value = "make result"
@@ -261,6 +262,7 @@ class TestCLI(SSGTestCase):
         mock_path.return_value.exists.return_value = True
         example_conf_path = "tests/examples/example_config.yaml"
         output_path = "make_stats_output.yaml"
+
         result = runner.invoke(
             app,
             [
@@ -275,3 +277,38 @@ class TestCLI(SSGTestCase):
             mock_stderr.getvalue(),
         )
         self.assertEqual(1, result.exit_code)
+
+    @patch("sqlsynthgen.main.Path")
+    @patch("sqlsynthgen.main.make_src_stats")
+    @patch("sqlsynthgen.main.get_settings")
+    def test_make_stats_with_force_enabled(
+        self, mock_get_settings: MagicMock, mock_make: MagicMock, mock_path: MagicMock
+    ) -> None:
+        """Tests that the make-stats command overwrite files when instructed."""
+        test_config_file: str = "tests/examples/example_config.yaml"
+        with open(test_config_file, "r", encoding="utf8") as f:
+            config_file_content: Dict = yaml.safe_load(f)
+
+        mock_path.return_value.exists.return_value = True
+        test_settings: Settings = get_test_settings()
+        mock_get_settings.return_value = test_settings
+        make_test_output: Dict = {"some_stat": 0}
+        mock_make.return_value = make_test_output
+
+        result: Result = runner.invoke(
+            app,
+            [
+                "make-stats",
+                "--stats-file=stats_file.yaml",
+                f"--config-file={test_config_file}",
+                "--force",
+            ],
+        )
+
+        mock_make.assert_called_once_with(
+            test_settings.src_postgres_dsn, config_file_content
+        )
+        mock_path.return_value.write_text.assert_called_once_with(
+            "some_stat: 0\n", encoding="utf-8"
+        )
+        self.assertSuccess(result)
