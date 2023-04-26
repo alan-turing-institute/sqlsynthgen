@@ -200,9 +200,7 @@ def make_table_generators(
         new_content += (
             f'\nwith open("{src_stats_filename}", "r", encoding="utf-8") as f:'
         )
-        new_content += (
-            f"\n{INDENTATION}SRC_STATS = yaml.load(f, Loader=yaml.FullLoader)"
-        )
+        new_content += f"\n{INDENTATION}SRC_STATS = yaml.unsafe_load(f)"
 
     table_generator_dict = "{\n"
     vocab_dict = "{\n"
