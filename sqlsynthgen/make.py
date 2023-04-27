@@ -96,7 +96,7 @@ def _add_default_generator(content: str, tables_module: ModuleType, column: Any)
             raise NotImplementedError(
                 "Can't handle multiple foreign keys for one column."
             )
-        fkey = column.foreign_keys.pop()
+        fkey = next(iter(column.foreign_keys))
         target_name_parts = fkey.target_fullname.split(".")
         target_table_name = ".".join(target_name_parts[:-1])
         target_column_name = target_name_parts[-1]
