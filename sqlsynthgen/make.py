@@ -138,7 +138,10 @@ def _add_generator_for_table(
 
 
 def make_generators_from_tables(
-    tables_module: ModuleType, generator_config: dict, src_stats_filename: Optional[str]
+    tables_module: ModuleType,
+    generator_config: dict,
+    src_stats_filename: Optional[str],
+    overwrite_files: bool = False,
 ) -> str:
     """Create sqlsynthgen generator classes from a sqlacodegen-generated file.
 
@@ -183,7 +186,7 @@ def make_generators_from_tables(
         if table_config.get("vocabulary_table") is True:
 
             table_content, vocabulary_dictionary = _make_generator_for_vocabulary_table(
-                tables_module, table, engine
+                tables_module, table, engine, overwrite_files=overwrite_files
             )
             new_content += table_content
             vocab_dict += vocabulary_dictionary
@@ -208,6 +211,7 @@ def _make_generator_for_vocabulary_table(
     table: Any,
     engine: Any,
     table_file_name: Optional[str] = None,
+    overwrite_files: bool = False,
 ) -> Tuple[str, str]:
     orm_class: Optional[Type] = _orm_class_from_table_name(
         tables_module, table.fullname
@@ -225,7 +229,7 @@ def _make_generator_for_vocabulary_table(
     )
 
     yaml_file_name: str = table_file_name or table.fullname + ".yaml"
-    if Path(yaml_file_name).exists():
+    if Path(yaml_file_name).exists() and not overwrite_files:
         print(f"{str(yaml_file_name)} already exists. Exiting...", file=stderr)
         sys.exit(1)
     else:
