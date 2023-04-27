@@ -100,7 +100,7 @@ def make_generators(
     ssg_file: str = typer.Option(SSG_FILENAME),
     config_file: Optional[str] = typer.Option(None),
     stats_file: Optional[str] = typer.Option(None),
-    force: bool = typer.Option(False, "--force", "--f"),
+    force: bool = typer.Option(False, "--force", "-f"),
 ) -> None:
     """Make a SQLSynthGen file of generator classes.
 
@@ -134,7 +134,7 @@ def make_generators(
 def make_stats(
     config_file: str = typer.Option(...),
     stats_file: str = typer.Option(STATS_FILENAME),
-    force: bool = typer.Option(False, "--force", "--f"),
+    force: bool = typer.Option(False, "--force", "-f"),
 ) -> None:
     """Compute summary statistics from the source database, write them to a YAML file.
 
@@ -157,7 +157,7 @@ def make_stats(
 @app.command()
 def make_tables(
     orm_file: str = typer.Option(ORM_FILENAME),
-    force: bool = typer.Option(False, "--force", "--f"),
+    force: bool = typer.Option(False, "--force", "-f"),
 ) -> None:
     """Make a SQLAlchemy file of Table classes.
 

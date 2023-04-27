@@ -89,14 +89,18 @@ class TestCLI(SSGTestCase):
         mock_path.return_value.exists.return_value = True
         mock_make.return_value = "make result"
 
-        result: Result = runner.invoke(app, ["make-generators", "--force"])
+        for force_option in ["--force", "-f"]:
+            with self.subTest(f"Using option {force_option}"):
+                result: Result = runner.invoke(app, ["make-generators", force_option])
 
-        mock_make.assert_called_once_with(mock_import.return_value, {}, None)
-        mock_path.return_value.write_text.assert_called_once_with(
-            "make result", encoding="utf-8"
-        )
+                mock_make.assert_called_once_with(mock_import.return_value, {}, None)
+                mock_path.return_value.write_text.assert_called_once_with(
+                    "make result", encoding="utf-8"
+                )
+                self.assertSuccess(result)
 
-        self.assertSuccess(result)
+                mock_make.reset_mock()
+                mock_path.reset_mock()
 
     @patch("sqlsynthgen.main.create_db_tables")
     @patch("sqlsynthgen.main.import_file")
@@ -214,15 +218,21 @@ class TestCLI(SSGTestCase):
         mock_get_settings.return_value = test_settings
         mock_make_tables.return_value = mock_tables_output
 
-        result: Result = runner.invoke(app, ["make-tables", "--force"])
+        for force_option in ["--force", "-f"]:
 
-        mock_make_tables.assert_called_once_with(
-            test_settings.src_postgres_dsn, test_settings.src_schema
-        )
-        mock_path.return_value.write_text.assert_called_once_with(
-            mock_tables_output, encoding="utf-8"
-        )
-        self.assertSuccess(result)
+            with self.subTest(f"Using option {force_option}"):
+                result: Result = runner.invoke(app, ["make-tables", force_option])
+
+                mock_make_tables.assert_called_once_with(
+                    test_settings.src_postgres_dsn, test_settings.src_schema
+                )
+                mock_path.return_value.write_text.assert_called_once_with(
+                    mock_tables_output, encoding="utf-8"
+                )
+                self.assertSuccess(result)
+
+                mock_make_tables.reset_mock()
+                mock_path.reset_mock()
 
     @patch("sqlsynthgen.main.Path")
     @patch("sqlsynthgen.main.make_src_stats")
@@ -295,20 +305,26 @@ class TestCLI(SSGTestCase):
         make_test_output: Dict = {"some_stat": 0}
         mock_make.return_value = make_test_output
 
-        result: Result = runner.invoke(
-            app,
-            [
-                "make-stats",
-                "--stats-file=stats_file.yaml",
-                f"--config-file={test_config_file}",
-                "--force",
-            ],
-        )
+        for force_option in ["--force", "-f"]:
 
-        mock_make.assert_called_once_with(
-            test_settings.src_postgres_dsn, config_file_content
-        )
-        mock_path.return_value.write_text.assert_called_once_with(
-            "some_stat: 0\n", encoding="utf-8"
-        )
-        self.assertSuccess(result)
+            with self.subTest(f"Using option {force_option}"):
+                result: Result = runner.invoke(
+                    app,
+                    [
+                        "make-stats",
+                        "--stats-file=stats_file.yaml",
+                        f"--config-file={test_config_file}",
+                        force_option,
+                    ],
+                )
+
+                mock_make.assert_called_once_with(
+                    test_settings.src_postgres_dsn, config_file_content
+                )
+                mock_path.return_value.write_text.assert_called_once_with(
+                    "some_stat: 0\n", encoding="utf-8"
+                )
+                self.assertSuccess(result)
+
+                mock_make.reset_mock()
+                mock_path.reset_mock()
