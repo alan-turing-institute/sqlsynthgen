@@ -3,7 +3,6 @@ import os
 import sys
 from importlib import import_module
 from pathlib import Path
-from sys import stderr
 from types import ModuleType
 from typing import Any
 
@@ -42,19 +41,13 @@ def import_file(file_name: str) -> ModuleType:
     return module
 
 
-def download_table(table: Any, engine: Any) -> None:
+def download_table(table: Any, engine: Any, yaml_file_name: str) -> None:
     """Download a Table and store it as a .yaml file."""
-    yaml_file_name = table.fullname + ".yaml"
-    yaml_file_path = Path(yaml_file_name)
-    if yaml_file_path.exists():
-        print(f"{str(yaml_file_name)} already exists. Exiting...", file=stderr)
-        sys.exit(1)
-
     stmt = select([table])
     with engine.connect() as conn:
         result = [dict(row) for row in conn.execute(stmt)]
 
-    with yaml_file_path.open("w", newline="", encoding="utf-8") as yamlfile:
+    with Path(yaml_file_name).open("w", newline="", encoding="utf-8") as yamlfile:
         yamlfile.write(yaml.dump(result))
 
 

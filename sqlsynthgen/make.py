@@ -1,8 +1,10 @@
 """Functions to make a module of generator classes."""
 import inspect
+import sys
+from pathlib import Path
 from sys import stderr
 from types import ModuleType
-from typing import Any, Final, Optional
+from typing import Any, Final, Optional, Tuple, Type
 
 import snsql
 from mimesis.providers.base import BaseProvider
@@ -180,17 +182,11 @@ def make_generators_from_tables(
 
         if table_config.get("vocabulary_table") is True:
 
-            orm_class = _orm_class_from_table_name(tables_module, table.fullname)
-            if not orm_class:
-                raise RuntimeError(f"Couldn't find {table.fullname} in {tables_module}")
-            class_name = orm_class.__name__
-            new_content += (
-                f"\n\n{class_name.lower()}_vocab "
-                f"= FileUploader({tables_module.__name__}.{class_name}.__table__)"
+            table_content, vocabulary_dictionary = _make_generator_for_vocabulary_table(
+                tables_module, table, engine
             )
-            vocab_dict += f'{INDENTATION}"{table.name}": {class_name.lower()}_vocab,\n'
-
-            download_table(table, engine)
+            new_content += table_content
+            vocab_dict += vocabulary_dictionary
 
         else:
             new_content, new_generator_name = _add_generator_for_table(
@@ -205,6 +201,37 @@ def make_generators_from_tables(
     new_content += "\n\n" + "vocab_dict = " + vocab_dict + "\n"
 
     return new_content
+
+
+def _make_generator_for_vocabulary_table(
+    tables_module: ModuleType,
+    table: Any,
+    engine: Any,
+    table_file_name: Optional[str] = None,
+) -> Tuple[str, str]:
+    orm_class: Optional[Type] = _orm_class_from_table_name(
+        tables_module, table.fullname
+    )
+    if not orm_class:
+        raise RuntimeError(f"Couldn't find {table.fullname} in {tables_module}")
+
+    class_name: str = orm_class.__name__
+    vocabulary_table_content: str = (
+        f"\n\n{class_name.lower()}_vocab "
+        f"= FileUploader({tables_module.__name__}.{class_name}.__table__)"
+    )
+    vocabulary_dictionary: str = (
+        f'{INDENTATION}"{table.name}": {class_name.lower()}_vocab,\n'
+    )
+
+    yaml_file_name: str = table_file_name or table.fullname + ".yaml"
+    if Path(yaml_file_name).exists():
+        print(f"{str(yaml_file_name)} already exists. Exiting...", file=stderr)
+        sys.exit(1)
+    else:
+        download_table(table, engine, yaml_file_name)
+
+    return vocabulary_table_content, vocabulary_dictionary
 
 
 def make_tables_file(db_dsn: PostgresDsn, schema_name: Optional[str]) -> str:

@@ -31,6 +31,7 @@ class TestMakeGenerators(SSGTestCase):
         """Post-test cleanup."""
         os.chdir(self.start_dir)
 
+    @patch("sqlsynthgen.make.Path")
     @patch("sqlsynthgen.make.get_settings")
     @patch("sqlsynthgen.make.create_engine")
     @patch("sqlsynthgen.make.download_table")
@@ -39,8 +40,12 @@ class TestMakeGenerators(SSGTestCase):
         mock_download: MagicMock,
         mock_create: MagicMock,
         mock_get_settings: MagicMock,
+        mock_path: MagicMock,
     ) -> None:
         """Check that we can make a generators file from a tables module."""
+
+        mock_path.return_value.exists.return_value = False
+
         mock_get_settings.return_value = get_test_settings()
         with open("expected_ssg.py", encoding="utf-8") as expected_output:
             expected = expected_output.read()
@@ -52,8 +57,70 @@ class TestMakeGenerators(SSGTestCase):
         actual = make_generators_from_tables(example_orm, config, stats_path)
         mock_download.assert_called_once()
         mock_create.assert_called_once()
+        mock_path.assert_called_once()
 
         self.assertEqual(expected, actual)
+
+    # @patch("sys.exit")
+    # @patch("sqlsynthgen.make.stderr", new_callable=StringIO)
+    # @patch("sqlsynthgen.make.download_table")
+    # @patch("sqlsynthgen.make.Path")
+    # @patch("sqlsynthgen.make.get_settings")
+    # @patch("sqlsynthgen.make.create_engine")
+    # def test_make_generators_do_not_overwrite(
+    #     self,
+    #     mock_create: MagicMock,
+    #     mock_get_settings: MagicMock,
+    #     mock_path: MagicMock,
+    #     mock_download: MagicMock,
+    #     mock_stderr: MagicMock,
+    #     mock_exit: MagicMock,
+    # ) -> None:
+    #     mock_path.return_value.exists.return_value = True
+    #     mock_get_settings.return_value = get_test_settings()
+    #     configuration_file: str = "example_config.yaml"
+    #     with open(configuration_file, "r", encoding="utf8") as f:
+    #         configuration: Dict = yaml.safe_load(f)
+    #     stats_path = "example_stats.yaml"
+
+    #     try:
+    #         make_generators_from_tables(example_orm, configuration, stats_path)
+    #     except SystemExit:
+    #         pass
+
+    #     mock_create.assert_called_once()
+    #     mock_exit.assert_called_once_with(1)
+    #     mock_download.assert_not_called()
+    #     self.assertEqual(
+    #         "myschema.concept.yaml already exists. Exiting...\n", mock_stderr.getvalue()
+    #     )
+
+    # @patch("sqlsynthgen.make.download_table")
+    # @patch("sqlsynthgen.make.create_engine")
+    # @patch("sqlsynthgen.make.get_settings")
+    # @patch("sqlsynthgen.make.Path")
+    # def test_make_generators_force_overwrite(
+    #     self,
+    #     mock_path: MagicMock,
+    #     mock_get_settings: MagicMock,
+    #     mock_create: MagicMock,
+    #     mock_download: MagicMock,
+    # ) -> None:
+
+    #     mock_path.return_value.exists.return_value = False
+
+    #     mock_get_settings.return_value = get_test_settings()
+    #     with open("expected_ssg.py", encoding="utf-8") as expected_output:
+    #         expected: str = expected_output.read()
+    #     conf_path = "example_config.yaml"
+    #     with open(conf_path, "r", encoding="utf8") as f:
+    #         config: Dict = yaml.safe_load(f)
+    #     stats_path: str = "example_stats.yaml"
+
+    #     actual = make_generators_from_tables(example_orm, config, stats_path)
+
+    #     mock_create.assert_called_once()
+    #     mock_download.assert_called_once()
 
 
 class TestMakeTables(SSGTestCase):
