@@ -1,5 +1,6 @@
 """Tests for the create module."""
 import itertools as itt
+from typing import Any, Generator, Tuple
 from unittest.mock import MagicMock, call, patch
 
 from sqlsynthgen.create import (
@@ -51,6 +52,15 @@ class MyTestCase(SSGTestCase):
     def test_populate(self, mock_insert: MagicMock) -> None:
         """Test the populate function."""
         table_name = "table_name"
+
+        def story() -> Generator[Tuple[str, dict], None, None]:
+            """Mock story."""
+            yield "table_name", {}
+
+        def mock_story_gen(_: Any) -> Generator[Tuple[str, dict], None, None]:
+            """A function that returns mock stories."""
+            return story()
+
         for num_stories_per_pass, num_rows_per_pass in itt.product([0, 2], [0, 3]):
             mock_src_conn = MagicMock()
             mock_dst_conn = MagicMock()
@@ -60,8 +70,6 @@ class MyTestCase(SSGTestCase):
             mock_gen = MagicMock()
             mock_gen.num_rows_per_pass = num_rows_per_pass
             mock_gen.return_value.__dict__ = {}
-            mock_story_gen = MagicMock()
-            mock_story_gen.return_value = {table_name: [{}]}
 
             tables = [mock_table]
             row_generators = {table_name: mock_gen}
@@ -74,9 +82,6 @@ class MyTestCase(SSGTestCase):
                 mock_src_conn, mock_dst_conn, tables, row_generators, story_generators
             )
 
-            mock_story_gen.assert_has_calls(
-                [call(mock_dst_conn)] * num_stories_per_pass
-            )
             mock_gen.assert_has_calls(
                 [call(mock_src_conn, mock_dst_conn)]
                 * (num_stories_per_pass + num_rows_per_pass)
