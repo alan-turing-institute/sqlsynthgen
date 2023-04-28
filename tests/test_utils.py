@@ -1,15 +1,13 @@
 """Tests for the utils module."""
 import os
 import sys
-from io import StringIO
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 from sqlalchemy import Column, Integer, create_engine, insert
 from sqlalchemy.orm import declarative_base
 
 from sqlsynthgen.utils import download_table, import_file
-from tests.utils import RequiresDBTestCase, SSGTestCase, SysExit, run_psql
+from tests.utils import RequiresDBTestCase, SSGTestCase, run_psql
 
 # pylint: disable=invalid-name
 Base = declarative_base()
@@ -83,7 +81,7 @@ class TestDownload(RequiresDBTestCase):
         with self.engine.connect() as conn:
             conn.execute(insert(MyTable).values({"id": 1}))
 
-        download_table(MyTable.__table__, self.engine)
+        download_table(MyTable.__table__, self.engine, "mytable.yaml")
 
         # The .strip() gets rid of any possible empty lines at the end of the file.
         with Path("../examples/expected.yaml").open(encoding="utf-8") as yamlfile:
@@ -93,25 +91,3 @@ class TestDownload(RequiresDBTestCase):
             actual = yamlfile.read().strip()
 
         self.assertEqual(expected, actual)
-
-    @patch("sys.exit")
-    @patch("sqlsynthgen.utils.stderr", new_callable=StringIO)
-    @patch("sqlsynthgen.utils.Path")
-    def test_download_table_does_not_overwrite(
-        self, mock_path: MagicMock, mock_stderr: MagicMock, mock_exit: MagicMock
-    ) -> None:
-        """Test the download_table function."""
-        # pylint: disable=protected-access
-
-        mock_exit.side_effect = SysExit
-        mock_path.return_value.exists.return_value = True
-
-        try:
-            download_table(MyTable.__table__, None)
-        except SysExit:
-            pass
-
-        self.assertEqual(
-            "mytable.yaml already exists. Exiting...\n", mock_stderr.getvalue()
-        )
-        mock_exit.assert_called_once_with(1)

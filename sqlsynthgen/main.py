@@ -2,6 +2,7 @@
 import sys
 from pathlib import Path
 from sys import stderr
+from types import ModuleType
 from typing import Final, Optional
 
 import typer
@@ -100,6 +101,7 @@ def make_generators(
     ssg_file: str = typer.Option(SSG_FILENAME),
     config_file: Optional[str] = typer.Option(None),
     stats_file: Optional[str] = typer.Option(None),
+    force: bool = typer.Option(False, "--force", "-f"),
 ) -> None:
     """Make a SQLSynthGen file of generator classes.
 
@@ -115,15 +117,18 @@ def make_generators(
         ssg_file (str): Path to write the generators file to.
         config_file (str): Path to configuration file.
         stats_file (str): Path to source stats file (output of make-stats).
+        force (bool): Overwrite the ORM file if exists. Default to False.
     """
     ssg_file_path = Path(ssg_file)
-    if ssg_file_path.exists():
+    if ssg_file_path.exists() and not force:
         print(f"{ssg_file} should not already exist. Exiting...", file=stderr)
         sys.exit(1)
 
-    orm_module = import_file(orm_file)
+    orm_module: ModuleType = import_file(orm_file)
     generator_config = read_yaml_file(config_file) if config_file is not None else {}
-    result = make_generators_from_tables(orm_module, generator_config, stats_file)
+    result: str = make_generators_from_tables(
+        orm_module, generator_config, stats_file, overwrite_files=force
+    )
 
     ssg_file_path.write_text(result, encoding="utf-8")
 
@@ -132,6 +137,7 @@ def make_generators(
 def make_stats(
     config_file: str = typer.Option(...),
     stats_file: str = typer.Option(STATS_FILENAME),
+    force: bool = typer.Option(False, "--force", "-f"),
 ) -> None:
     """Compute summary statistics from the source database, write them to a YAML file.
 
@@ -139,7 +145,7 @@ def make_stats(
         $ sqlsynthgen make_stats --config-file=example_config.yaml
     """
     stats_file_path = Path(stats_file)
-    if stats_file_path.exists():
+    if stats_file_path.exists() and not force:
         print(f"{stats_file} should not already exist. Exiting...", file=stderr)
         sys.exit(1)
     settings = get_settings()
@@ -154,6 +160,7 @@ def make_stats(
 @app.command()
 def make_tables(
     orm_file: str = typer.Option(ORM_FILENAME),
+    force: bool = typer.Option(False, "--force", "-f"),
 ) -> None:
     """Make a SQLAlchemy file of Table classes.
 
@@ -166,9 +173,10 @@ def make_tables(
 
     Args:
         orm_file (str): Path to write the Python ORM file.
+        force (bool): Overwrite ORM file, if exists. Default to False.
     """
     orm_file_path = Path(orm_file)
-    if orm_file_path.exists():
+    if orm_file_path.exists() and not force:
         print(f"{orm_file} should not already exist. Exiting...", file=stderr)
         sys.exit(1)
 

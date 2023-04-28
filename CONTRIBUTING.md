@@ -33,6 +33,8 @@ Please install the following software on your workstation:
     pre-commit install --install-hooks
     ```
 
+    *To execute the hooks before a commit, run `pre-commit run --all-files`.*
+
 1. Finally, activate the Poetry shell. Now you're ready to play with the code:
 
     ```bash
