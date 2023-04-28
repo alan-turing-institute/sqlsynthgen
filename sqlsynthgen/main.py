@@ -2,6 +2,7 @@
 import sys
 from pathlib import Path
 from sys import stderr
+from types import ModuleType
 from typing import Final, Optional
 
 import typer
@@ -123,9 +124,11 @@ def make_generators(
         print(f"{ssg_file} should not already exist. Exiting...", file=stderr)
         sys.exit(1)
 
-    orm_module = import_file(orm_file)
+    orm_module: ModuleType = import_file(orm_file)
     generator_config = read_yaml_file(config_file) if config_file is not None else {}
-    result = make_generators_from_tables(orm_module, generator_config, stats_file)
+    result: str = make_generators_from_tables(
+        orm_module, generator_config, stats_file, overwrite_files=force
+    )
 
     ssg_file_path.write_text(result, encoding="utf-8")
 

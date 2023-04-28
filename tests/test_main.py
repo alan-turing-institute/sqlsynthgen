@@ -51,7 +51,9 @@ class TestCLI(SSGTestCase):
             catch_exceptions=False,
         )
 
-        mock_make.assert_called_once_with(mock_import.return_value, {}, None)
+        mock_make.assert_called_once_with(
+            mock_import.return_value, {}, None, overwrite_files=False
+        )
         mock_path.return_value.write_text.assert_called_once_with(
             "some text", encoding="utf-8"
         )
@@ -93,7 +95,9 @@ class TestCLI(SSGTestCase):
             with self.subTest(f"Using option {force_option}"):
                 result: Result = runner.invoke(app, ["make-generators", force_option])
 
-                mock_make.assert_called_once_with(mock_import.return_value, {}, None)
+                mock_make.assert_called_once_with(
+                    mock_import.return_value, {}, None, overwrite_files=True
+                )
                 mock_path.return_value.write_text.assert_called_once_with(
                     "make result", encoding="utf-8"
                 )
