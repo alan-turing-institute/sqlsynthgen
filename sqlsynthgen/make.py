@@ -140,8 +140,9 @@ def _add_generator_for_table(
     return content, new_class_name
 
 
-def _add_story_generators(content: str, config: dict) -> str:
+def _add_story_generators(config: dict) -> str:
     """Add story generators to the generator file `content`."""
+    content = ""
     generators = []
     for gen in config.get("story_generators", []):
         name = "run_" + gen["name"].replace(".", "_").lower()
@@ -239,7 +240,7 @@ def make_table_generators(
     new_content += "\n\n" + "table_generator_dict = " + table_generator_dict + "\n"
     new_content += "\n\n" + "vocab_dict = " + vocab_dict + "\n"
 
-    new_content = _add_story_generators(new_content, config)
+    new_content += _add_story_generators(config)
     return new_content
 
 
