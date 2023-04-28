@@ -1,5 +1,4 @@
 import datetime as dt
-import random
 from typing import Any, Dict, Generator, Tuple
 import sqlalchemy as sqla
 
@@ -7,7 +6,9 @@ import sqlalchemy as sqla
 def short_story(
     generic: Any,
 ) -> Generator[Tuple[str, Dict[str, Any]], Dict[str, Any], None]:
-    yield ("person", {"name": generic.person.first_name()})
+
+    # Create one row in the person table and override the default name
+    yield "person", {"name": generic.person.first_name()}
 
 
 def long_story(
