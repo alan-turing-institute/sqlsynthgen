@@ -7,6 +7,7 @@ from typing import Final, Optional
 
 import typer
 import yaml
+from jinja2 import Environment, FileSystemLoader, Template
 
 from sqlsynthgen.create import create_db_data, create_db_tables, create_db_vocab
 from sqlsynthgen.make import (
@@ -20,6 +21,9 @@ from sqlsynthgen.utils import import_file, read_yaml_file
 ORM_FILENAME: Final[str] = "orm.py"
 SSG_FILENAME: Final[str] = "ssg.py"
 STATS_FILENAME: Final[str] = "src-stats.yaml"
+
+TEMPLATE_DIRECTORY: Path = Path(__file__).parent / "templates/"
+SSG_TEMPLATE_FILENAME: Final[str] = "ssg.py.template"
 
 app = typer.Typer()
 
@@ -130,7 +134,13 @@ def make_generators(
         orm_module, generator_config, stats_file, overwrite_files=force
     )
 
-    ssg_file_path.write_text(result, encoding="utf-8")
+    environment: Environment = Environment(
+        loader=FileSystemLoader(str(TEMPLATE_DIRECTORY))
+    )
+    ssg_template: Template = environment.get_template(SSG_TEMPLATE_FILENAME)
+    ssg_content: str = ssg_template.render(ssg_content=result)
+
+    ssg_file_path.write_text(ssg_content, encoding="utf-8")
 
 
 @app.command()
