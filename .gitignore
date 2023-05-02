@@ -145,7 +145,4 @@ docs/temp/*
 
 ssg.py
 orm.py
-concept.yaml
-concept_type.yaml
-mitigation_type.yaml
 src-stats.yaml
