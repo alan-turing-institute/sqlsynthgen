@@ -188,6 +188,7 @@ def make_table_generators(
     Returns:
       A string that is a valid Python module, once written to file.
     """
+    # pylint: disable=too-many-locals
     new_content = HEADER_TEXT
     new_content += f"\nimport {tables_module.__name__}"
     row_generator_module_name = config.get("row_generators_module", None)
