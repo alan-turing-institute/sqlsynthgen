@@ -12,16 +12,19 @@ smartnoise-sql:
         name: research_opt_out
         type: boolean
         private_id: False
+
 src-stats:
   - name: count_opt_outs
     query: SELECT count(*) AS num, research_opt_out FROM person GROUP BY research_opt_out
     epsilon: 0.1
     delta: 0.0001
-custom_generators_module: custom_generators
+
+row_generators_module: row_generators
 tables:
+
   person:
     num_rows_per_pass: 2
-    custom_generators:
+    row_generators:
       - name: generic.person.full_name
         args: null
         columns_assigned: name
@@ -30,7 +33,7 @@ tables:
           start: 2022
           end: 2022
         columns_assigned: stored_from
-      - name: custom_generators.boolean_from_src_stats_generator
+      - name: row_generators.boolean_from_src_stats_generator
         args:
           generic: generic
           src_stats: SRC_STATS["count_opt_outs"]
@@ -38,8 +41,8 @@ tables:
 
   hospital_visit:
     num_rows_per_pass: 3
-    custom_generators:
-      - name: custom_generators.timespan_generator
+    row_generators:
+      - name: row_generators.timespan_generator
         args:
           generic: generic
           earliest_start_year: 2021
@@ -50,9 +53,23 @@ tables:
           - visit_start
           - visit_end
           - visit_duration_seconds
+
   concept:
     vocabulary_table: true
   concept_type:
     vocabulary_table: true
   mitigation_type:
     vocabulary_table: true
+
+story_generators_module: story_generators
+story_generators:
+  - name: story_generators.short_story
+    args:
+      generic: generic
+    num_stories_per_pass: 3
+  - name: story_generators.long_story
+    args:
+      dst_db_conn: dst_db_conn
+      generic: generic
+      count_opt_outs: 'SRC_STATS["count_opt_outs"]'
+    num_stories_per_pass: 2
