@@ -147,18 +147,8 @@ def make_generators_from_tables(
     Returns:
       A string that is a valid Python module, once written to file.
     """
-    new_content = f"\nimport {tables_module.__name__}"
-    generator_module_name = generator_config.get("custom_generators_module", None)
-    if generator_module_name is not None:
-        new_content += f"\nimport {generator_module_name}"
-    if src_stats_filename:
-        new_content += "\nimport yaml"
-        new_content += (
-            f'\nwith open("{src_stats_filename}", "r", encoding="utf-8") as f:'
-        )
-        new_content += (
-            f"\n{INDENTATION}SRC_STATS = yaml.load(f, Loader=yaml.FullLoader)"
-        )
+    new_content: str = ""
+    generator_module_name: str = generator_config.get("custom_generators_module", None)
 
     generator_dict = "{\n"
     vocab_dict = "{\n"
@@ -199,6 +189,9 @@ def make_generators_from_tables(
         {
             "provider_imports": PROVIDER_IMPORTS,
             "ssg_content": new_content,
+            "tables_module": tables_module,
+            "generator_module_name": generator_module_name,
+            "src_stats_filename": src_stats_filename,
         }
     )
 
@@ -227,7 +220,7 @@ def _make_generator_for_vocabulary_table(
 
     class_name: str = orm_class.__name__
     vocabulary_table_content: str = (
-        f"\n\n{class_name.lower()}_vocab "
+        f"\n{class_name.lower()}_vocab "
         f"= FileUploader({tables_module.__name__}.{class_name}.__table__)"
     )
     vocabulary_dictionary: str = (

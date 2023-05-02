@@ -7,4 +7,13 @@ generic = Generic(locale=Locale.EN_GB)
 {% for provider_import in provider_imports %}
 from sqlsynthgen.providers import {{ provider_import }}
 generic.add_provider({{ provider_import }}){% endfor %}
+
+import {{ tables_module.__name__ }}
+{% if generator_module_name is not none -%}
+import {{ generator_module_name }}
+{%- endif %}
+{% if src_stats_filename -%}
+import yaml
+with open("{{ src_stats_filename }}", "r", encoding="utf-8") as f:
+    SRC_STATS = yaml.load(f, Loader=yaml.FullLoader){%- endif %}
 {{ssg_content}}
