@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from sys import stderr
 from types import ModuleType
-from typing import Any, Dict, Final, List, Optional, Tuple, Type
+from typing import Any, Dict, Final, List, Optional, Type
 
 import snsql
 from jinja2 import Environment, FileSystemLoader, Template
@@ -30,16 +30,16 @@ SSG_TEMPLATE_FILENAME: Final[str] = "ssg.py.template"
 INDENTATION: Final[str] = " " * 4
 
 SQL_TO_MIMESIS_MAP = {
-    sqltypes.BigInteger: "generic.numeric.integer_number()",
-    sqltypes.Boolean: "generic.development.boolean()",
-    sqltypes.Date: "generic.datetime.date()",
-    sqltypes.DateTime: "generic.datetime.datetime()",
-    sqltypes.Float: "generic.numeric.float_number()",
-    sqltypes.Integer: "generic.numeric.integer_number()",
-    sqltypes.LargeBinary: "generic.bytes_provider.bytes()",
-    sqltypes.Numeric: "generic.numeric.float_number()",
-    sqltypes.String: "generic.text.color()",
-    sqltypes.Text: "generic.text.color()",
+    sqltypes.BigInteger: "generic.numeric.integer_number",
+    sqltypes.Boolean: "generic.development.boolean",
+    sqltypes.Date: "generic.datetime.date",
+    sqltypes.DateTime: "generic.datetime.datetime",
+    sqltypes.Float: "generic.numeric.float_number",
+    sqltypes.Integer: "generic.numeric.integer_number",
+    sqltypes.LargeBinary: "generic.bytes_provider.bytes",
+    sqltypes.Numeric: "generic.numeric.float_number",
+    sqltypes.String: "generic.text.color",
+    sqltypes.Text: "generic.text.color",
 }
 
 
@@ -52,38 +52,46 @@ def _orm_class_from_table_name(tables_module: Any, full_name: str) -> Optional[A
     return None
 
 
-def _add_custom_generators(content: str, table_config: dict) -> tuple[str, list[str]]:
+def _add_custom_generators(table_config: dict) -> tuple[List[Dict], list[str]]:
     """Append the custom generators to content, for the given table."""
+    column_info: List[Dict] = []
     generators_config = table_config.get("custom_generators", {})
     columns_covered = []
     for gen_conf in generators_config:
+        column_data: Dict[str, Any] = {}
+
         name = gen_conf["name"]
         columns_assigned = gen_conf["columns_assigned"]
         args = gen_conf["args"]
         if isinstance(columns_assigned, str):
             columns_assigned = [columns_assigned]
 
-        content += INDENTATION * 2
-        content += ", ".join(map(lambda x: f"self.{x}", columns_assigned))
+        column_data["column_names"] = ", ".join(
+            map(lambda x: f"self.{x}", columns_assigned)
+        )
         try:
             columns_covered += columns_assigned
         except TypeError:
             # Might be a single string, rather than a list of strings.
             columns_covered.append(columns_assigned)
-        content += f" = {name}("
+
+        column_data["generator_name"] = name
         if args is not None:
-            content += ", ".join(f"{key}={value}" for key, value in args.items())
-        content += ")\n"
-    return content, columns_covered
+            column_data["generator_arguments"] = ", ".join(
+                f"{key}={value}" for key, value in args.items()
+            )
+
+        column_info.append(column_data)
+    return column_info, columns_covered
 
 
-def _add_default_generator(content: str, tables_module: ModuleType, column: Any) -> str:
+def _add_default_generator(tables_module: ModuleType, column: Any) -> Dict[str, Any]:
     """Append a default generator to content, for the given column."""
-    content += INDENTATION * 2
+    column_data: Dict[str, Any] = {"primary_key": False}
     # If it's a primary key column, we presume that primary keys are populated
     # automatically.
     if column.primary_key:
-        content += "pass"
+        column_data["primary_key"] = True
     # If it's a foreign key column, pull random values from the column it
     # references.
     elif column.foreign_keys:
@@ -98,36 +106,40 @@ def _add_default_generator(content: str, tables_module: ModuleType, column: Any)
         target_orm_class = _orm_class_from_table_name(tables_module, target_table_name)
         if target_orm_class is None:
             raise ValueError(f"Could not find the ORM class for {target_table_name}.")
-        content += (
-            f"self.{column.name} = "
-            f"generic.column_value_provider.column_value(dst_db_conn, "
-            f"{tables_module.__name__}.{target_orm_class.__name__}, "
-            f'"{target_column_name}"'
-            ")"
+
+        column_data["column_names"] = f"self.{column.name}"
+        column_data["generator_name"] = "generic.column_value_provider.column_value"
+        column_data["generator_arguments"] = (
+            f"dst_db_conn, {tables_module.__name__}.{target_orm_class.__name__},"
+            + f' "{target_column_name}"'
         )
 
     # Otherwise generate values based on just the datatype of the column.
     else:
         provider = SQL_TO_MIMESIS_MAP[type(column.type)]
-        content += f"self.{column.name} = {provider}"
-    content += "\n"
-    return content
+        column_data["column_names"] = f"self.{column.name}"
+        column_data["generator_name"] = provider
+
+    return column_data
 
 
 def _add_generator_for_table(
-    content: str, tables_module: ModuleType, table_config: dict, table: Any
-) -> tuple[str, str]:
+    tables_module: ModuleType, table_config: dict, table: Any
+) -> Dict[str, Any]:
     """Add to the generator file `content` a generator for the given table."""
-    new_class_name = table.name + "Generator"
-    content += f"\n\nclass {new_class_name}:\n"
-    content += f"{INDENTATION}num_rows_per_pass = {table_config.get('num_rows_per_pass', 1)}\n\n"
-    content += f"{INDENTATION}def __init__(self, src_db_conn, dst_db_conn):\n"
-    content, columns_covered = _add_custom_generators(content, table_config)
+    table_data: Dict[str, Any] = {}
+    table_data["table_name"] = table.name
+    table_data["class_name"] = table.name + "Generator"
+    table_data["num_rows_per_pass"] = table_config.get("num_rows_per_pass", 1)
+
+    columns_and_generators, columns_covered = _add_custom_generators(table_config)
+    table_data["columns"] = columns_and_generators
+
     for column in table.columns:
         if column.name not in columns_covered:
             # No generator for this column in the user config.
-            content = _add_default_generator(content, tables_module, column)
-    return content, new_class_name
+            table_data["columns"].append(_add_default_generator(tables_module, column))
+    return table_data
 
 
 def make_generators_from_tables(
@@ -150,9 +162,6 @@ def make_generators_from_tables(
     new_content: str = ""
     generator_module_name: str = generator_config.get("custom_generators_module", None)
 
-    generator_dict = "{\n"
-    vocab_dict = "{\n"
-
     settings = get_settings()
     engine = (
         create_engine_with_search_path(
@@ -162,28 +171,22 @@ def make_generators_from_tables(
         else create_engine(settings.src_postgres_dsn)
     )
 
+    table_data_list: List[Dict] = []
     for table in tables_module.Base.metadata.sorted_tables:
         table_config = generator_config.get("tables", {}).get(table.name, {})
+        table_data: Dict = {"table_config": table_config}
 
         if table_config.get("vocabulary_table") is True:
 
-            table_content, vocabulary_dictionary = _make_generator_for_vocabulary_table(
+            table_data = table_data | _make_generator_for_vocabulary_table(
                 tables_module, table, engine, overwrite_files=overwrite_files
             )
-            new_content += table_content
-            vocab_dict += vocabulary_dictionary
-
         else:
-            new_content, new_generator_name = _add_generator_for_table(
-                new_content, tables_module, table_config, table
+            table_data = table_data | _add_generator_for_table(
+                tables_module, table_config, table
             )
-            generator_dict += f'{INDENTATION}"{table.name}": {new_generator_name},\n'
 
-    generator_dict += "}"
-    vocab_dict += "}"
-
-    new_content += "\n\n" + "generator_dict = " + generator_dict + "\n"
-    new_content += "\n\n" + "vocab_dict = " + vocab_dict + "\n"
+        table_data_list.append(table_data)
 
     return generate_ssg_content(
         {
@@ -192,6 +195,7 @@ def make_generators_from_tables(
             "tables_module": tables_module,
             "generator_module_name": generator_module_name,
             "src_stats_filename": src_stats_filename,
+            "table_data_list": table_data_list,
         }
     )
 
@@ -199,7 +203,9 @@ def make_generators_from_tables(
 def generate_ssg_content(template_context: Dict[str, Any]) -> str:
     """Generate the content of the ssg.py file as a string."""
     environment: Environment = Environment(
-        loader=FileSystemLoader(str(TEMPLATE_DIRECTORY))
+        loader=FileSystemLoader(str(TEMPLATE_DIRECTORY)),
+        trim_blocks=True,
+        lstrip_blocks=True,
     )
     ssg_template: Template = environment.get_template(SSG_TEMPLATE_FILENAME)
     return ssg_template.render(template_context)
@@ -211,7 +217,7 @@ def _make_generator_for_vocabulary_table(
     engine: Any,
     table_file_name: Optional[str] = None,
     overwrite_files: bool = False,
-) -> Tuple[str, str]:
+) -> Dict[str, Any]:
     orm_class: Optional[Type] = _orm_class_from_table_name(
         tables_module, table.fullname
     )
@@ -219,13 +225,6 @@ def _make_generator_for_vocabulary_table(
         raise RuntimeError(f"Couldn't find {table.fullname} in {tables_module}")
 
     class_name: str = orm_class.__name__
-    vocabulary_table_content: str = (
-        f"\n{class_name.lower()}_vocab "
-        f"= FileUploader({tables_module.__name__}.{class_name}.__table__)"
-    )
-    vocabulary_dictionary: str = (
-        f'{INDENTATION}"{table.name}": {class_name.lower()}_vocab,\n'
-    )
 
     yaml_file_name: str = table_file_name or table.fullname + ".yaml"
     if Path(yaml_file_name).exists() and not overwrite_files:
@@ -234,7 +233,12 @@ def _make_generator_for_vocabulary_table(
     else:
         download_table(table, engine, yaml_file_name)
 
-    return vocabulary_table_content, vocabulary_dictionary
+    return {
+        "is_vocabulary_table": True,
+        "class_name": class_name,
+        "vocabulary_class": f"{class_name.lower()}_vocab",
+        "table_name": table.name,
+    }
 
 
 def make_tables_file(db_dsn: PostgresDsn, schema_name: Optional[str]) -> str:

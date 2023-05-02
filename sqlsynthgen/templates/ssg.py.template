@@ -4,16 +4,56 @@ from mimesis.locales import Locale
 from sqlsynthgen.base import FileUploader
 
 generic = Generic(locale=Locale.EN_GB)
+
 {% for provider_import in provider_imports %}
 from sqlsynthgen.providers import {{ provider_import }}
-generic.add_provider({{ provider_import }}){% endfor %}
+generic.add_provider({{ provider_import }})
+{% endfor %}
 
 import {{ tables_module.__name__ }}
-{% if generator_module_name is not none -%}
+{% if generator_module_name is not none %}
 import {{ generator_module_name }}
-{%- endif %}
-{% if src_stats_filename -%}
+{% endif %}
+
+{% if src_stats_filename %}
 import yaml
 with open("{{ src_stats_filename }}", "r", encoding="utf-8") as f:
-    SRC_STATS = yaml.load(f, Loader=yaml.FullLoader){%- endif %}
-{{ssg_content}}
+    SRC_STATS = yaml.load(f, Loader=yaml.FullLoader)
+{% endif %}
+
+{% for table_data in table_data_list %}
+    {% if table_data.is_vocabulary_table %}
+{{ table_data.vocabulary_class }} = FileUploader({{ tables_module.__name__ }}.{{ table_data.class_name }}.__table__)
+    {%  else %}
+
+class {{ table_data.class_name }}:
+    num_rows_per_pass = {{ table_data.num_rows_per_pass }}
+
+    def __init__(self, src_db_conn, dst_db_conn):
+    {% for column_data in table_data.columns %}
+        {% if column_data.primary_key %}
+        pass
+        {% else %}
+        {{ column_data.column_names}} = {{ column_data.generator_name }}({{ column_data.generator_arguments }})
+        {% endif %}
+    {% endfor %}
+    {%  endif %}
+
+{% endfor %}
+
+generator_dict = {
+{% for table_data in table_data_list %}
+    {% if not table_data.table_config.get("vocabulary_table") %}
+    "{{ table_data.table_name }}": {{ table_data.class_name }},
+    {% endif %}
+{% endfor %}
+}
+
+
+vocab_dict = {
+{% for table_data in table_data_list %}
+    {% if table_data.table_config.get("vocabulary_table") %}
+    "{{ table_data.table_name }}": {{ table_data.vocabulary_class }},
+    {% endif %}
+{% endfor %}
+}

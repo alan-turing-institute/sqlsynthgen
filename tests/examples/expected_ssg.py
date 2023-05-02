@@ -18,11 +18,13 @@ generic.add_provider(WeightedBooleanProvider)
 
 import tests.examples.example_orm
 import custom_generators
+
 import yaml
 with open("example_stats.yaml", "r", encoding="utf-8") as f:
     SRC_STATS = yaml.load(f, Loader=yaml.FullLoader)
 
 concept_vocab = FileUploader(tests.examples.example_orm.Concept.__table__)
+
 
 class entityGenerator:
     num_rows_per_pass = 1
