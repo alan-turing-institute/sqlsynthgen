@@ -7,6 +7,7 @@ from types import ModuleType
 from typing import Any, Dict, Final, List, Optional, Type
 
 import snsql
+from black import FileMode, format_str
 from jinja2 import Environment, FileSystemLoader, Template
 from mimesis.providers.base import BaseProvider
 from pydantic import PostgresDsn
@@ -24,7 +25,7 @@ for entry_name, entry in inspect.getmembers(providers, inspect.isclass):
         PROVIDER_IMPORTS.append(entry_name)
 
 TEMPLATE_DIRECTORY: Path = Path(__file__).parent / "templates/"
-SSG_TEMPLATE_FILENAME: Final[str] = "ssg.py.template"
+SSG_TEMPLATE_FILENAME: Final[str] = "ssg.py.j2"
 
 
 INDENTATION: Final[str] = " " * 4
@@ -87,14 +88,13 @@ def _add_custom_generators(table_config: dict) -> tuple[List[Dict], list[str]]:
 
 def _add_default_generator(tables_module: ModuleType, column: Any) -> Dict[str, Any]:
     """Append a default generator to content, for the given column."""
-    column_data: Dict[str, Any] = {"primary_key": False}
     # If it's a primary key column, we presume that primary keys are populated
     # automatically.
-    if column.primary_key:
-        column_data["primary_key"] = True
+    column_data: Dict[str, Any] = {"primary_key": column.primary_key}
+
     # If it's a foreign key column, pull random values from the column it
     # references.
-    elif column.foreign_keys:
+    if column.foreign_keys:
         if len(column.foreign_keys) > 1:
             raise NotImplementedError(
                 "Can't handle multiple foreign keys for one column."
@@ -159,7 +159,6 @@ def make_generators_from_tables(
     Returns:
       A string that is a valid Python module, once written to file.
     """
-    new_content: str = ""
     generator_module_name: str = generator_config.get("custom_generators_module", None)
 
     settings = get_settings()
@@ -191,7 +190,6 @@ def make_generators_from_tables(
     return generate_ssg_content(
         {
             "provider_imports": PROVIDER_IMPORTS,
-            "ssg_content": new_content,
             "tables_module": tables_module,
             "generator_module_name": generator_module_name,
             "src_stats_filename": src_stats_filename,
@@ -208,7 +206,9 @@ def generate_ssg_content(template_context: Dict[str, Any]) -> str:
         lstrip_blocks=True,
     )
     ssg_template: Template = environment.get_template(SSG_TEMPLATE_FILENAME)
-    return ssg_template.render(template_context)
+    template_output: str = ssg_template.render(template_context)
+
+    return format_str(template_output, mode=FileMode())
 
 
 def _make_generator_for_vocabulary_table(
