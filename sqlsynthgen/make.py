@@ -1,6 +1,7 @@
 """Functions to make a module of generator classes."""
 import inspect
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from sys import stderr
 from types import ModuleType
@@ -42,6 +43,15 @@ SQL_TO_MIMESIS_MAP = {
     sqltypes.String: "generic.text.color",
     sqltypes.Text: "generic.text.color",
 }
+
+
+@dataclass
+class VocabularyTable:
+    """Contains the ssg.py content related to vocabulary tables."""
+
+    variable_name: str
+    class_name: str
+    table_name: str
 
 
 def _orm_class_from_table_name(tables_module: Any, full_name: str) -> Optional[Any]:
@@ -171,21 +181,23 @@ def make_generators_from_tables(
     )
 
     table_data_list: List[Dict] = []
+    vocabulary_tables: List[VocabularyTable] = []
+
     for table in tables_module.Base.metadata.sorted_tables:
         table_config = generator_config.get("tables", {}).get(table.name, {})
-        table_data: Dict = {"table_config": table_config}
 
         if table_config.get("vocabulary_table") is True:
-
-            table_data = table_data | _make_generator_for_vocabulary_table(
-                tables_module, table, engine, overwrite_files=overwrite_files
+            vocabulary_tables.append(
+                _make_generator_for_vocabulary_table(
+                    tables_module, table, engine, overwrite_files=overwrite_files
+                )
             )
         else:
-            table_data = table_data | _add_generator_for_table(
+            table_data: Dict[str, Any] = _add_generator_for_table(
                 tables_module, table_config, table
             )
 
-        table_data_list.append(table_data)
+            table_data_list.append(table_data)
 
     return generate_ssg_content(
         {
@@ -194,6 +206,7 @@ def make_generators_from_tables(
             "generator_module_name": generator_module_name,
             "src_stats_filename": src_stats_filename,
             "table_data_list": table_data_list,
+            "vocabulary_tables": vocabulary_tables,
         }
     )
 
@@ -217,7 +230,7 @@ def _make_generator_for_vocabulary_table(
     engine: Any,
     table_file_name: Optional[str] = None,
     overwrite_files: bool = False,
-) -> Dict[str, Any]:
+) -> VocabularyTable:
     orm_class: Optional[Type] = _orm_class_from_table_name(
         tables_module, table.fullname
     )
@@ -233,12 +246,11 @@ def _make_generator_for_vocabulary_table(
     else:
         download_table(table, engine, yaml_file_name)
 
-    return {
-        "is_vocabulary_table": True,
-        "class_name": class_name,
-        "vocabulary_class": f"{class_name.lower()}_vocab",
-        "table_name": table.name,
-    }
+    return VocabularyTable(
+        class_name=class_name,
+        variable_name=f"{class_name.lower()}_vocab",
+        table_name=table.name,
+    )
 
 
 def make_tables_file(db_dsn: PostgresDsn, schema_name: Optional[str]) -> str:

@@ -21,11 +21,11 @@ with open("{{ src_stats_filename }}", "r", encoding="utf-8") as f:
     SRC_STATS = yaml.load(f, Loader=yaml.FullLoader)
 {% endif %}
 
-{% for table_data in table_data_list %}
-    {% if table_data.is_vocabulary_table %}
-{{ table_data.vocabulary_class }} = FileUploader({{ tables_module.__name__ }}.{{ table_data.class_name }}.__table__)
-    {%  else %}
+{% for table_data in vocabulary_tables %}
+{{ table_data.variable_name }} = FileUploader({{ tables_module.__name__ }}.{{ table_data.class_name }}.__table__)
+{% endfor %}
 
+{% for table_data in table_data_list %}
 class {{ table_data.class_name }}:
     num_rows_per_pass = {{ table_data.num_rows_per_pass }}
 
@@ -37,23 +37,17 @@ class {{ table_data.class_name }}:
         {{ column_data.column_names}} = {{ column_data.generator_name }}({{ column_data.generator_arguments }})
         {% endif %}
     {% endfor %}
-    {%  endif %}
-
 {% endfor %}
 
 generator_dict = {
 {% for table_data in table_data_list %}
-    {% if not table_data.table_config.get("vocabulary_table") %}
     "{{ table_data.table_name }}": {{ table_data.class_name }},
-    {% endif %}
 {% endfor %}
 }
 
 
 vocab_dict = {
-{% for table_data in table_data_list %}
-    {% if table_data.table_config.get("vocabulary_table") %}
-    "{{ table_data.table_name }}": {{ table_data.vocabulary_class }},
-    {% endif %}
+{% for table_data in vocabulary_tables %}
+    "{{ table_data.table_name }}": {{ table_data.variable_name }},
 {% endfor %}
 }
