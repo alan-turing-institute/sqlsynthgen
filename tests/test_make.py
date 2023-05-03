@@ -60,8 +60,7 @@ class TestMakeGenerators(SSGTestCase):
         mock_create.assert_called_once()
         mock_path.assert_called_once()
 
-        # Temporary workaround
-        self.assertEqual(expected.strip(), actual.strip())
+        self.assertEqual(expected, actual)
 
     @patch("sqlsynthgen.make.stderr", new_callable=StringIO)
     @patch("sqlsynthgen.make.Path")
@@ -121,8 +120,7 @@ class TestMakeGenerators(SSGTestCase):
         mock_create.assert_called_once()
         mock_download.assert_called_once()
 
-        # Temporary workaround
-        self.assertEqual(expected.strip(), actual.strip())
+        self.assertEqual(expected, actual)
 
 
 class TestMakeTables(SSGTestCase):
