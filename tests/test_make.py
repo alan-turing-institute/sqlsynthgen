@@ -209,7 +209,6 @@ class TestMakeStats(RequiresDBTestCase):
             (connection_string, config, "public"),
             (connection_string, config_no_snsql),
         ):
-
             src_stats = make_src_stats(*args)
 
             self.assertSetEqual({"count_opt_outs"}, set(src_stats.keys()))

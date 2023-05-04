@@ -98,7 +98,6 @@ def _get_row_generator(
     config = table_config.get("row_generators", {})
     columns_covered = []
     for gen_conf in config:
-
         name = gen_conf["name"]
         columns_assigned = gen_conf["columns_assigned"]
         args = gen_conf["args"]
