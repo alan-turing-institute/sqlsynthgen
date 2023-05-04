@@ -71,6 +71,16 @@ class TableGenerator:
     columns: List[ColumnGenerator] = field(default_factory=list)
 
 
+@dataclass
+class StoryGenerator:
+    """Contains the ssg.py content related to story generators."""
+
+    wrapper_name: str
+    name: str
+    arguments: Dict[str, str]
+    num_stories_per_pass: int
+
+
 def _orm_class_from_table_name(tables_module: Any, full_name: str) -> Optional[Any]:
     """Return the ORM class corresponding to a table name."""
     for mapper in tables_module.Base.registry.mappers:
@@ -80,14 +90,14 @@ def _orm_class_from_table_name(tables_module: Any, full_name: str) -> Optional[A
     return None
 
 
-def _get_custom_generator(
+def _get_row_generator(
     table_config: dict,
 ) -> tuple[List[ColumnGenerator], list[str]]:
-    """Get the custom generators information, for the given table."""
+    """Get the row generators information, for the given table."""
     column_info: List[ColumnGenerator] = []
-    generators_config = table_config.get("custom_generators", {})
+    config = table_config.get("row_generators", {})
     columns_covered = []
-    for gen_conf in generators_config:
+    for gen_conf in config:
 
         name = gen_conf["name"]
         columns_assigned = gen_conf["columns_assigned"]
@@ -175,7 +185,7 @@ def _get_generator_for_table(
         rows_per_pass=table_config.get("num_rows_per_pass", 1),
     )
 
-    column_info_data, columns_covered = _get_custom_generator(table_config)
+    column_info_data, columns_covered = _get_row_generator(table_config)
     table_data.columns.extend(column_info_data)
 
     for column in table.columns:
@@ -185,9 +195,25 @@ def _get_generator_for_table(
     return table_data
 
 
-def make_generators_from_tables(
+def _get_story_generators(config: dict) -> List[StoryGenerator]:
+    """Get story generators."""
+    generators = []
+    for gen in config.get("story_generators", []):
+        wrapper_name = "run_" + gen["name"].replace(".", "_").lower()
+        generators.append(
+            StoryGenerator(
+                wrapper_name=wrapper_name,
+                name=gen["name"],
+                arguments=gen["args"],
+                num_stories_per_pass=gen["num_stories_per_pass"],
+            )
+        )
+    return generators
+
+
+def make_table_generators(
     tables_module: ModuleType,
-    generator_config: dict,
+    config: dict,
     src_stats_filename: Optional[str],
     overwrite_files: bool = False,
 ) -> str:
@@ -195,14 +221,16 @@ def make_generators_from_tables(
 
     Args:
       tables_module: A sqlacodegen-generated module.
-      generator_config: Configuration to control the generator creation.
-      src_stats_filename: A filename for where to read src stats from. Optional, if
-          `None` this feature will be skipped
+      config: Configuration to control the generator creation.
+      src_stats_filename: A filename for where to read src stats from.
+        Optional, if `None` this feature will be skipped
+      overwrite_files: Whether to overwrite pre-existing vocabulary files
 
     Returns:
       A string that is a valid Python module, once written to file.
     """
-    generator_module_name: str = generator_config.get("custom_generators_module", None)
+    row_generator_module_name: str = config.get("row_generators_module", None)
+    story_generator_module_name = config.get("story_generators_module", None)
 
     settings = get_settings()
     engine = (
@@ -217,7 +245,7 @@ def make_generators_from_tables(
     vocabulary_tables: List[VocabularyTableGenerator] = []
 
     for table in tables_module.Base.metadata.sorted_tables:
-        table_config = generator_config.get("tables", {}).get(table.name, {})
+        table_config = config.get("tables", {}).get(table.name, {})
 
         if table_config.get("vocabulary_table") is True:
             vocabulary_tables.append(
@@ -228,14 +256,18 @@ def make_generators_from_tables(
         else:
             tables.append(_get_generator_for_table(tables_module, table_config, table))
 
+    story_generators = _get_story_generators(config)
+
     return generate_ssg_content(
         {
             "provider_imports": PROVIDER_IMPORTS,
             "tables_module": tables_module,
-            "generator_module_name": generator_module_name,
+            "row_generator_module_name": row_generator_module_name,
+            "story_generator_module_name": story_generator_module_name,
             "src_stats_filename": src_stats_filename,
             "tables": tables,
             "vocabulary_tables": vocabulary_tables,
+            "story_generators": story_generators,
         }
     )
 

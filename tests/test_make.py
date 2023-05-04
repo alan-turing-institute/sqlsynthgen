@@ -9,17 +9,13 @@ import yaml
 from pydantic import PostgresDsn
 from pydantic.tools import parse_obj_as
 
-from sqlsynthgen.make import (
-    make_generators_from_tables,
-    make_src_stats,
-    make_tables_file,
-)
+from sqlsynthgen.make import make_src_stats, make_table_generators, make_tables_file
 from tests.examples import example_orm
 from tests.utils import RequiresDBTestCase, SSGTestCase, get_test_settings
 
 
 class TestMakeGenerators(SSGTestCase):
-    """Test the make_generators_from_tables function."""
+    """Test the make_table_generators function."""
 
     test_dir = Path("tests/examples")
     start_dir = os.getcwd()
@@ -36,7 +32,7 @@ class TestMakeGenerators(SSGTestCase):
     @patch("sqlsynthgen.make.get_settings")
     @patch("sqlsynthgen.make.create_engine")
     @patch("sqlsynthgen.make.download_table")
-    def test_make_generators_from_tables(
+    def test_make_table_generators(
         self,
         mock_download: MagicMock,
         mock_create: MagicMock,
@@ -55,7 +51,7 @@ class TestMakeGenerators(SSGTestCase):
             config = yaml.safe_load(f)
         stats_path = "example_stats.yaml"
 
-        actual = make_generators_from_tables(example_orm, config, stats_path)
+        actual = make_table_generators(example_orm, config, stats_path)
         mock_download.assert_called_once()
         mock_create.assert_called_once()
         mock_path.assert_called_once()
@@ -82,7 +78,7 @@ class TestMakeGenerators(SSGTestCase):
         stats_path = "example_stats.yaml"
 
         try:
-            make_generators_from_tables(example_orm, configuration, stats_path)
+            make_table_generators(example_orm, configuration, stats_path)
         except SystemExit:
             pass
 
@@ -113,7 +109,7 @@ class TestMakeGenerators(SSGTestCase):
             config: Dict = yaml.safe_load(f)
         stats_path: str = "example_stats.yaml"
 
-        actual: str = make_generators_from_tables(
+        actual: str = make_table_generators(
             example_orm, config, stats_path, overwrite_files=True
         )
 

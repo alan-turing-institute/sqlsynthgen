@@ -35,7 +35,7 @@ class TestCLI(SSGTestCase):
 
     @patch("sqlsynthgen.main.import_file")
     @patch("sqlsynthgen.main.Path")
-    @patch("sqlsynthgen.main.make_generators_from_tables")
+    @patch("sqlsynthgen.main.make_table_generators")
     def test_make_generators(
         self, mock_make: MagicMock, mock_path: MagicMock, mock_import: MagicMock
     ) -> None:
@@ -82,7 +82,7 @@ class TestCLI(SSGTestCase):
 
     @patch("sqlsynthgen.main.Path")
     @patch("sqlsynthgen.main.import_file")
-    @patch("sqlsynthgen.main.make_generators_from_tables")
+    @patch("sqlsynthgen.main.make_table_generators")
     def test_make_generators_with_force_enabled(
         self, mock_make: MagicMock, mock_import: MagicMock, mock_path: MagicMock
     ) -> None:
@@ -146,7 +146,8 @@ class TestCLI(SSGTestCase):
 
         mock_create.assert_called_once_with(
             mock_import.return_value.Base.metadata.sorted_tables,
-            mock_import.return_value.generator_dict,
+            mock_import.return_value.table_generator_dict,
+            mock_import.return_value.story_generator_list,
             1,
         )
         self.assertSuccess(result)
