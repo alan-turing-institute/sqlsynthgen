@@ -2,7 +2,7 @@
 import inspect
 from sys import stderr
 from types import ModuleType
-from typing import Any, Dict, Final, Optional
+from typing import Any, Dict, Final, Optional, Tuple
 
 import snsql
 from mimesis.providers.base import BaseProvider
@@ -48,12 +48,20 @@ SQL_TO_MIMESIS_MAP = {
 }
 
 
-def _orm_class_from_table_name(tables_module: Any, full_name: str) -> Optional[Any]:
+def _orm_class_from_table_name(
+    tables_module: Any, full_name: str
+) -> Optional[Tuple[str, str]]:
     """Return the ORM class corresponding to a table name."""
+    # If the class in tables_module is an SQLAlchemy ORM class
     for mapper in tables_module.Base.registry.mappers:
         cls = mapper.class_
         if cls.__table__.fullname == full_name:
-            return cls
+            return cls.__name__, cls.__name__ + ".__table__"
+
+    # If the class in tables_module is a SQLAlchemy Core Table
+    guess = "t_" + full_name
+    if guess in dir(tables_module):
+        return guess, guess
     return None
 
 
@@ -100,13 +108,16 @@ def _add_default_generator(content: str, tables_module: ModuleType, column: Any)
         target_name_parts = fkey.target_fullname.split(".")
         target_table_name = ".".join(target_name_parts[:-1])
         target_column_name = target_name_parts[-1]
-        target_orm_class = _orm_class_from_table_name(tables_module, target_table_name)
-        if target_orm_class is None:
+        class_and_name = _orm_class_from_table_name(tables_module, target_table_name)
+        if not class_and_name:
             raise ValueError(f"Could not find the ORM class for {target_table_name}.")
+
+        target_orm_class, _ = class_and_name
+
         content += (
             f"self.{column.name} = "
             f"generic.column_value_provider.column_value(dst_db_conn, "
-            f"{tables_module.__name__}.{target_orm_class.__name__}, "
+            f"{tables_module.__name__}.{target_orm_class}, "
             f'"{target_column_name}"'
             ")"
         )
@@ -149,6 +160,7 @@ def make_generators_from_tables(
     Returns:
       A string that is a valid Python module, once written to file.
     """
+    # pylint: disable=too-many-locals
     new_content = HEADER_TEXT
     new_content += f"\nimport {tables_module.__name__}"
     generator_module_name = generator_config.get("custom_generators_module", None)
@@ -180,13 +192,18 @@ def make_generators_from_tables(
 
         if table_config.get("vocabulary_table") is True:
 
-            orm_class = _orm_class_from_table_name(tables_module, table.fullname)
-            if not orm_class:
+            class_and_name = _orm_class_from_table_name(tables_module, table.fullname)
+
+            if not class_and_name:
                 raise RuntimeError(f"Couldn't find {table.fullname} in {tables_module}")
-            class_name = orm_class.__name__
+
+            class_name, table_name = class_and_name
+
+            the_table_to_download = f"{tables_module.__name__}.{table_name}"
+
             new_content += (
                 f"\n\n{class_name.lower()}_vocab "
-                f"= FileUploader({tables_module.__name__}.{class_name}.__table__)"
+                f"= FileUploader({the_table_to_download})"
             )
             vocab_dict += f'{INDENTATION}"{table.name}": {class_name.lower()}_vocab,\n'
 
