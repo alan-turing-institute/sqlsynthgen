@@ -20,12 +20,12 @@ from sqlsynthgen import providers
 from sqlsynthgen.settings import get_settings
 from sqlsynthgen.utils import create_engine_with_search_path, download_table
 
-PROVIDER_IMPORTS: List[str] = []
+PROVIDER_IMPORTS: Final[List[str]] = []
 for entry_name, entry in inspect.getmembers(providers, inspect.isclass):
     if issubclass(entry, BaseProvider) and entry.__module__ == "sqlsynthgen.providers":
         PROVIDER_IMPORTS.append(entry_name)
 
-TEMPLATE_DIRECTORY: Path = Path(__file__).parent / "templates/"
+TEMPLATE_DIRECTORY: Final[Path] = Path(__file__).parent / "templates/"
 SSG_TEMPLATE_FILENAME: Final[str] = "ssg.py.j2"
 
 SQL_TO_MIMESIS_MAP = {
@@ -274,7 +274,7 @@ def make_table_generators(
 def generate_ssg_content(template_context: Dict[str, Any]) -> str:
     """Generate the content of the ssg.py file as a string."""
     environment: Environment = Environment(
-        loader=FileSystemLoader(str(TEMPLATE_DIRECTORY)),
+        loader=FileSystemLoader(TEMPLATE_DIRECTORY),
         trim_blocks=True,
         lstrip_blocks=True,
     )
