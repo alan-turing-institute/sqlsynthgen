@@ -26,48 +26,21 @@ In the source database, remove the circular foreign key between `concept` and `v
 
   alter table concept drop constraint concept.concept_vocabulary_id_fkey
 
+and between `concept` and `domain` with, for example:
+
+.. code-block:: sql
+
+  alter table concept drop constraint concept.concept_domain_id_fkey
+
+
 Create a config file
 ++++++++++++++++++++
 
 Make a config file called `omop.yaml`.
 At the very least, our config file will need to specify the tables that need to be copied over in their entirety:
 
-.. code-block:: yaml
-
-  tables:
-    # Standardized Vocabularies
-    concept:
-      vocabulary_table: true
-    concept_class
-      vocabulary_table: true
-    concept_relationship:
-      vocabulary_table: true
-    concept_synonym:
-      vocabulary_table: true
-    domain:
-      vocabulary_table: true
-    drug_strength:
-      vocabulary_table: true
-    cohort_definition:
-      vocabulary_table: true
-    attribute_definition:
-      vocabulary_table: true
-    relationship:
-      vocabulary_table: true
-    source_to_concept_map
-      vocabulary_table: true
-    vocabulary:
-      vocabulary_table: true
-    # Standardized meta-data
-    cdm_source:
-      vocabulary_table: true
-    # Standardized health system data
-    location:
-      vocabulary_table: true
-    care_site:
-      vocabulary_table: true
-    provider:
-      vocabulary_table: true
+.. literalinclude:: ../../tests/examples/omop/config.yaml
+   :language: yaml
 
 Make SQLAlchemy file
 ++++++++++++++++++++
