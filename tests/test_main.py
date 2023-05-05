@@ -224,7 +224,6 @@ class TestCLI(SSGTestCase):
         mock_make_tables.return_value = mock_tables_output
 
         for force_option in ["--force", "-f"]:
-
             with self.subTest(f"Using option {force_option}"):
                 result: Result = runner.invoke(app, ["make-tables", force_option])
 
@@ -311,7 +310,6 @@ class TestCLI(SSGTestCase):
         mock_make.return_value = make_test_output
 
         for force_option in ["--force", "-f"]:
-
             with self.subTest(f"Using option {force_option}"):
                 result: Result = runner.invoke(
                     app,
