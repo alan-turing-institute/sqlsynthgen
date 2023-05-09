@@ -113,6 +113,16 @@ CREATE TABLE public.no_pk_test (
 ALTER TABLE public.no_pk_test OWNER TO postgres;
 
 --
+-- Name: test_table; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.test_table (
+    single_letter_column VARCHAR(1)
+);
+
+ALTER TABLE public.test_table OWNER TO postgres;
+
+--
 -- Name: person; Type: TABLE; Schema: public; Owner: postgres
 --
 
