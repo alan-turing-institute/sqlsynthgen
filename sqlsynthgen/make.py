@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from sys import stderr
 from types import ModuleType
-from typing import Any, Dict, Final, List, Optional, Type
+from typing import Any, Dict, Final, List, Optional, Tuple, Type
 
 import snsql
 from black import FileMode, format_str
@@ -27,19 +27,6 @@ for entry_name, entry in inspect.getmembers(providers, inspect.isclass):
 
 TEMPLATE_DIRECTORY: Final[Path] = Path(__file__).parent / "templates/"
 SSG_TEMPLATE_FILENAME: Final[str] = "ssg.py.j2"
-
-SQL_TO_MIMESIS_MAP = {
-    sqltypes.BigInteger: "generic.numeric.integer_number",
-    sqltypes.Boolean: "generic.development.boolean",
-    sqltypes.Date: "generic.datetime.date",
-    sqltypes.DateTime: "generic.datetime.datetime",
-    sqltypes.Float: "generic.numeric.float_number",
-    sqltypes.Integer: "generic.numeric.integer_number",
-    sqltypes.LargeBinary: "generic.bytes_provider.bytes",
-    sqltypes.Numeric: "generic.numeric.float_number",
-    sqltypes.String: "generic.text.color",
-    sqltypes.Text: "generic.text.color",
-}
 
 
 @dataclass
@@ -162,9 +149,11 @@ def _get_default_generator(tables_module: ModuleType, column: Any) -> ColumnGene
 
     # Otherwise generate values based on just the datatype of the column.
     else:
-        provider = SQL_TO_MIMESIS_MAP[type(column.type)]
-        variable_names = f"self.{column.name}"
-        generator_function = provider
+        (
+            variable_names,
+            generator_function,
+            generator_arguments,
+        ) = _get_mimesis_function_for_colum(column)
 
     return ColumnGenerator(
         primary_key=column.primary_key,
@@ -172,6 +161,39 @@ def _get_default_generator(tables_module: ModuleType, column: Any) -> ColumnGene
         generator_function=generator_function,
         generator_arguments=generator_arguments,
     )
+
+
+def _get_mimesis_function_for_colum(column: Any) -> Tuple[str, str, str]:
+    variable_names: str = f"self.{column.name}"
+    generator_arguments: str = ""
+    generator_function: str = ""
+
+    column_type = type(column.type)
+    column_size: Optional[int] = getattr(column.type, "length", None)
+
+    print(f"{variable_names} {column_type} {column_size}")
+
+    if column_type == sqltypes.BigInteger:
+        generator_function = "generic.numeric.integer_number"
+    elif column_type == sqltypes.Boolean:
+        generator_function = "generic.development.boolean"
+    elif column_type == sqltypes.Date:
+        generator_function = "generic.datetime.date"
+    elif column_type == sqltypes.DateTime:
+        generator_function = "generic.datetime.datetime"
+    elif column_type in {sqltypes.Float, sqltypes.Numeric}:
+        generator_function = "generic.numeric.float_number"
+    elif column_type == sqltypes.Integer:
+        generator_function = "generic.numeric.integer_number"
+    elif column_type == sqltypes.LargeBinary:
+        generator_function = "generic.bytes_provider.bytes"
+    elif column_type in {sqltypes.String, sqltypes.Text} and column_size is None:
+        generator_function = "generic.text.color"
+    elif column_type in {sqltypes.String, sqltypes.Text} and column_size is not None:
+        generator_function = "generic.person.password"
+        generator_arguments = str(column_size)
+
+    return variable_names, generator_function, generator_arguments
 
 
 def _get_generator_for_table(
