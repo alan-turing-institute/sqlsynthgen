@@ -171,8 +171,6 @@ def _get_mimesis_function_for_colum(column: Any) -> Tuple[str, str, str]:
     column_type = type(column.type)
     column_size: Optional[int] = getattr(column.type, "length", None)
 
-    print(f"{variable_names} {column_type} {column_size}")
-
     if column_type == sqltypes.BigInteger:
         generator_function = "generic.numeric.integer_number"
     elif column_type == sqltypes.Boolean:
