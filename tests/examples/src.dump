@@ -21,7 +21,7 @@ DROP DATABASE IF EXISTS src WITH (FORCE);
 -- Name: src; Type: DATABASE; Schema: -; Owner: postgres
 --
 
-CREATE DATABASE src WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE = 'en_US.utf8';
+CREATE DATABASE src WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE = 'en_US.UTF-8';
 
 
 ALTER DATABASE src OWNER TO postgres;
@@ -113,15 +113,15 @@ CREATE TABLE public.no_pk_test (
 ALTER TABLE public.no_pk_test OWNER TO postgres;
 
 --
--- Name: empty_dictionary; Type: TABLE; Schema: public; Owner: postgres
+-- Name: empty_vocabulary; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.empty_dictionary (
+CREATE TABLE public.empty_vocabulary (
     entry_id integer NOT NULL,
     entry_name text NOT NULL
 );
 
-ALTER TABLE public.empty_dictionary OWNER TO postgres;
+ALTER TABLE public.empty_vocabulary OWNER TO postgres;
 
 --
 -- Name: test_entity; Type: TABLE; Schema: public; Owner: postgres
@@ -129,7 +129,7 @@ ALTER TABLE public.empty_dictionary OWNER TO postgres;
 
 CREATE TABLE public.test_entity (
     single_letter_column VARCHAR(1),
-    dictionary_entry_id integer
+    vocabulary_entry_id integer
 );
 
 ALTER TABLE public.test_entity OWNER TO postgres;
@@ -1199,11 +1199,11 @@ ALTER TABLE ONLY public.concept
     ADD CONSTRAINT concept_pkey PRIMARY KEY (concept_id);
 
 --
--- Name: empty_dictionary empty_dictionary_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: empty_vocabulary empty_vocabulary_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.empty_dictionary
-    ADD CONSTRAINT empty_dictionary_pkey PRIMARY KEY (entry_id);
+ALTER TABLE ONLY public.empty_vocabulary
+    ADD CONSTRAINT empty_vocabulary_pkey PRIMARY KEY (entry_id);
 
 
 --
@@ -1253,11 +1253,11 @@ ALTER TABLE ONLY public.concept
     ADD CONSTRAINT concept_concept_type_id_fkey FOREIGN KEY (concept_type_id) REFERENCES public.concept_type(id);
 
 --
--- Name: test_entity test_entity_dictionary_entry_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: test_entity test_entity_vocabulary_entry_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.test_entity
-    ADD CONSTRAINT test_entity_dictionary_entry_id_fkey FOREIGN KEY (dictionary_entry_id) REFERENCES public.empty_dictionary(entry_id);
+    ADD CONSTRAINT test_entity_vocabulary_entry_id_fkey FOREIGN KEY (vocabulary_entry_id) REFERENCES public.empty_vocabulary(entry_id);
 
 --
 -- Name: concept_type concept_type_mitigation_type_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
