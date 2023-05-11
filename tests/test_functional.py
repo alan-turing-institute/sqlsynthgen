@@ -61,29 +61,20 @@ class FunctionalTestCase(RequiresDBTestCase):
 
         os.chdir(self.test_dir)
 
-        for file_path in (
-            self.orm_file_path,
-            self.ssg_file_path,
-            self.alt_orm_file_path,
-            self.alt_ssg_file_path,
-            self.stats_file_path,
-        ) + self.vocabulary_file_paths:
-            file_path.unlink(missing_ok=True)
-
     def tearDown(self) -> None:
         os.chdir(self.start_dir)
 
     def test_workflow_minimal_args(self) -> None:
         """Test the recommended CLI workflow runs without errors."""
         completed_process = run(
-            ["sqlsynthgen", "make-tables"],
+            ["sqlsynthgen", "make-tables", "--force"],
             capture_output=True,
             env=self.env,
         )
         self.assertSuccess(completed_process)
 
         completed_process = run(
-            ["sqlsynthgen", "make-generators"],
+            ["sqlsynthgen", "make-generators", "--force"],
             capture_output=True,
             env=self.env,
         )
@@ -122,6 +113,7 @@ class FunctionalTestCase(RequiresDBTestCase):
                 "sqlsynthgen",
                 "make-tables",
                 f"--orm-file={self.alt_orm_file_path}",
+                "--force",
             ],
             capture_output=True,
             env=self.env,
@@ -138,6 +130,7 @@ class FunctionalTestCase(RequiresDBTestCase):
                 "make-stats",
                 f"--stats-file={self.stats_file_path}",
                 f"--config-file={self.config_file_path}",
+                "--force",
             ],
             capture_output=True,
             env=self.env,
@@ -152,6 +145,7 @@ class FunctionalTestCase(RequiresDBTestCase):
                 f"--ssg-file={self.alt_ssg_file_path}",
                 f"--config-file={self.config_file_path}",
                 f"--stats-file={self.stats_file_path}",
+                "--force",
             ],
             capture_output=True,
             env=self.env,

@@ -60,6 +60,8 @@ tables:
     vocabulary_table: true
   mitigation_type:
     vocabulary_table: true
+  empty_vocabulary:
+    vocabulary_table: true
 
 story_generators_module: story_generators
 story_generators:

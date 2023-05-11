@@ -113,11 +113,23 @@ CREATE TABLE public.no_pk_test (
 ALTER TABLE public.no_pk_test OWNER TO postgres;
 
 --
+-- Name: empty_vocabulary; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.empty_vocabulary (
+    entry_id integer NOT NULL,
+    entry_name text NOT NULL
+);
+
+ALTER TABLE public.empty_vocabulary OWNER TO postgres;
+
+--
 -- Name: test_entity; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.test_entity (
-    single_letter_column VARCHAR(1)
+    single_letter_column VARCHAR(1),
+    vocabulary_entry_id integer
 );
 
 ALTER TABLE public.test_entity OWNER TO postgres;
@@ -1186,6 +1198,13 @@ INSERT INTO public.person VALUES (1000, 'Randy Random', true, '2023-03-01 00:00:
 ALTER TABLE ONLY public.concept
     ADD CONSTRAINT concept_pkey PRIMARY KEY (concept_id);
 
+--
+-- Name: empty_vocabulary empty_vocabulary_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.empty_vocabulary
+    ADD CONSTRAINT empty_vocabulary_pkey PRIMARY KEY (entry_id);
+
 
 --
 -- Name: concept_type concept_type_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
@@ -1233,6 +1252,12 @@ CREATE INDEX fki_concept_concept_type_id_fkey ON public.concept USING btree (con
 ALTER TABLE ONLY public.concept
     ADD CONSTRAINT concept_concept_type_id_fkey FOREIGN KEY (concept_type_id) REFERENCES public.concept_type(id);
 
+--
+-- Name: test_entity test_entity_vocabulary_entry_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.test_entity
+    ADD CONSTRAINT test_entity_vocabulary_entry_id_fkey FOREIGN KEY (vocabulary_entry_id) REFERENCES public.empty_vocabulary(entry_id);
 
 --
 -- Name: concept_type concept_type_mitigation_type_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres

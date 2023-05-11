@@ -1,6 +1,7 @@
 """Tests for the providers module."""
 import datetime as dt
 from pathlib import Path
+from typing import Any
 
 from sqlalchemy import Column, Integer, Text, create_engine, insert
 from sqlalchemy.ext.declarative import declarative_base
@@ -47,7 +48,7 @@ class ColumnValueProviderTestCase(RequiresDBTestCase):
         )
         metadata.create_all(self.engine)
 
-    def test_column_value(self) -> None:
+    def test_column_value_present(self) -> None:
         """Test the key method."""
         # pylint: disable=invalid-name
 
@@ -59,6 +60,15 @@ class ColumnValueProviderTestCase(RequiresDBTestCase):
             key = provider.column_value(conn, Person, "sex")
 
         self.assertEqual("M", key)
+
+    def test_column_value_missing(self) -> None:
+        """Test the generator when there are no values in the source table."""
+
+        with self.engine.connect() as connection:
+            provider: providers.ColumnValueProvider = providers.ColumnValueProvider()
+            generated_value: Any = provider.column_value(connection, Person, "sex")
+
+        self.assertIsNone(generated_value)
 
 
 class TimedeltaProvider(SSGTestCase):
