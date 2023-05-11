@@ -152,6 +152,7 @@ class FunctionalTestCase(RequiresDBTestCase):
                 f"--ssg-file={self.alt_ssg_file_path}",
                 f"--config-file={self.config_file_path}",
                 f"--stats-file={self.stats_file_path}",
+                "--force",
             ],
             capture_output=True,
             env=self.env,
