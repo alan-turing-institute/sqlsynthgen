@@ -21,7 +21,7 @@ DROP DATABASE IF EXISTS src WITH (FORCE);
 -- Name: src; Type: DATABASE; Schema: -; Owner: postgres
 --
 
-CREATE DATABASE src WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE = 'en_US.UTF-8';
+CREATE DATABASE src WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE = 'en_US.utf8';
 
 
 ALTER DATABASE src OWNER TO postgres;
