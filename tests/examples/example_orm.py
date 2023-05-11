@@ -1,6 +1,17 @@
 # coding: utf-8
 
-from sqlalchemy import BigInteger, Boolean, Column, ForeignKey, Integer, DateTime, Text, Date, Float, LargeBinary
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    Column,
+    ForeignKey,
+    Integer,
+    DateTime,
+    Text,
+    Date,
+    Float,
+    LargeBinary,
+)
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -47,6 +58,18 @@ class Entity(Base):
         Integer,
         primary_key=True,
     )
+
+
+class TestEntity(Base):
+    __tablename__ = "test_entity"
+    __table_args__ = {"schema": "myschema"}
+
+    test_entity_id = Column(
+        Integer,
+        primary_key=True,
+    )
+
+    single_letter_attribute = Column("single_letter_column", Text(length=1))
 
 
 class Concept(Base):

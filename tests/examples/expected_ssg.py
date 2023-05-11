@@ -54,6 +54,14 @@ class personGenerator:
         self.source_system = generic.text.color()
 
 
+class test_entityGenerator:
+    num_rows_per_pass = 1
+
+    def __init__(self, src_db_conn, dst_db_conn):
+        pass
+        self.single_letter_column = generic.person.password(1)
+
+
 class hospital_visitGenerator:
     num_rows_per_pass = 3
 
@@ -79,6 +87,7 @@ class hospital_visitGenerator:
 table_generator_dict = {
     "entity": entityGenerator,
     "person": personGenerator,
+    "test_entity": test_entityGenerator,
     "hospital_visit": hospital_visitGenerator,
 }
 
