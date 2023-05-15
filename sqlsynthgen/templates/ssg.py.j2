@@ -25,7 +25,7 @@ with open("{{ src_stats_filename }}", "r", encoding="utf-8") as f:
 {% endif %}
 
 {% for table_data in vocabulary_tables %}
-{{ table_data.variable_name }} = FileUploader({{ tables_module.__name__ }}.{{ table_data.class_name }}.__table__)
+{{ table_data.variable_name }} = FileUploader({{ tables_module.__name__ }}.{{ table_data.table_name }})
 {% endfor %}
 
 {% for table_data in tables %}
@@ -51,7 +51,7 @@ table_generator_dict = {
 
 vocab_dict = {
 {% for table_data in vocabulary_tables %}
-    "{{ table_data.table_name }}": {{ table_data.variable_name }},
+    "{{ table_data.dictionary_entry }}": {{ table_data.variable_name }},
 {% endfor %}
 }
 
