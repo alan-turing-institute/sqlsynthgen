@@ -1,0 +1,28 @@
+---
+name: Publish to PyPI
+on:
+  release:
+    types:
+      - published
+jobs:
+  publish-job:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Check that tag and package versions match
+        run: |
+          PYPROJECT_VERSION=$(sed -n '3p' pyproject.toml | sed "s/version = //")
+          GITHUB_VERSION=${{ github.event.release.tag_name }}
+          if [[ "$PYPROJECT_VERSION" != "\"$GITHUB_VERSION\"" ]]
+          then
+              echo "pyproject.toml version $PYPROJECT_VERSION doesn't match GitHub version \"$GITHUB_VERSION\""
+              exit 1
+          fi
+      - name: Build and publish to pypi
+        uses: JRubics/poetry-publish@v1.16
+        with:
+          pypi_token: ${{ secrets.PYPI_TOKEN }}
+          ignore_dev_requirements: "yes"
+          package_directory: "sqlsynthgen"

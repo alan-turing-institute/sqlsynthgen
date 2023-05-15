@@ -1,5 +1,6 @@
 """Tests for the CLI."""
 import os
+import shutil
 from pathlib import Path
 from subprocess import run
 
@@ -11,6 +12,9 @@ from tests.utils import RequiresDBTestCase, run_psql
 class FunctionalTestCase(RequiresDBTestCase):
     """End-to-end tests."""
 
+    test_dir = Path("tests/workspace")
+    examples_dir = Path("tests/examples")
+
     orm_file_path = Path("orm.py")
     ssg_file_path = Path("ssg.py")
 
@@ -20,10 +24,13 @@ class FunctionalTestCase(RequiresDBTestCase):
     vocabulary_file_paths = tuple(
         map(Path, ("concept.yaml", "concept_type.yaml", "mitigation_type.yaml"))
     )
-    config_file_path = Path("../examples/example_config.yaml")
+    generator_file_paths = tuple(
+        map(Path, ("story_generators.py", "row_generators.py"))
+    )
+    dump_file_path = Path("dst.dump")
+    config_file_path = Path("example_config.yaml")
     stats_file_path = Path("example_stats.yaml")
 
-    test_dir = Path("tests/workspace")
     start_dir = os.getcwd()
 
     env = os.environ.copy()
@@ -43,18 +50,16 @@ class FunctionalTestCase(RequiresDBTestCase):
         """Pre-test setup."""
 
         # Create a blank destination database
-        run_psql(Path("tests/examples/dst.dump"))
+        run_psql(self.examples_dir / self.dump_file_path)
+
+        # Copy some of the example files over to the workspace.
+        for file in self.generator_file_paths + (self.config_file_path,):
+            src = self.examples_dir / file
+            dst = self.test_dir / file
+            dst.unlink(missing_ok=True)
+            shutil.copy(src, dst)
 
         os.chdir(self.test_dir)
-
-        for file_path in (
-            self.orm_file_path,
-            self.ssg_file_path,
-            self.alt_orm_file_path,
-            self.alt_ssg_file_path,
-            self.stats_file_path,
-        ) + self.vocabulary_file_paths:
-            file_path.unlink(missing_ok=True)
 
     def tearDown(self) -> None:
         os.chdir(self.start_dir)
@@ -62,14 +67,14 @@ class FunctionalTestCase(RequiresDBTestCase):
     def test_workflow_minimal_args(self) -> None:
         """Test the recommended CLI workflow runs without errors."""
         completed_process = run(
-            ["sqlsynthgen", "make-tables"],
+            ["sqlsynthgen", "make-tables", "--force"],
             capture_output=True,
             env=self.env,
         )
         self.assertSuccess(completed_process)
 
         completed_process = run(
-            ["sqlsynthgen", "make-generators"],
+            ["sqlsynthgen", "make-generators", "--force"],
             capture_output=True,
             env=self.env,
         )
@@ -108,6 +113,7 @@ class FunctionalTestCase(RequiresDBTestCase):
                 "sqlsynthgen",
                 "make-tables",
                 f"--orm-file={self.alt_orm_file_path}",
+                "--force",
             ],
             capture_output=True,
             env=self.env,
@@ -124,6 +130,7 @@ class FunctionalTestCase(RequiresDBTestCase):
                 "make-stats",
                 f"--stats-file={self.stats_file_path}",
                 f"--config-file={self.config_file_path}",
+                "--force",
             ],
             capture_output=True,
             env=self.env,
@@ -138,6 +145,7 @@ class FunctionalTestCase(RequiresDBTestCase):
                 f"--ssg-file={self.alt_ssg_file_path}",
                 f"--config-file={self.config_file_path}",
                 f"--stats-file={self.stats_file_path}",
+                "--force",
             ],
             capture_output=True,
             env=self.env,

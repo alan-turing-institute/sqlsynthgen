@@ -1,4 +1,4 @@
-"""Base generator classes."""
+"""Base table generator classes."""
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -19,5 +19,6 @@ class FileUploader:
             "r", newline="", encoding="utf-8"
         ) as yamlfile:
             rows = yaml.load(yamlfile, Loader=yaml.Loader)
-            stmt = insert(self.table).values(list(rows))
-        connection.execute(stmt)
+            if rows:
+                stmt = insert(self.table).values(list(rows))
+                connection.execute(stmt)
