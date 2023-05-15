@@ -127,9 +127,6 @@ def _add_default_generator(content: str, tables_module: ModuleType, column: Any)
         provider = SQL_TO_MIMESIS_MAP[type(column.type)]
         content += f"self.{column.name} = {provider}"
 
-        if "VARCHAR" in str(column.type):
-            content += f"[:{column.type.length}]"
-
     content += "\n"
     return content
 

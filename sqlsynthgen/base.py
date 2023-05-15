@@ -19,7 +19,5 @@ class FileUploader:
             "r", newline="", encoding="utf-8"
         ) as yamlfile:
             rows = yaml.load(yamlfile, Loader=yaml.Loader)
-            if not rows:
-                return
             stmt = insert(self.table).values(list(rows))
         connection.execute(stmt)

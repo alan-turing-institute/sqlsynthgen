@@ -20,7 +20,7 @@ class ColumnValueProvider(BaseProvider):
         """Return a random value from the column specified."""
         query = select(orm_class).order_by(func.random()).limit(1)
         random_row = db_connection.execute(query).first()
-        return getattr(random_row, column_name, None)
+        return getattr(random_row, column_name)
 
 
 class BytesProvider(BaseDataProvider):
