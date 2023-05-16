@@ -4,7 +4,8 @@ Tutorials
 OMOP CDM
 --------
 
-ToDo Explain why you might want to use sqlsynthgen and not simply use the .sql files provided by ohdsi
+Even though the OMOP CDM schema is publicly available, there are sometimes variations with certain implementations (at schema and data levels).
+`sqlsynthgen` allows you to generate data irrespective of your schema peculiarities.
 
 If you have an OMOP CDM style database, there are a couple of things to bear in mind when using `sqlsynthgen`:
 
@@ -41,6 +42,15 @@ At the very least, our config file will need to specify the tables that need to 
 
 .. literalinclude:: ../../tests/examples/omop/config.yaml
    :language: yaml
+
+Create a custom generators file
++++++++++++++++++++++++++++++++
+
+Make a python file called `custom_generators.py`.
+We will define a generator which produces a maximum of one row in the `death` table per row in the `person` table.
+
+.. literalinclude:: ../../tests/examples/omop/custom_generators.py
+   :language: python
 
 Make SQLAlchemy file
 ++++++++++++++++++++

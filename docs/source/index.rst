@@ -31,6 +31,7 @@ Contents:
    sqlsynthgen
    faq
    changelog
+   glossary
 
 
 Indices and tables
