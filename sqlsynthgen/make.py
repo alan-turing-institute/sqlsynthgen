@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from sys import stderr
 from types import ModuleType
-from typing import Any, Dict, Final, List, Optional, Tuple, Type
+from typing import Any, Dict, Final, List, Optional, Tuple
 
 import snsql
 from black import FileMode, format_str
@@ -36,6 +36,7 @@ class VocabularyTableGenerator:
     variable_name: str
     class_name: str
     table_name: str
+    dictionary_entry: str
 
 
 @dataclass
@@ -68,12 +69,20 @@ class StoryGenerator:
     num_stories_per_pass: int
 
 
-def _orm_class_from_table_name(tables_module: Any, full_name: str) -> Optional[Any]:
+def _orm_class_from_table_name(
+    tables_module: Any, full_name: str
+) -> Optional[Tuple[str, str]]:
     """Return the ORM class corresponding to a table name."""
+    # If the class in tables_module is an SQLAlchemy ORM class
     for mapper in tables_module.Base.registry.mappers:
         cls = mapper.class_
         if cls.__table__.fullname == full_name:
-            return cls
+            return cls.__name__, cls.__name__ + ".__table__"
+
+    # If the class in tables_module is a SQLAlchemy Core Table
+    guess = "t_" + full_name
+    if guess in dir(tables_module):
+        return guess, guess
     return None
 
 
@@ -136,14 +145,16 @@ def _get_default_generator(tables_module: ModuleType, column: Any) -> ColumnGene
         target_name_parts = fkey.target_fullname.split(".")
         target_table_name = ".".join(target_name_parts[:-1])
         target_column_name = target_name_parts[-1]
-        target_orm_class = _orm_class_from_table_name(tables_module, target_table_name)
-        if target_orm_class is None:
+        class_and_name = _orm_class_from_table_name(tables_module, target_table_name)
+        if not class_and_name:
             raise ValueError(f"Could not find the ORM class for {target_table_name}.")
+
+        target_orm_class, _ = class_and_name
 
         variable_names = f"self.{column.name}"
         generator_function = "generic.column_value_provider.column_value"
         generator_arguments = (
-            f"dst_db_conn, {tables_module.__name__}.{target_orm_class.__name__},"
+            f"dst_db_conn, {tables_module.__name__}.{target_orm_class},"
             + f' "{target_column_name}"'
         )
 
@@ -311,13 +322,13 @@ def _get_generator_for_vocabulary_table(
     table_file_name: Optional[str] = None,
     overwrite_files: bool = False,
 ) -> VocabularyTableGenerator:
-    orm_class: Optional[Type] = _orm_class_from_table_name(
+    class_and_name: Optional[Tuple[str, str]] = _orm_class_from_table_name(
         tables_module, table.fullname
     )
-    if not orm_class:
+    if not class_and_name:
         raise RuntimeError(f"Couldn't find {table.fullname} in {tables_module}")
 
-    class_name: str = orm_class.__name__
+    class_name, table_name = class_and_name
 
     yaml_file_name: str = table_file_name or table.fullname + ".yaml"
     if Path(yaml_file_name).exists() and not overwrite_files:
@@ -328,8 +339,9 @@ def _get_generator_for_vocabulary_table(
 
     return VocabularyTableGenerator(
         class_name=class_name,
+        dictionary_entry=table.name,
         variable_name=f"{class_name.lower()}_vocab",
-        table_name=table.name,
+        table_name=table_name,
     )
 
 

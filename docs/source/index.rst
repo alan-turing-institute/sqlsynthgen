@@ -27,9 +27,11 @@ Contents:
 
    installation
    quickstart
+   tutorials
    sqlsynthgen
    faq
    changelog
+   glossary
 
 
 Indices and tables
