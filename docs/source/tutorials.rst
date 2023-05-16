@@ -76,9 +76,9 @@ This will also create one `.csv` file for each of the vocabulary tables listed i
 Restore the circular foreign key
 ++++++++++++++++++++++++++++++++
 
-If we deleted a foreign key constraint in the first step, we can now restore it
+If we deleted foreign key constraints in the first step, we can now restore them
 
 .. code-block:: sql
 
-  --alter table concept drop constraint concept.concept_vocabulary_id_fkey
-  ToDo
+  ALTER TABLE concept ADD CONSTRAINT concept_vocabulary_id_fkey FOREIGN KEY (vocabulary_id) REFERENCES vocabulary(vocabulary_id);
+  ALTER TABLE concept ADD CONSTRAINT concept_domain_id_fkey FOREIGN KEY (domain_id) REFERENCES domain(domain_id);
