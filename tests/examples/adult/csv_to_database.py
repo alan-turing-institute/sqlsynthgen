@@ -1,5 +1,6 @@
 from sqlalchemy import Column, ForeignKey, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Session
 
 
 Base = declarative_base()
@@ -30,6 +31,9 @@ def main():
     database_url: str = "postgresql://postgres:password@localhost:5432/adults"
     engine = create_engine(database_url)
     Base.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        session.commit()
 
 
 if __name__ == "__main__":
