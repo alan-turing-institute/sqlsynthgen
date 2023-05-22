@@ -36,14 +36,14 @@ concept_vocab = FileUploader(tests.examples.example_orm.Concept.__table__)
 class entityGenerator:
     num_rows_per_pass = 1
 
-    def __init__(self, src_db_conn, dst_db_conn):
+    def __init__(self, dst_db_conn):
         pass
 
 
 class personGenerator:
     num_rows_per_pass = 2
 
-    def __init__(self, src_db_conn, dst_db_conn):
+    def __init__(self, dst_db_conn):
         self.name = generic.person.full_name()
         self.stored_from = generic.datetime.datetime(start=2022, end=2022)
         self.research_opt_out = row_generators.boolean_from_src_stats_generator(
@@ -57,7 +57,7 @@ class personGenerator:
 class test_entityGenerator:
     num_rows_per_pass = 1
 
-    def __init__(self, src_db_conn, dst_db_conn):
+    def __init__(self, dst_db_conn):
         pass
         self.single_letter_column = generic.person.password(1)
 
@@ -65,7 +65,7 @@ class test_entityGenerator:
 class hospital_visitGenerator:
     num_rows_per_pass = 3
 
-    def __init__(self, src_db_conn, dst_db_conn):
+    def __init__(self, dst_db_conn):
         (
             self.visit_start,
             self.visit_end,
