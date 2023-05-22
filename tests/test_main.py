@@ -80,6 +80,23 @@ class TestCLI(SSGTestCase):
         )
         self.assertEqual(1, result.exit_code)
 
+    @patch("sqlsynthgen.main.stderr", new_callable=StringIO)
+    def test_make_generators_errors_if_src_dsn_missing(
+        self, mock_stderr: MagicMock
+    ) -> None:
+        """Test the make-generators sub-command with missing db params."""
+        result = runner.invoke(
+            app,
+            [
+                "make-generators",
+            ],
+            catch_exceptions=False,
+        )
+        self.assertEqual(
+            "Missing source database connection details.\n", mock_stderr.getvalue()
+        )
+        self.assertEqual(1, result.exit_code)
+
     @patch("sqlsynthgen.main.Path")
     @patch("sqlsynthgen.main.import_file")
     @patch("sqlsynthgen.main.make_table_generators")
@@ -204,6 +221,24 @@ class TestCLI(SSGTestCase):
         )
         self.assertEqual(1, result.exit_code)
 
+    @patch("sqlsynthgen.main.stderr", new_callable=StringIO)
+    def test_make_tables_errors_if_src_dsn_missing(
+        self, mock_stderr: MagicMock
+    ) -> None:
+        """Test the make-tables sub-command doesn't overwrite."""
+
+        result = runner.invoke(
+            app,
+            [
+                "make-tables",
+            ],
+            catch_exceptions=False,
+        )
+        self.assertEqual(
+            "Missing source database connection details.\n", mock_stderr.getvalue()
+        )
+        self.assertEqual(1, result.exit_code)
+
     @patch("sqlsynthgen.main.make_tables_file")
     @patch("sqlsynthgen.main.get_settings")
     @patch("sqlsynthgen.main.Path")
@@ -288,6 +323,28 @@ class TestCLI(SSGTestCase):
         )
         self.assertEqual(
             f"{output_path} should not already exist. Exiting...\n",
+            mock_stderr.getvalue(),
+        )
+        self.assertEqual(1, result.exit_code)
+
+    @patch("sqlsynthgen.main.stderr", new_callable=StringIO)
+    def test_make_stats_errors_if_no_src_dsn(
+        self,
+        mock_stderr: MagicMock,
+    ) -> None:
+        """Test the make-stats sub-command with missing settings."""
+        example_conf_path = "tests/examples/example_config.yaml"
+
+        result = runner.invoke(
+            app,
+            [
+                "make-stats",
+                f"--config-file={example_conf_path}",
+            ],
+            catch_exceptions=False,
+        )
+        self.assertEqual(
+            "Missing source database connection details.\n",
             mock_stderr.getvalue(),
         )
         self.assertEqual(1, result.exit_code)

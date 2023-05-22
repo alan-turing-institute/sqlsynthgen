@@ -123,6 +123,12 @@ def make_generators(
         print(f"{ssg_file} should not already exist. Exiting...", file=stderr)
         sys.exit(1)
 
+    settings = get_settings()
+    src_dsn = settings.src_postgres_dsn
+    if src_dsn is None:
+        print("Missing source database connection details.", file=stderr)
+        sys.exit(1)
+
     orm_module: ModuleType = import_file(orm_file)
     generator_config = read_yaml_file(config_file) if config_file is not None else {}
     result: str = make_table_generators(
@@ -147,11 +153,15 @@ def make_stats(
     if stats_file_path.exists() and not force:
         print(f"{stats_file} should not already exist. Exiting...", file=stderr)
         sys.exit(1)
-    settings = get_settings()
+
     config = read_yaml_file(config_file) if config_file is not None else {}
+
+    settings = get_settings()
     src_dsn = settings.src_postgres_dsn
     if src_dsn is None:
-        raise ValueError("Missing source database connection details.")
+        print("Missing source database connection details.", file=stderr)
+        sys.exit(1)
+
     src_stats = make_src_stats(src_dsn, config)
     stats_file_path.write_text(yaml.dump(src_stats), encoding="utf-8")
 
@@ -180,8 +190,13 @@ def make_tables(
         sys.exit(1)
 
     settings = get_settings()
+    if settings.src_postgres_dsn is None:
+        print("Missing source database connection details.", file=stderr)
+        sys.exit(1)
 
-    content = make_tables_file(settings.src_postgres_dsn, settings.src_schema)  # type: ignore
+    src_dsn = settings.src_postgres_dsn
+
+    content = make_tables_file(src_dsn, settings.src_schema)
     orm_file_path.write_text(content, encoding="utf-8")
 
 
