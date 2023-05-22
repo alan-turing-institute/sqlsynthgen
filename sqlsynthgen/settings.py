@@ -56,25 +56,26 @@ class Settings(BaseSettings):
             Connection database e.g. `postgres`
         dst_ssl_required (bool) :
             Flag `True` if db requires SSL
-
     """
 
     # Connection parameters for the source PostgreSQL database. See also
     # https://www.postgresql.org/docs/11/libpq-connect.html#LIBPQ-PARAMKEYWORDS
-    src_host_name: str  # e.g. "mydb.mydomain.com" or "0.0.0.0"
+    src_host_name: Optional[str]  # e.g. "mydb.mydomain.com" or "0.0.0.0"
     src_port: int = 5432
-    src_user_name: str  # e.g. "postgres" or "myuser@mydb"
-    src_password: str
-    src_db_name: str
+    src_user_name: Optional[str]  # e.g. "postgres" or "myuser@mydb"
+    src_password: Optional[str]
+    src_db_name: Optional[str]
     src_ssl_required: bool = False  # whether the db requires SSL
     src_schema: Optional[str]
 
     # Connection parameters for the destination PostgreSQL database.
-    dst_host_name: str  # Connection parameter e.g. "mydb.mydomain.com" or "0.0.0.0"
+    dst_host_name: Optional[
+        str
+    ]  # Connection parameter e.g. "mydb.mydomain.com" or "0.0.0.0"
     dst_port: int = 5432
-    dst_user_name: str  # e.g. "postgres" or "myuser@mydb"
-    dst_password: str
-    dst_db_name: str
+    dst_user_name: Optional[str]  # e.g. "postgres" or "myuser@mydb"
+    dst_password: Optional[str]
+    dst_db_name: Optional[str]
     dst_schema: Optional[str]
     dst_ssl_required: bool = False  # whether the db requires SSL
 
@@ -83,42 +84,24 @@ class Settings(BaseSettings):
     dst_postgres_dsn: Optional[PostgresDsn]
 
     @validator("src_postgres_dsn", pre=True)
-    def validate_src_postgres_dsn(cls, _: Optional[PostgresDsn], values: Any) -> str:
-        """Create and validate the source db data source name.
-
-        Args:
-            cls (Settings): Self Settings instance
-            values (Optional Any): Eg. parameters for source database connection
-
-        Return:
-            (str): Validated data source name
-        """
+    def validate_src_postgres_dsn(
+        cls, _: Optional[PostgresDsn], values: Any
+    ) -> Optional[str]:
+        """Create and validate the source db data source name."""
         return cls.check_postgres_dsn(_, values, "src")
 
     @validator("dst_postgres_dsn", pre=True)
-    def validate_dst_postgres_dsn(cls, _: Optional[PostgresDsn], values: Any) -> str:
-        """Create and validate the destination db data source name.
-
-        Args:
-            cls (Settings): Self Settings instance
-            values (Optional Any): Eg. Connection parameters for destination database
-
-        Return:
-            (str): Validated data source name
-        """
+    def validate_dst_postgres_dsn(
+        cls, _: Optional[PostgresDsn], values: Any
+    ) -> Optional[str]:
+        """Create and validate the destination db data source name."""
         return cls.check_postgres_dsn(_, values, "dst")
 
     @staticmethod
-    def check_postgres_dsn(_: Optional[PostgresDsn], values: Any, prefix: str) -> str:
-        """Build a DSN string from the host, db name, port, username and password.
-
-        Args:
-            cls (Settings): Self Settings instance
-            values (Optional Any): Eg. Connection parameters
-
-        Return:
-            (str): A data source name
-        """
+    def check_postgres_dsn(
+        _: Optional[PostgresDsn], values: Any, prefix: str
+    ) -> Optional[str]:
+        """Build a DSN string from the host, db name, port, username and password."""
         # We want to build the Data Source Name ourselves so none should be provided
         if _:
             raise ValueError("postgres_dsn should not be provided")
@@ -129,12 +112,15 @@ class Settings(BaseSettings):
         port = values[f"{prefix}_port"]
         db_name = values[f"{prefix}_db_name"]
 
-        dsn = f"postgresql://{user}:{password}@{host}:{port}/{db_name}"
+        if user and password and host and port and db_name:
+            dsn = f"postgresql://{user}:{password}@{host}:{port}/{db_name}"
 
-        if values[f"{prefix}_ssl_required"]:
-            return dsn + "?sslmode=require"
+            if values[f"{prefix}_ssl_required"]:
+                return dsn + "?sslmode=require"
 
-        return dsn
+            return dsn
+
+        return None
 
     @dataclass
     class Config:
