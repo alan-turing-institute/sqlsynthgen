@@ -133,55 +133,55 @@ def get_reference_by_value(
 def load_all_vocabulary_tables(session: Session, adult_data_frame: pd.DataFrame):
     load_vocabulary_table(
         session,
-        adult_data_frame["workclass"],
+        adult_data_frame["workclass"].str.strip(),
         lambda name: WorkClass(work_class_name=name),
     )
 
     load_vocabulary_table(
         session,
-        adult_data_frame["education"],
+        adult_data_frame["education"].str.strip(),
         lambda name: Education(education_name=name),
     )
 
     load_vocabulary_table(
         session,
-        adult_data_frame["marital-status"],
+        adult_data_frame["marital-status"].str.strip(),
         lambda name: MaritalStatus(marital_status_name=name),
     )
 
     load_vocabulary_table(
         session,
-        adult_data_frame["occupation"],
+        adult_data_frame["occupation"].str.strip(),
         lambda name: Occupation(occupation_name=name),
     )
 
     load_vocabulary_table(
         session,
-        adult_data_frame["relationship"],
+        adult_data_frame["relationship"].str.strip(),
         lambda name: Relationship(relationship_name=name),
     )
 
     load_vocabulary_table(
         session,
-        adult_data_frame["race"],
+        adult_data_frame["race"].str.strip(),
         lambda name: Race(race_name=name),
     )
 
     load_vocabulary_table(
         session,
-        adult_data_frame["sex"],
+        adult_data_frame["sex"].str.strip(),
         lambda name: Sex(sex_name=name),
     )
 
     load_vocabulary_table(
         session,
-        adult_data_frame["native-country"],
+        adult_data_frame["native-country"].str.strip(),
         lambda name: NativeCountry(native_country_name=name),
     )
 
     load_vocabulary_table(
         session,
-        adult_data_frame["income"],
+        adult_data_frame["income"].str.strip(),
         lambda name: Income(income_name=name),
     )
 
