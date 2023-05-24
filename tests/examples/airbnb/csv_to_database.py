@@ -90,9 +90,15 @@ def user_csv_to_dataframe(filename: str) -> pd.DataFrame:
         ["NDF", "other"], None
     )
 
-    dataframe = dataframe.replace({np.nan: None})
-
     return dataframe
+
+
+def always_insert(object: Any, db_session: Session) -> bool:
+    return True
+
+
+def insert_if_user_present(user_session: UserSession, db_session: Session) -> bool:
+    return db_session.query(User).get(user_session.user_id) is not None
 
 
 def upload_csv_to_database(
@@ -100,13 +106,20 @@ def upload_csv_to_database(
     mapped_class: Type,
     session: Session,
     dataframe_function: Callable[[str], pd.DataFrame] = csv_to_dataframe,
+    filter_function: Callable[[Any, Session], bool] = always_insert,
 ) -> None:
     print(f"Loading {filename}")
 
     dataframe: pd.DataFrame = dataframe_function(filename)
-    session.add_all(
-        [mapped_class(**data_as_series) for _, data_as_series in dataframe.iterrows()]
-    )
+    dataframe = dataframe.replace({np.nan: None})
+
+    for model_instance in [
+        mapped_class(**data_as_series) for _, data_as_series in dataframe.iterrows()
+    ]:
+        if filter_function(model_instance, session):
+            session.add(model_instance)
+        else:
+            print(f"Skipping: {model_instance=}")
     session.commit()
 
 
@@ -115,6 +128,7 @@ def main():
     countries_data_file: str = "countries.csv"
     buckets_data_file: str = "age_gender_bkts.csv"
     users_data_file: str = "train_users_2.csv"
+    sessions_data_file: str = "sessions.csv"
 
     engine = create_engine(database_url)
     metadata = Base.metadata
@@ -126,6 +140,12 @@ def main():
         upload_csv_to_database(countries_data_file, Country, session)
         upload_csv_to_database(buckets_data_file, AgeGenderBucket, session)
         upload_csv_to_database(users_data_file, User, session, user_csv_to_dataframe)
+        upload_csv_to_database(
+            sessions_data_file,
+            UserSession,
+            session,
+            filter_function=insert_if_user_present,
+        )
 
 
 if __name__ == "__main__":
