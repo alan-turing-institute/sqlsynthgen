@@ -1,3 +1,5 @@
+from typing import Any, Callable, List, Type
+import numpy as np
 import pandas as pd
 from sqlalchemy import (
     Column,
@@ -67,14 +69,52 @@ class User(Base):
     affiliate_provider = Column(String)
     first_affiliate_tracked = Column(String)
     signup_app = Column(String)
-    first_device = Column(String)
+    first_device_type = Column(String)
     first_browser = Column(String)
     country_destination = Column(String, ForeignKey("countries.country_destination"))
+
+
+def csv_to_dataframe(filename: str) -> pd.DataFrame:
+    dataframe: pd.DataFrame = pd.read_csv(filename, header=0)
+    dataframe.columns = [column.strip() for column in dataframe.columns]
+
+    return dataframe
+
+
+def user_csv_to_dataframe(filename: str) -> pd.DataFrame:
+    dataframe: pd.DataFrame = csv_to_dataframe(filename)
+    dataframe["timestamp_first_active"] = pd.to_datetime(
+        dataframe["timestamp_first_active"], format="%Y%m%d%H%M%S"
+    )
+    dataframe["country_destination"] = dataframe["country_destination"].replace(
+        ["NDF", "other"], None
+    )
+
+    dataframe = dataframe.replace({np.nan: None})
+
+    return dataframe
+
+
+def upload_csv_to_database(
+    filename: str,
+    mapped_class: Type,
+    session: Session,
+    dataframe_function: Callable[[str], pd.DataFrame] = csv_to_dataframe,
+) -> None:
+    print(f"Loading {filename}")
+
+    dataframe: pd.DataFrame = dataframe_function(filename)
+    session.add_all(
+        [mapped_class(**data_as_series) for _, data_as_series in dataframe.iterrows()]
+    )
+    session.commit()
 
 
 def main():
     database_url: str = "postgresql://postgres:password@localhost:5432/airbnb"
     countries_data_file: str = "countries.csv"
+    buckets_data_file: str = "age_gender_bkts.csv"
+    users_data_file: str = "train_users_2.csv"
 
     engine = create_engine(database_url)
     metadata = Base.metadata
@@ -82,14 +122,10 @@ def main():
     metadata.drop_all(engine)
     metadata.create_all(engine)
 
-    countries_dataset: pd.DataFrame = pd.read_csv(countries_data_file, header=0)
-    countries_dataset.columns = [column.strip() for column in countries_dataset.columns]
-
     with Session(engine) as session:
-        for _, country_as_series in countries_dataset.iterrows():
-            session.add(Country(**country_as_series))
-
-        session.commit()
+        upload_csv_to_database(countries_data_file, Country, session)
+        upload_csv_to_database(buckets_data_file, AgeGenderBucket, session)
+        upload_csv_to_database(users_data_file, User, session, user_csv_to_dataframe)
 
 
 if __name__ == "__main__":
