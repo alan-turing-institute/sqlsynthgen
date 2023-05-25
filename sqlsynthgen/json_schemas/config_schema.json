@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SQLSynthGen Config",
+  "description": "A SQLSynthGen configuration YAML file",
+  "type": [
+    "object"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "row_generators_module": {
+      "type": "string"
+    },
+    "story_generators_module": {
+      "type": "string"
+    },
+    "smartnoise-sql": {
+      "type": "object",
+      "patternProperties": {
+        ".*": {
+          "type": "object",
+          "patternProperties": {
+            ".*": {
+              "type": "object",
+              "properties": {
+                "censor_dims": {
+                  "type": "boolean"
+                }
+              },
+              "patternProperties": {
+                "^(?!censor_dims).*$": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "private_id": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "src-stats": {
+      "type": "array",
+      "items": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "query": {
+            "type": "string"
+          },
+          "epsilon": {
+            "type": "number"
+          },
+          "delta": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "story_generators": {
+      "type": "array",
+      "items": {
+        "additionalProperties": false,
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "args": {
+            "type": "object"
+          },
+          "num_stories_per_pass": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "tables": {
+      "type": "object",
+      "patternProperties": {
+        ".*": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "vocabulary_table": {
+              "type": "boolean"
+            },
+            "num_rows_per_pass": {
+              "type": "integer"
+            },
+            "row_generators": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "args": {
+                    "type": ["object", "null"]
+                  },
+                  "columns_assigned": {
+                    "type": ["array", "string"],
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,4 +1,5 @@
 """Entrypoint for the SQLSynthGen package."""
+import json
 import sys
 from pathlib import Path
 from sys import stderr
@@ -7,6 +8,8 @@ from typing import Final, Optional
 
 import typer
 import yaml
+from jsonschema.exceptions import ValidationError
+from jsonschema.validators import validate
 
 from sqlsynthgen.create import create_db_data, create_db_tables, create_db_vocab
 from sqlsynthgen.make import make_src_stats, make_table_generators, make_tables_file
@@ -16,6 +19,9 @@ from sqlsynthgen.utils import import_file, read_yaml_file
 ORM_FILENAME: Final[str] = "orm.py"
 SSG_FILENAME: Final[str] = "ssg.py"
 STATS_FILENAME: Final[str] = "src-stats.yaml"
+CONFIG_SCHEMA_PATH: Final[Path] = (
+    Path(__file__).parent / "json_schemas/config_schema.json"
+)
 
 app = typer.Typer()
 
@@ -198,6 +204,18 @@ def make_tables(
 
     content = make_tables_file(src_dsn, settings.src_schema)
     orm_file_path.write_text(content, encoding="utf-8")
+
+
+@app.command()
+def validate_config(config_file: Path) -> None:
+    """Validate the format of a config file."""
+    config = yaml.load(config_file.read_text(encoding="UTF-8"), Loader=yaml.SafeLoader)
+    schema_config = json.loads(CONFIG_SCHEMA_PATH.read_text(encoding="UTF-8"))
+    try:
+        validate(config, schema_config)
+    except ValidationError as e:
+        typer.echo(e, err=True)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

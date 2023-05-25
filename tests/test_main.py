@@ -400,3 +400,23 @@ class TestCLI(SSGTestCase):
 
                 mock_make.reset_mock()
                 mock_path.reset_mock()
+
+    def test_validate_config(self) -> None:
+        """Test the validate-config sub-command."""
+        result = runner.invoke(
+            app,
+            ["validate-config", "tests/examples/example_config.yaml"],
+            catch_exceptions=False,
+        )
+
+        self.assertSuccess(result)
+
+    def test_validate_config_invalid(self) -> None:
+        """Test the validate-config sub-command."""
+        result = runner.invoke(
+            app,
+            ["validate-config", "tests/examples/invalid_config.yaml"],
+            catch_exceptions=False,
+        )
+
+        self.assertEqual(1, result.exit_code)

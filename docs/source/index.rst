@@ -32,6 +32,7 @@ Contents:
    faq
    changelog
    glossary
+   configuration
 
 
 Indices and tables
