@@ -62,7 +62,6 @@ class MyTestCase(SSGTestCase):
             return story()
 
         for num_stories_per_pass, num_rows_per_pass in itt.product([0, 2], [0, 3]):
-            mock_src_conn = MagicMock()
             mock_dst_conn = MagicMock()
             mock_dst_conn.execute.return_value.returned_defaults = {}
             mock_table = MagicMock()
@@ -78,13 +77,10 @@ class MyTestCase(SSGTestCase):
                 if num_stories_per_pass > 0
                 else []
             )
-            populate(
-                mock_src_conn, mock_dst_conn, tables, row_generators, story_generators
-            )
+            populate(mock_dst_conn, tables, row_generators, story_generators)
 
             mock_gen.assert_has_calls(
-                [call(mock_src_conn, mock_dst_conn)]
-                * (num_stories_per_pass + num_rows_per_pass)
+                [call(mock_dst_conn)] * (num_stories_per_pass + num_rows_per_pass)
             )
             mock_insert.return_value.values.assert_has_calls(
                 [call(mock_gen.return_value.__dict__)]
@@ -110,7 +106,7 @@ class MyTestCase(SSGTestCase):
         tables = [mock_table_one, mock_table_two, mock_table_three]
         row_generators = {"two": mock_gen_two, "three": mock_gen_three}
 
-        populate(2, mock_dst_conn, tables, row_generators, [])
+        populate(mock_dst_conn, tables, row_generators, [])
         self.assertListEqual(
             [call(mock_table_two), call(mock_table_three)], mock_insert.call_args_list
         )

@@ -32,7 +32,7 @@ with open("{{ src_stats_filename }}", "r", encoding="utf-8") as f:
 class {{ table_data.class_name }}:
     num_rows_per_pass = {{ table_data.rows_per_pass }}
 
-    def __init__(self, src_db_conn, dst_db_conn):
+    def __init__(self, dst_db_conn):
     {% for column_data in table_data.columns %}
         {% if column_data.primary_key %}
         pass
