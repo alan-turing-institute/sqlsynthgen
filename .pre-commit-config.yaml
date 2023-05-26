@@ -7,6 +7,7 @@ repos:
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
+        exclude: docs/source/_static/
       - id: check-yaml
       - id: check-added-large-files
   - repo: https://github.com/markdownlint/markdownlint
@@ -21,11 +22,16 @@ repos:
       - id: shellcheck
   - repo: local
     hooks:
+      # Ensure that the config html pages are current
       - id: config_schema
         name: Config Schema Docs
-        entry: generate-schema-doc sqlsynthgen/json_schemas/config_schema.json docs/source/_static/
+        entry: >
+          generate-schema-doc
+          --config-file .jsfh.yaml
+          sqlsynthgen/json_schemas/config_schema.json
+          docs/source/_static/
         language: system
-        files: sqlsynthgen/json_schemas/config_schema.json
+        pass_filenames: false
       - id: black
         name: Black
         entry: poetry run black

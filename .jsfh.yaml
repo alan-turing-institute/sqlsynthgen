@@ -1,0 +1,5 @@
+---
+# Config file for the JSON Schema for Humans tool
+# https://github.com/coveooss/json-schema-for-humans/blob/main/config_schema.json
+footer_show_time: false
+examples_as_yaml: true
