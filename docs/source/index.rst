@@ -28,11 +28,11 @@ Contents:
    installation
    quickstart
    tutorials
+   configuration
    sqlsynthgen
    faq
    changelog
    glossary
-   configuration
 
 
 Indices and tables
