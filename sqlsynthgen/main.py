@@ -2,7 +2,6 @@
 import json
 import sys
 from pathlib import Path
-from sys import stderr
 from types import ModuleType
 from typing import Final, Optional
 
@@ -126,13 +125,13 @@ def make_generators(
     """
     ssg_file_path = Path(ssg_file)
     if ssg_file_path.exists() and not force:
-        print(f"{ssg_file} should not already exist. Exiting...", file=stderr)
+        typer.echo(f"{ssg_file} should not already exist. Exiting...", err=True)
         sys.exit(1)
 
     settings = get_settings()
     src_dsn = settings.src_postgres_dsn
     if src_dsn is None:
-        print("Missing source database connection details.", file=stderr)
+        typer.echo("Missing source database connection details.", err=True)
         sys.exit(1)
 
     orm_module: ModuleType = import_file(orm_file)
@@ -157,7 +156,7 @@ def make_stats(
     """
     stats_file_path = Path(stats_file)
     if stats_file_path.exists() and not force:
-        print(f"{stats_file} should not already exist. Exiting...", file=stderr)
+        typer.echo(f"{stats_file} should not already exist. Exiting...", err=True)
         sys.exit(1)
 
     config = read_yaml_file(config_file) if config_file is not None else {}
@@ -165,7 +164,7 @@ def make_stats(
     settings = get_settings()
     src_dsn = settings.src_postgres_dsn
     if src_dsn is None:
-        print("Missing source database connection details.", file=stderr)
+        typer.echo("Missing source database connection details.", err=True)
         sys.exit(1)
 
     src_stats = make_src_stats(src_dsn, config)
@@ -192,12 +191,12 @@ def make_tables(
     """
     orm_file_path = Path(orm_file)
     if orm_file_path.exists() and not force:
-        print(f"{orm_file} should not already exist. Exiting...", file=stderr)
+        typer.echo(f"{orm_file} should not already exist. Exiting...", err=True)
         sys.exit(1)
 
     settings = get_settings()
     if settings.src_postgres_dsn is None:
-        print("Missing source database connection details.", file=stderr)
+        typer.echo("Missing source database connection details.", err=True)
         sys.exit(1)
 
     src_dsn = settings.src_postgres_dsn
