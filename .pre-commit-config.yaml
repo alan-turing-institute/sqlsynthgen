@@ -26,6 +26,7 @@ repos:
       - id: config_schema
         name: Config Schema Docs
         entry: >
+          poetry run
           generate-schema-doc
           --config-file .jsfh.yaml
           sqlsynthgen/json_schemas/config_schema.json
