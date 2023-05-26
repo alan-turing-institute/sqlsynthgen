@@ -1,3 +1,5 @@
+row_generators_module: airbnb_generators
+
 tables:
   countries:
     vocabulary_table: true
@@ -19,12 +21,21 @@ tables:
 
   users:
     row_generators:
-      - name: generic.person.password
-        args: null
+      - name: generic.person.identifier
+        args:
+          mask: '"@@##@@@@"'
         columns_assigned: id
+      - name: airbnb_generators.user_dates_provider
+        args: null
+        columns_assigned: ["date_account_created", "date_first_booking"]
 
   sessions:
     row_generators:
+      - name: generic.numeric.integer_number
+        args:
+          start: 0
+          end: 3600
+        columns_assigned: secs_elapsed
       - name: generic.choice
         args:
           items: ["show", "index", "personalize"]
@@ -41,8 +52,3 @@ tables:
         args:
           items: ["Mac Desktop", "Windows Desktop", "iPhone"]
         columns_assigned: device_type
-      - name: generic.numeric.integer_number
-        args:
-          start: 0
-          end: 3600
-        columns_assigned: secs_elapsed
