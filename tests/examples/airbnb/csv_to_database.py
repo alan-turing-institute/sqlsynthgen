@@ -113,14 +113,13 @@ def upload_csv_to_database(
     dataframe: pd.DataFrame = dataframe_function(filename)
     dataframe = dataframe.replace({np.nan: None})
 
-    for model_instance in [
-        mapped_class(**data_as_series) for _, data_as_series in dataframe.iterrows()
-    ]:
+    for _, data_as_series in dataframe.iterrows():
+        model_instance = mapped_class(**data_as_series)
         if filter_function(model_instance, session):
             session.add(model_instance)
+            session.commit()
         else:
             print(f"Skipping: {model_instance=}")
-    session.commit()
 
 
 def main():
