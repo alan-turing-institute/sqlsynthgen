@@ -1,0 +1,3 @@
+tables:
+  countries:
+    vocabulary_table: true
