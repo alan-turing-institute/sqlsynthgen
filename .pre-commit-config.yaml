@@ -21,6 +21,11 @@ repos:
       - id: shellcheck
   - repo: local
     hooks:
+      - id: config_schema
+        name: Config Schema Docs
+        entry: generate-schema-doc sqlsynthgen/json_schemas/config_schema.json docs/source/_static/
+        language: system
+        files: sqlsynthgen/json_schemas/config_schema.json
       - id: black
         name: Black
         entry: poetry run black
