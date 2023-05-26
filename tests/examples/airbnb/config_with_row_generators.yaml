@@ -1,0 +1,48 @@
+tables:
+  countries:
+    vocabulary_table: true
+
+  age_gender_bkts:
+    row_generators:
+      - name: generic.person.password
+        args: null
+        columns_assigned: age_bucket
+      - name: generic.column_value_provider.column_value
+        args:
+          db_connection: dst_db_conn
+          orm_class: orm.Countries
+          column_name: '"country_destination"'
+        columns_assigned: country_destination
+      - name: generic.person.gender
+        args: null
+        columns_assigned: gender
+
+  users:
+    row_generators:
+      - name: generic.person.password
+        args: null
+        columns_assigned: id
+
+  sessions:
+    row_generators:
+      - name: generic.choice
+        args:
+          items: ["show", "index", "personalize"]
+        columns_assigned: action
+      - name: generic.choice
+        args:
+          items: ["view", "data", "click"]
+        columns_assigned: action_type
+      - name: generic.choice
+        args:
+          items: ["view_search_results", "user_profile", "similar_listings"]
+        columns_assigned: action_detail
+      - name: generic.choice
+        args:
+          items: ["Mac Desktop", "Windows Desktop", "iPhone"]
+        columns_assigned: device_type
+      - name: generic.numeric.integer_number
+        args:
+          start: 0
+          end: 3600
+        columns_assigned: secs_elapsed
