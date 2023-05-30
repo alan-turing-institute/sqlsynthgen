@@ -1,0 +1,4 @@
+---
+tables:
+  any_table_name:
+    num_rows_per_pass: "a"
