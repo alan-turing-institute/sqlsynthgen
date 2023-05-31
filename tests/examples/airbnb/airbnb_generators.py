@@ -16,3 +16,10 @@ def user_dates_provider():
         )
 
     return date_account_created, booking_date
+
+
+def user_age_provider(query_results):
+    mu: float = query_results[0][0]
+    sigma: float = query_results[0][1]
+
+    return random.gauss(mu, sigma)

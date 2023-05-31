@@ -28,6 +28,10 @@ tables:
       - name: airbnb_generators.user_dates_provider
         args: null
         columns_assigned: ["date_account_created", "date_first_booking"]
+      - name: airbnb_generators.user_age_provider
+        args:
+          query_results: SRC_STATS["age_stats"]
+        columns_assigned: age
 
   sessions:
     row_generators:
@@ -52,3 +56,23 @@ tables:
         args:
           items: ["Mac Desktop", "Windows Desktop", "iPhone"]
         columns_assigned: device_type
+smartnoise-sql:
+  public:
+    users:
+      age:
+        type: float
+        private_id: false
+        lower: 0
+        upper: 100
+      id:
+        type: string
+        private_id: true
+
+src-stats:
+  - name: age_stats
+    query: >
+      select avg(age), stddev(age)
+      from users
+      where age <= 100
+    epsilon: 0.1
+    delta: 0.000001
