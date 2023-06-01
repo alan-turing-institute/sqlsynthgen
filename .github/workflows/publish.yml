@@ -4,6 +4,8 @@ on:
   release:
     types:
       - published
+env:
+  PYTHON_VERSION: "3.9"
 jobs:
   publish-job:
     runs-on: ubuntu-latest
