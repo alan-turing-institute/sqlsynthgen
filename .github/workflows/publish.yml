@@ -13,6 +13,10 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
       - name: Check that tag and package versions match
         run: |
           PYPROJECT_VERSION=$(sed -n '3p' pyproject.toml | sed "s/version = //")
