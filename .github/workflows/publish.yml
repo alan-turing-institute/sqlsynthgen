@@ -4,8 +4,6 @@ on:
   release:
     types:
       - published
-env:
-  PYTHON_VERSION: "3.9"
 jobs:
   publish-job:
     runs-on: ubuntu-latest
@@ -13,10 +11,6 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
       - name: Check that tag and package versions match
         run: |
           PYPROJECT_VERSION=$(sed -n '3p' pyproject.toml | sed "s/version = //")
@@ -32,3 +26,4 @@ jobs:
           pypi_token: ${{ secrets.PYPI_TOKEN }}
           ignore_dev_requirements: "yes"
           package_directory: "sqlsynthgen"
+          python_version: "3.9"
