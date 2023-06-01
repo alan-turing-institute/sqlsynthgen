@@ -1567,23 +1567,19 @@ description = "Automatic model code generator for SQLAlchemy"
 category = "main"
 optional = false
 python-versions = ">=3.7"
-files = []
-develop = false
+files = [
+    {file = "sqlacodegen-3.0.0rc1-py3-none-any.whl", hash = "sha256:c391d4a35df1436a86625e255eeec96c941210cf8ad4121860a0d94fa93d6c98"},
+    {file = "sqlacodegen-3.0.0rc1.tar.gz", hash = "sha256:c3e885cfb913cb9f8aa47e6e0c0e03e079dcee65de8290fd502d978c3be2041a"},
+]
 
 [package.dependencies]
-importlib_metadata = {version = "*", markers = "python_version < \"3.10\""}
+importlib-metadata = {version = "*", markers = "python_version < \"3.10\""}
 inflect = ">=4.0.0"
 SQLAlchemy = ">=1.4.0"
 
 [package.extras]
 citext = ["sqlalchemy-citext (>=1.7.0)"]
 test = ["mysql-connector-python", "psycopg2-binary", "pytest", "pytest-cov"]
-
-[package.source]
-type = "git"
-url = "https://github.com/agronholm/sqlacodegen.git"
-reference = "3.0.0rc1"
-resolved_reference = "c673bb24446c6ed1401a48fe56a663b0a0616cee"
 
 [[package]]
 name = "sqlalchemy"
@@ -1923,4 +1919,4 @@ docs = ["sphinx-rtd-theme", "sphinxcontrib-napoleon"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9,<3.11"
-content-hash = "b73f0e0e2edac175168fe961dc588d522a3cb54d83112d72f9855ec2cbae7ac4"
+content-hash = "0272cd8458842b707577f3e9d51304704f04bc12df90b139696e28d267e700d1"

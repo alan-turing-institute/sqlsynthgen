@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sqlsynthgen"
-version = "0.1.0"
+version = "0.2.0"
 description = ""
 authors = ["Iain <25081046+Iain-S@users.noreply.github.com>"]
 license = "MIT"
@@ -8,7 +8,6 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.9,<3.11"
-sqlacodegen = {git = "https://github.com/agronholm/sqlacodegen.git", rev = "3.0.0rc1"}
 pydantic = {extras = ["dotenv"], version = "^1.10.2"}
 psycopg2-binary = "^2.9.5"
 sqlalchemy-utils = "^0.38.3"
@@ -22,6 +21,7 @@ smartnoise-sql = "^0.2.11"
 jinja2 = "^3.1.2"
 black = "^23.3.0"
 jsonschema = "^4.17.3"
+sqlacodegen = "3.0.0rc1"
 
 [tool.poetry.group.dev.dependencies]
 isort = "^5.10.1"
