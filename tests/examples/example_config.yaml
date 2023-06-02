@@ -23,7 +23,6 @@ src-stats:
 
 row_generators_module: row_generators
 tables:
-
   person:
     num_rows_per_pass: 2
     row_generators:
@@ -31,11 +30,11 @@ tables:
         columns_assigned: name
       - name: generic.datetime.datetime
         args:
-          start: 2022
-          end: 2022
+          - 2022
+          - 2022
         columns_assigned: stored_from
       - name: row_generators.boolean_from_src_stats_generator
-        args:
+        kwargs:
           generic: generic
           src_stats: SRC_STATS["count_opt_outs"]
         columns_assigned: research_opt_out
@@ -44,7 +43,7 @@ tables:
     num_rows_per_pass: 3
     row_generators:
       - name: row_generators.timespan_generator
-        args:
+        kwargs:
           generic: generic
           earliest_start_year: 2021
           last_start_year: 2022

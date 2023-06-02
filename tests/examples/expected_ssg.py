@@ -45,7 +45,7 @@ class personGenerator:
 
     def __init__(self, dst_db_conn):
         self.name = generic.person.full_name()
-        self.stored_from = generic.datetime.datetime(start=2022, end=2022)
+        self.stored_from = generic.datetime.datetime(2022, 2022)
         self.research_opt_out = row_generators.boolean_from_src_stats_generator(
             generic=generic, src_stats=SRC_STATS["count_opt_outs"]
         )

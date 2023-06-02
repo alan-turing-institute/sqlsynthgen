@@ -96,7 +96,9 @@ def _get_row_generator(
     for gen_conf in config:
         name = gen_conf["name"]
         columns_assigned = gen_conf["columns_assigned"]
-        args: Optional[Dict[str, Any]] = gen_conf.get("args")
+        keyword_arguments: Dict[str, Any] = gen_conf.get("kwargs", {})
+        positional_arguments: List[str] = gen_conf.get("args", [])
+
         if isinstance(columns_assigned, str):
             columns_assigned = [columns_assigned]
 
@@ -107,19 +109,16 @@ def _get_row_generator(
             # Might be a single string, rather than a list of strings.
             columns_covered.append(columns_assigned)
 
-        generator_function: str = name
-
-        generator_arguments: str = ""
-        if args is not None:
-            generator_arguments = ", ".join(
-                f"{key}={value}" for key, value in args.items()
-            )
+        argument_values: List[str] = [str(value) for value in positional_arguments]
+        argument_values += [
+            f"{key}={value}" for key, value in keyword_arguments.items()
+        ]
 
         column_info.append(
             ColumnGenerator(
                 variable_names=variable_names,
-                generator_function=generator_function,
-                generator_arguments=generator_arguments,
+                generator_function=name,
+                generator_arguments=", ".join(argument_values),
             )
         )
     return column_info, columns_covered

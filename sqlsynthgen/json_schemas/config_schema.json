@@ -106,6 +106,9 @@
                     "type": "string"
                   },
                   "args": {
+                    "type": ["array", "null"]
+                  },
+                  "kwargs": {
                     "type": ["object", "null"]
                   },
                   "columns_assigned": {
