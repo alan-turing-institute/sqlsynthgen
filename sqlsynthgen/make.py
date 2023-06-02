@@ -40,12 +40,19 @@ class VocabularyTableGenerator:
 
 
 @dataclass
+class FunctionCall:
+    """Contains the ssg.py content related function calls."""
+
+    function_name: str
+    argument_values: List[str]
+
+
+@dataclass
 class ColumnGenerator:
     """Contains the ssg.py content related to columns of a table."""
 
     variable_names: str
-    generator_function: str
-    generator_arguments: str
+    function_call: FunctionCall
     primary_key: bool = False
 
 
@@ -64,8 +71,7 @@ class StoryGenerator:
     """Contains the ssg.py content related to story generators."""
 
     wrapper_name: str
-    name: str
-    arguments: Dict[str, str]
+    function_call: FunctionCall
     num_stories_per_pass: int
 
 
@@ -84,6 +90,23 @@ def _orm_class_from_table_name(
     if guess in dir(tables_module):
         return guess, guess
     return None
+
+
+def _get_function_call(
+    function_name: str,
+    positional_arguments: Optional[List[Any]] = None,
+    keyword_arguments: Optional[Dict[str, Any]] = None,
+) -> FunctionCall:
+    if positional_arguments is None:
+        positional_arguments = []
+
+    if keyword_arguments is None:
+        keyword_arguments = {}
+
+    argument_values: List[str] = [str(value) for value in positional_arguments]
+    argument_values += [f"{key}={value}" for key, value in keyword_arguments.items()]
+
+    return FunctionCall(function_name=function_name, argument_values=argument_values)
 
 
 def _get_row_generator(
@@ -117,8 +140,9 @@ def _get_row_generator(
         column_info.append(
             ColumnGenerator(
                 variable_names=variable_names,
-                generator_function=name,
-                generator_arguments=", ".join(argument_values),
+                function_call=_get_function_call(
+                    name, positional_arguments, keyword_arguments
+                ),
             )
         )
     return column_info, columns_covered
@@ -133,7 +157,7 @@ def _get_default_generator(tables_module: ModuleType, column: Any) -> ColumnGene
     # references.
     variable_names: str = ""
     generator_function: str = ""
-    generator_arguments: str = ""
+    generator_arguments: List[str] = []
 
     if column.foreign_keys:
         if len(column.foreign_keys) > 1:
@@ -152,10 +176,11 @@ def _get_default_generator(tables_module: ModuleType, column: Any) -> ColumnGene
 
         variable_names = f"self.{column.name}"
         generator_function = "generic.column_value_provider.column_value"
-        generator_arguments = (
-            f"dst_db_conn, {tables_module.__name__}.{target_orm_class},"
-            + f' "{target_column_name}"'
-        )
+        generator_arguments = [
+            "dst_db_conn",
+            f"{tables_module.__name__}.{target_orm_class}",
+            f'"{target_column_name}"',
+        ]
 
     # Otherwise generate values based on just the datatype of the column.
     else:
@@ -168,14 +193,15 @@ def _get_default_generator(tables_module: ModuleType, column: Any) -> ColumnGene
     return ColumnGenerator(
         primary_key=column.primary_key,
         variable_names=variable_names,
-        generator_function=generator_function,
-        generator_arguments=generator_arguments,
+        function_call=_get_function_call(
+            function_name=generator_function, positional_arguments=generator_arguments
+        ),
     )
 
 
-def _get_mimesis_function_for_colum(column: Any) -> Tuple[str, str, str]:
+def _get_mimesis_function_for_colum(column: Any) -> Tuple[str, str, List[str]]:
     variable_names: str = f"self.{column.name}"
-    generator_arguments: str = ""
+    generator_arguments: List[str] = []
     generator_function: str = ""
 
     column_type = type(column.type)
@@ -199,7 +225,7 @@ def _get_mimesis_function_for_colum(column: Any) -> Tuple[str, str, str]:
         generator_function = "generic.text.color"
     elif column_type in {sqltypes.String, sqltypes.Text} and column_size is not None:
         generator_function = "generic.person.password"
-        generator_arguments = str(column_size)
+        generator_arguments.append(str(column_size))
 
     return variable_names, generator_function, generator_arguments
 
@@ -232,8 +258,9 @@ def _get_story_generators(config: dict) -> List[StoryGenerator]:
         generators.append(
             StoryGenerator(
                 wrapper_name=wrapper_name,
-                name=gen["name"],
-                arguments=gen["args"],
+                function_call=_get_function_call(
+                    function_name=gen["name"], keyword_arguments=gen["args"]
+                ),
                 num_stories_per_pass=gen["num_stories_per_pass"],
             )
         )

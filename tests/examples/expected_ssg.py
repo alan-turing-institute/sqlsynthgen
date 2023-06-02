@@ -94,9 +94,7 @@ vocab_dict = {
 
 
 def run_story_generators_short_story(dst_db_conn):
-    return story_generators.short_story(
-        generic=generic,
-    )
+    return story_generators.short_story(generic=generic)
 
 
 def run_story_generators_long_story(dst_db_conn):

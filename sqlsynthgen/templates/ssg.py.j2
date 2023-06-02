@@ -37,7 +37,7 @@ class {{ table_data.class_name }}:
         {% if column_data.primary_key %}
         pass
         {% else %}
-        {{ column_data.variable_names}} = {{ column_data.generator_function }}({{ column_data.generator_arguments }})
+        {{ column_data.variable_names}} = {{ column_data.function_call.function_name }}({{ column_data.function_call.argument_values| join(", ") }})
         {% endif %}
     {% endfor %}
 {% endfor %}
@@ -57,11 +57,7 @@ vocab_dict = {
 
 {% for gen_data in story_generators %}
 def {{ gen_data.wrapper_name }}(dst_db_conn):
-    return {{ gen_data.name }}(
-    {% for arg, val in gen_data["arguments"].items() %}
-        {{ arg }}={{ val }},
-    {% endfor %}
-    )
+    return {{ gen_data.function_call.function_name }}({{ gen_data.function_call.argument_values| join(", ") }})
 {% endfor %}
 
 story_generator_list = [
