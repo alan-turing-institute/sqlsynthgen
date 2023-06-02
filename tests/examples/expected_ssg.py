@@ -71,11 +71,7 @@ class hospital_visitGenerator:
             self.visit_end,
             self.visit_duration_seconds,
         ) = row_generators.timespan_generator(
-            generic=generic,
-            earliest_start_year=2021,
-            last_start_year=2022,
-            min_dt_days=1,
-            max_dt_days=30,
+            generic, 2021, 2022, min_dt_days=1, max_dt_days=30
         )
         pass
         self.person_id = generic.column_value_provider.column_value(

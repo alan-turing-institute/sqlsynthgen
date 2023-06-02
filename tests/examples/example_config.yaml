@@ -43,10 +43,8 @@ tables:
     num_rows_per_pass: 3
     row_generators:
       - name: row_generators.timespan_generator
+        args: [generic, 2021, 2022]
         kwargs:
-          generic: generic
-          earliest_start_year: 2021
-          last_start_year: 2022
           min_dt_days: 1
           max_dt_days: 30
         columns_assigned:
