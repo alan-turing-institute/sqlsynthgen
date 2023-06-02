@@ -254,7 +254,9 @@ def _get_story_generators(config: dict) -> List[StoryGenerator]:
             StoryGenerator(
                 wrapper_name=wrapper_name,
                 function_call=_get_function_call(
-                    function_name=gen["name"], keyword_arguments=gen["args"]
+                    function_name=gen["name"],
+                    keyword_arguments=gen.get("kwargs"),
+                    positional_arguments=gen.get("args"),
                 ),
                 num_stories_per_pass=gen["num_stories_per_pass"],
             )

@@ -65,10 +65,10 @@ story_generators_module: story_generators
 story_generators:
   - name: story_generators.short_story
     args:
-      generic: generic
+      - generic
     num_stories_per_pass: 3
   - name: story_generators.long_story
-    args:
+    kwargs:
       dst_db_conn: dst_db_conn
       generic: generic
       count_opt_outs: 'SRC_STATS["count_opt_outs"]'

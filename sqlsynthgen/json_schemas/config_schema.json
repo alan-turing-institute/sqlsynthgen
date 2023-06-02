@@ -76,7 +76,16 @@
             "type": "string"
           },
           "args": {
-            "type": "object"
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "kwargs": {
+            "type": [
+              "object",
+              "null"
+            ]
           },
           "num_stories_per_pass": {
             "type": "integer"
@@ -106,13 +115,22 @@
                     "type": "string"
                   },
                   "args": {
-                    "type": ["array", "null"]
+                    "type": [
+                      "array",
+                      "null"
+                    ]
                   },
                   "kwargs": {
-                    "type": ["object", "null"]
+                    "type": [
+                      "object",
+                      "null"
+                    ]
                   },
                   "columns_assigned": {
-                    "type": ["array", "string"],
+                    "type": [
+                      "array",
+                      "string"
+                    ],
                     "items": {
                       "type": "string"
                     }
