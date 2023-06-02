@@ -132,11 +132,6 @@ def _get_row_generator(
             # Might be a single string, rather than a list of strings.
             columns_covered.append(columns_assigned)
 
-        argument_values: List[str] = [str(value) for value in positional_arguments]
-        argument_values += [
-            f"{key}={value}" for key, value in keyword_arguments.items()
-        ]
-
         column_info.append(
             ColumnGenerator(
                 variable_names=variable_names,
