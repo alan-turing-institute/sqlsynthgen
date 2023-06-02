@@ -96,7 +96,7 @@ def _get_row_generator(
     for gen_conf in config:
         name = gen_conf["name"]
         columns_assigned = gen_conf["columns_assigned"]
-        args = gen_conf["args"]
+        args: Optional[Dict[str, Any]] = gen_conf.get("args")
         if isinstance(columns_assigned, str):
             columns_assigned = [columns_assigned]
 

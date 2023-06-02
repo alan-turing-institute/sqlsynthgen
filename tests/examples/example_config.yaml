@@ -1,3 +1,5 @@
+# yaml-language-server: $schema=../../sqlsynthgen/json_schemas/config_schema.json
+
 smartnoise-sql:
   public:
     person:
@@ -26,7 +28,6 @@ tables:
     num_rows_per_pass: 2
     row_generators:
       - name: generic.person.full_name
-        args: null
         columns_assigned: name
       - name: generic.datetime.datetime
         args:
