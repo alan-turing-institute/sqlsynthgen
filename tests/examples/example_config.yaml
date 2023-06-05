@@ -1,3 +1,5 @@
+# yaml-language-server: $schema=../../sqlsynthgen/json_schemas/config_schema.json
+
 smartnoise-sql:
   public:
     person:
@@ -21,20 +23,18 @@ src-stats:
 
 row_generators_module: row_generators
 tables:
-
   person:
     num_rows_per_pass: 2
     row_generators:
       - name: generic.person.full_name
-        args: null
         columns_assigned: name
       - name: generic.datetime.datetime
         args:
-          start: 2022
-          end: 2022
+          - 2022
+          - 2022
         columns_assigned: stored_from
       - name: row_generators.boolean_from_src_stats_generator
-        args:
+        kwargs:
           generic: generic
           src_stats: SRC_STATS["count_opt_outs"]
         columns_assigned: research_opt_out
@@ -43,10 +43,8 @@ tables:
     num_rows_per_pass: 3
     row_generators:
       - name: row_generators.timespan_generator
-        args:
-          generic: generic
-          earliest_start_year: 2021
-          last_start_year: 2022
+        args: [generic, 2021, 2022]
+        kwargs:
           min_dt_days: 1
           max_dt_days: 30
         columns_assigned:
@@ -67,10 +65,10 @@ story_generators_module: story_generators
 story_generators:
   - name: story_generators.short_story
     args:
-      generic: generic
+      - generic
     num_stories_per_pass: 3
   - name: story_generators.long_story
-    args:
+    kwargs:
       dst_db_conn: dst_db_conn
       generic: generic
       count_opt_outs: 'SRC_STATS["count_opt_outs"]'

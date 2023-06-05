@@ -76,6 +76,9 @@
             "type": "string"
           },
           "args": {
+            "type": "array"
+          },
+          "kwargs": {
             "type": "object"
           },
           "num_stories_per_pass": {
@@ -106,10 +109,16 @@
                     "type": "string"
                   },
                   "args": {
-                    "type": ["object", "null"]
+                    "type": "array"
+                  },
+                  "kwargs": {
+                    "type": "object"
                   },
                   "columns_assigned": {
-                    "type": ["array", "string"],
+                    "type": [
+                      "array",
+                      "string"
+                    ],
                     "items": {
                       "type": "string"
                     }
