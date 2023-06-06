@@ -4,11 +4,12 @@ import sys
 from importlib import import_module
 from pathlib import Path
 from types import ModuleType
-from typing import Any
+from typing import Any, Optional
 
 import yaml
 from pydantic import PostgresDsn
 from sqlalchemy import create_engine, event, select
+from sqlalchemy.ext.asyncio import create_async_engine
 
 
 def read_yaml_file(path: str) -> Any:
@@ -51,13 +52,24 @@ def download_table(table: Any, engine: Any, yaml_file_name: str) -> None:
         yamlfile.write(yaml.dump(result))
 
 
-def create_engine_with_search_path(postgres_dsn: PostgresDsn, schema_name: str) -> Any:
-    """Create a SQLAlchemy Engine with an explicitly set schema."""
-    engine = create_engine(postgres_dsn)
+def create_db_engine(
+    postgres_dsn: PostgresDsn,
+    schema_name: Optional[str] = None,
+    use_asyncio: bool = False,
+    **kwargs: dict,
+) -> Any:
+    """Create a SQLAlchemy Engine."""
+    if use_asyncio:
+        async_dsn = postgres_dsn.replace("postgresql://", "postgresql+asyncpg://")
+        engine = create_async_engine(async_dsn, **kwargs)
+    else:
+        engine = create_engine(postgres_dsn, **kwargs)
 
-    @event.listens_for(engine, "connect", insert=True)
-    def connect(dbapi_connection: Any, _: Any) -> None:
-        set_search_path(dbapi_connection, schema_name)
+    if schema_name is not None:
+
+        @event.listens_for(engine, "connect", insert=True)
+        def connect(dbapi_connection: Any, _: Any) -> None:
+            set_search_path(dbapi_connection, schema_name)  # type: ignore
 
     return engine
 

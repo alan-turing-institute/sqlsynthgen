@@ -1,4 +1,5 @@
 """Entrypoint for the SQLSynthGen package."""
+import asyncio
 import json
 import sys
 from pathlib import Path
@@ -167,7 +168,9 @@ def make_stats(
         typer.echo("Missing source database connection details.", err=True)
         sys.exit(1)
 
-    src_stats = make_src_stats(src_dsn, config)
+    src_stats = asyncio.get_event_loop().run_until_complete(
+        make_src_stats(src_dsn, config)
+    )
     stats_file_path.write_text(yaml.dump(src_stats), encoding="utf-8")
 
 

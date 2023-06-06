@@ -2,12 +2,12 @@
 import logging
 from typing import Any, Dict, Generator, List, Tuple
 
-from sqlalchemy import create_engine, insert
+from sqlalchemy import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.schema import CreateSchema
 
 from sqlsynthgen.settings import get_settings
-from sqlsynthgen.utils import create_engine_with_search_path
+from sqlsynthgen.utils import create_db_engine
 
 Story = Generator[Tuple[str, Dict[str, Any]], Dict[str, Any], None]
 
@@ -16,7 +16,7 @@ def create_db_tables(metadata: Any) -> Any:
     """Create tables described by the sqlalchemy metadata object."""
     settings = get_settings()
 
-    engine = create_engine(settings.dst_postgres_dsn)
+    engine = create_db_engine(settings.dst_postgres_dsn)  # type: ignore
 
     # Create schema, if necessary.
     if settings.dst_schema:
@@ -25,8 +25,8 @@ def create_db_tables(metadata: Any) -> Any:
             engine.execute(CreateSchema(schema_name, if_not_exists=True))
 
         # Recreate the engine, this time with a schema specified
-        engine = create_engine_with_search_path(
-            settings.dst_postgres_dsn, schema_name  # type: ignore
+        engine = create_db_engine(
+            settings.dst_postgres_dsn, schema_name=schema_name  # type: ignore
         )
 
     metadata.create_all(engine)
@@ -36,12 +36,8 @@ def create_db_vocab(vocab_dict: Dict[str, Any]) -> None:
     """Load vocabulary tables from files."""
     settings = get_settings()
 
-    dst_engine = (
-        create_engine_with_search_path(
-            settings.dst_postgres_dsn, settings.dst_schema  # type: ignore
-        )
-        if settings.dst_schema
-        else create_engine(settings.dst_postgres_dsn)
+    dst_engine = create_db_engine(
+        settings.dst_postgres_dsn, schema_name=settings.dst_schema  # type: ignore
     )
 
     with dst_engine.connect() as dst_conn:
@@ -63,12 +59,8 @@ def create_db_data(
     """Connect to a database and populate it with data."""
     settings = get_settings()
 
-    dst_engine = (
-        create_engine_with_search_path(
-            settings.dst_postgres_dsn, settings.dst_schema  # type: ignore
-        )
-        if settings.dst_schema
-        else create_engine(settings.dst_postgres_dsn)
+    dst_engine = create_db_engine(
+        settings.dst_postgres_dsn, schema_name=settings.dst_schema  # type: ignore
     )
 
     with dst_engine.connect() as dst_conn:

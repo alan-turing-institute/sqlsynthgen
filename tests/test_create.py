@@ -15,7 +15,7 @@ from tests.utils import SSGTestCase, get_test_settings
 class MyTestCase(SSGTestCase):
     """Module test case."""
 
-    @patch("sqlsynthgen.create.create_engine")
+    @patch("sqlsynthgen.utils.create_engine")
     @patch("sqlsynthgen.create.get_settings")
     @patch("sqlsynthgen.create.populate")
     def test_create_db_data(
@@ -34,7 +34,7 @@ class MyTestCase(SSGTestCase):
         mock_create_engine.assert_called()
 
     @patch("sqlsynthgen.create.get_settings")
-    @patch("sqlsynthgen.create.create_engine")
+    @patch("sqlsynthgen.utils.create_engine")
     def test_create_db_tables(
         self, mock_create_engine: MagicMock, mock_get_settings: MagicMock
     ) -> None:
@@ -114,7 +114,7 @@ class MyTestCase(SSGTestCase):
         mock_gen_two.assert_called_once()
         mock_gen_three.assert_called_once()
 
-    @patch("sqlsynthgen.create.create_engine")
+    @patch("sqlsynthgen.utils.create_engine")
     @patch("sqlsynthgen.create.get_settings")
     def test_create_db_vocab(
         self, mock_get_settings: MagicMock, mock_create_engine: MagicMock
