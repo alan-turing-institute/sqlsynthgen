@@ -28,6 +28,7 @@ Contents:
    installation
    quickstart
    tutorials
+   configuration
    sqlsynthgen
    faq
    changelog

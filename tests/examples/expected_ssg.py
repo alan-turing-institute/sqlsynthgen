@@ -36,16 +36,16 @@ concept_vocab = FileUploader(tests.examples.example_orm.Concept.__table__)
 class entityGenerator:
     num_rows_per_pass = 1
 
-    def __init__(self, src_db_conn, dst_db_conn):
+    def __init__(self, dst_db_conn):
         pass
 
 
 class personGenerator:
     num_rows_per_pass = 2
 
-    def __init__(self, src_db_conn, dst_db_conn):
+    def __init__(self, dst_db_conn):
         self.name = generic.person.full_name()
-        self.stored_from = generic.datetime.datetime(start=2022, end=2022)
+        self.stored_from = generic.datetime.datetime(2022, 2022)
         self.research_opt_out = row_generators.boolean_from_src_stats_generator(
             generic=generic, src_stats=SRC_STATS["count_opt_outs"]
         )
@@ -57,7 +57,7 @@ class personGenerator:
 class test_entityGenerator:
     num_rows_per_pass = 1
 
-    def __init__(self, src_db_conn, dst_db_conn):
+    def __init__(self, dst_db_conn):
         pass
         self.single_letter_column = generic.person.password(1)
 
@@ -65,17 +65,13 @@ class test_entityGenerator:
 class hospital_visitGenerator:
     num_rows_per_pass = 3
 
-    def __init__(self, src_db_conn, dst_db_conn):
+    def __init__(self, dst_db_conn):
         (
             self.visit_start,
             self.visit_end,
             self.visit_duration_seconds,
         ) = row_generators.timespan_generator(
-            generic=generic,
-            earliest_start_year=2021,
-            last_start_year=2022,
-            min_dt_days=1,
-            max_dt_days=30,
+            generic, 2021, 2022, min_dt_days=1, max_dt_days=30
         )
         pass
         self.person_id = generic.column_value_provider.column_value(
@@ -98,9 +94,7 @@ vocab_dict = {
 
 
 def run_story_generators_short_story(dst_db_conn):
-    return story_generators.short_story(
-        generic=generic,
-    )
+    return story_generators.short_story(generic)
 
 
 def run_story_generators_long_story(dst_db_conn):

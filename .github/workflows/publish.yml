@@ -26,3 +26,4 @@ jobs:
           pypi_token: ${{ secrets.PYPI_TOKEN }}
           ignore_dev_requirements: "yes"
           package_directory: "sqlsynthgen"
+          python_version: "3.9"

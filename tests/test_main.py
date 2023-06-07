@@ -1,5 +1,4 @@
 """Tests for the main module."""
-from io import StringIO
 from pathlib import Path
 from typing import Dict
 from unittest.mock import MagicMock, call, patch
@@ -33,15 +32,21 @@ class TestCLI(SSGTestCase):
         mock_create.assert_called_once_with(mock_import.return_value.vocab_dict)
         self.assertSuccess(result)
 
+    @patch("sqlsynthgen.main.get_settings")
     @patch("sqlsynthgen.main.import_file")
     @patch("sqlsynthgen.main.Path")
     @patch("sqlsynthgen.main.make_table_generators")
     def test_make_generators(
-        self, mock_make: MagicMock, mock_path: MagicMock, mock_import: MagicMock
+        self,
+        mock_make: MagicMock,
+        mock_path: MagicMock,
+        mock_import: MagicMock,
+        mock_settings: MagicMock,
     ) -> None:
         """Test the make-generators sub-command."""
         mock_path.return_value.exists.return_value = False
         mock_make.return_value = "some text"
+        mock_settings.return_value.src_postges_dsn = ""
 
         result = runner.invoke(
             app,
@@ -60,9 +65,9 @@ class TestCLI(SSGTestCase):
         self.assertSuccess(result)
 
     @patch("sqlsynthgen.main.Path")
-    @patch("sqlsynthgen.main.stderr", new_callable=StringIO)
+    @patch("typer.echo")
     def test_make_generators_errors_if_file_exists(
-        self, mock_stderr: MagicMock, mock_path: MagicMock
+        self, mock_echo: MagicMock, mock_path: MagicMock
     ) -> None:
         """Test the make-generators sub-command doesn't overwrite."""
 
@@ -75,21 +80,44 @@ class TestCLI(SSGTestCase):
             ],
             catch_exceptions=False,
         )
-        self.assertEqual(
-            "ssg.py should not already exist. Exiting...\n", mock_stderr.getvalue()
+        mock_echo.assert_called_once_with(
+            "ssg.py should not already exist. Exiting...", err=True
         )
         self.assertEqual(1, result.exit_code)
 
+    @patch("typer.echo")
+    def test_make_generators_errors_if_src_dsn_missing(
+        self, mock_echo: MagicMock
+    ) -> None:
+        """Test the make-generators sub-command with missing db params."""
+        result = runner.invoke(
+            app,
+            [
+                "make-generators",
+            ],
+            catch_exceptions=False,
+        )
+        mock_echo.assert_called_once_with(
+            "Missing source database connection details.", err=True
+        )
+        self.assertEqual(1, result.exit_code)
+
+    @patch("sqlsynthgen.main.get_settings")
     @patch("sqlsynthgen.main.Path")
     @patch("sqlsynthgen.main.import_file")
     @patch("sqlsynthgen.main.make_table_generators")
     def test_make_generators_with_force_enabled(
-        self, mock_make: MagicMock, mock_import: MagicMock, mock_path: MagicMock
+        self,
+        mock_make: MagicMock,
+        mock_import: MagicMock,
+        mock_path: MagicMock,
+        mock_settings: MagicMock,
     ) -> None:
         """Tests the make-generators sub-commands overwrite files when instructed."""
 
         mock_path.return_value.exists.return_value = True
         mock_make.return_value = "make result"
+        mock_settings.return_value.src_postges_dsn = ""
 
         for force_option in ["--force", "-f"]:
             with self.subTest(f"Using option {force_option}"):
@@ -183,10 +211,10 @@ class TestCLI(SSGTestCase):
         )
         self.assertSuccess(result)
 
-    @patch("sqlsynthgen.main.stderr", new_callable=StringIO)
     @patch("sqlsynthgen.main.Path")
+    @patch("typer.echo")
     def test_make_tables_errors_if_file_exists(
-        self, mock_path: MagicMock, mock_stderr: MagicMock
+        self, mock_echo: MagicMock, mock_path: MagicMock
     ) -> None:
         """Test the make-tables sub-command doesn't overwrite."""
 
@@ -199,8 +227,24 @@ class TestCLI(SSGTestCase):
             ],
             catch_exceptions=False,
         )
-        self.assertEqual(
-            "orm.py should not already exist. Exiting...\n", mock_stderr.getvalue()
+        mock_echo.assert_called_once_with(
+            "orm.py should not already exist. Exiting...", err=True
+        )
+        self.assertEqual(1, result.exit_code)
+
+    @patch("typer.echo")
+    def test_make_tables_errors_if_src_dsn_missing(self, mock_echo: MagicMock) -> None:
+        """Test the make-tables sub-command doesn't overwrite."""
+
+        result = runner.invoke(
+            app,
+            [
+                "make-tables",
+            ],
+            catch_exceptions=False,
+        )
+        mock_echo.assert_called_once_with(
+            "Missing source database connection details.", err=True
         )
         self.assertEqual(1, result.exit_code)
 
@@ -268,9 +312,9 @@ class TestCLI(SSGTestCase):
         )
 
     @patch("sqlsynthgen.main.Path")
-    @patch("sqlsynthgen.main.stderr", new_callable=StringIO)
+    @patch("typer.echo")
     def test_make_stats_errors_if_file_exists(
-        self, mock_stderr: MagicMock, mock_path: MagicMock
+        self, mock_echo: MagicMock, mock_path: MagicMock
     ) -> None:
         """Test the make-stats sub-command when the stats file already exists."""
         mock_path.return_value.exists.return_value = True
@@ -286,9 +330,29 @@ class TestCLI(SSGTestCase):
             ],
             catch_exceptions=False,
         )
-        self.assertEqual(
-            f"{output_path} should not already exist. Exiting...\n",
-            mock_stderr.getvalue(),
+        mock_echo.assert_called_once_with(
+            f"{output_path} should not already exist. Exiting...", err=True
+        )
+        self.assertEqual(1, result.exit_code)
+
+    @patch("typer.echo")
+    def test_make_stats_errors_if_no_src_dsn(
+        self,
+        mock_echo: MagicMock,
+    ) -> None:
+        """Test the make-stats sub-command with missing settings."""
+        example_conf_path = "tests/examples/example_config.yaml"
+
+        result = runner.invoke(
+            app,
+            [
+                "make-stats",
+                f"--config-file={example_conf_path}",
+            ],
+            catch_exceptions=False,
+        )
+        mock_echo.assert_called_once_with(
+            "Missing source database connection details.", err=True
         )
         self.assertEqual(1, result.exit_code)
 
@@ -331,3 +395,23 @@ class TestCLI(SSGTestCase):
 
                 mock_make.reset_mock()
                 mock_path.reset_mock()
+
+    def test_validate_config(self) -> None:
+        """Test the validate-config sub-command."""
+        result = runner.invoke(
+            app,
+            ["validate-config", "tests/examples/example_config.yaml"],
+            catch_exceptions=False,
+        )
+
+        self.assertSuccess(result)
+
+    def test_validate_config_invalid(self) -> None:
+        """Test the validate-config sub-command."""
+        result = runner.invoke(
+            app,
+            ["validate-config", "tests/examples/invalid_config.yaml"],
+            catch_exceptions=False,
+        )
+
+        self.assertEqual(1, result.exit_code)

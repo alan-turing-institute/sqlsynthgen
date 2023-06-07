@@ -1,12 +1,14 @@
 """Entrypoint for the SQLSynthGen package."""
+import json
 import sys
 from pathlib import Path
-from sys import stderr
 from types import ModuleType
 from typing import Final, Optional
 
 import typer
 import yaml
+from jsonschema.exceptions import ValidationError
+from jsonschema.validators import validate
 
 from sqlsynthgen.create import create_db_data, create_db_tables, create_db_vocab
 from sqlsynthgen.make import make_src_stats, make_table_generators, make_tables_file
@@ -16,6 +18,9 @@ from sqlsynthgen.utils import import_file, read_yaml_file
 ORM_FILENAME: Final[str] = "orm.py"
 SSG_FILENAME: Final[str] = "ssg.py"
 STATS_FILENAME: Final[str] = "src-stats.yaml"
+CONFIG_SCHEMA_PATH: Final[Path] = (
+    Path(__file__).parent / "json_schemas/config_schema.json"
+)
 
 app = typer.Typer()
 
@@ -120,7 +125,13 @@ def make_generators(
     """
     ssg_file_path = Path(ssg_file)
     if ssg_file_path.exists() and not force:
-        print(f"{ssg_file} should not already exist. Exiting...", file=stderr)
+        typer.echo(f"{ssg_file} should not already exist. Exiting...", err=True)
+        sys.exit(1)
+
+    settings = get_settings()
+    src_dsn = settings.src_postgres_dsn
+    if src_dsn is None:
+        typer.echo("Missing source database connection details.", err=True)
         sys.exit(1)
 
     orm_module: ModuleType = import_file(orm_file)
@@ -145,13 +156,17 @@ def make_stats(
     """
     stats_file_path = Path(stats_file)
     if stats_file_path.exists() and not force:
-        print(f"{stats_file} should not already exist. Exiting...", file=stderr)
+        typer.echo(f"{stats_file} should not already exist. Exiting...", err=True)
         sys.exit(1)
-    settings = get_settings()
+
     config = read_yaml_file(config_file) if config_file is not None else {}
+
+    settings = get_settings()
     src_dsn = settings.src_postgres_dsn
     if src_dsn is None:
-        raise ValueError("Missing source database connection details.")
+        typer.echo("Missing source database connection details.", err=True)
+        sys.exit(1)
+
     src_stats = make_src_stats(src_dsn, config)
     stats_file_path.write_text(yaml.dump(src_stats), encoding="utf-8")
 
@@ -176,13 +191,30 @@ def make_tables(
     """
     orm_file_path = Path(orm_file)
     if orm_file_path.exists() and not force:
-        print(f"{orm_file} should not already exist. Exiting...", file=stderr)
+        typer.echo(f"{orm_file} should not already exist. Exiting...", err=True)
         sys.exit(1)
 
     settings = get_settings()
+    if settings.src_postgres_dsn is None:
+        typer.echo("Missing source database connection details.", err=True)
+        sys.exit(1)
 
-    content = make_tables_file(settings.src_postgres_dsn, settings.src_schema)  # type: ignore
+    src_dsn = settings.src_postgres_dsn
+
+    content = make_tables_file(src_dsn, settings.src_schema)
     orm_file_path.write_text(content, encoding="utf-8")
+
+
+@app.command()
+def validate_config(config_file: Path) -> None:
+    """Validate the format of a config file."""
+    config = yaml.load(config_file.read_text(encoding="UTF-8"), Loader=yaml.SafeLoader)
+    schema_config = json.loads(CONFIG_SCHEMA_PATH.read_text(encoding="UTF-8"))
+    try:
+        validate(config, schema_config)
+    except ValidationError as e:
+        typer.echo(e, err=True)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

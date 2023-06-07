@@ -80,9 +80,3 @@ class SSGTestCase(TestCase):
 @skipUnless(os.environ.get("REQUIRES_DB") == "1", "Set 'REQUIRES_DB=1' to enable.")
 class RequiresDBTestCase(SSGTestCase):
     """A test case that only runs if REQUIRES_DB has been set to 1."""
-
-    def setUp(self) -> None:
-        pass
-
-    def tearDown(self) -> None:
-        pass
