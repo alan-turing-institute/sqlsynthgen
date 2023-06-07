@@ -7,60 +7,57 @@ tables:
   age_gender_bkts:
     row_generators:
       - name: generic.person.password
-        args: null
         columns_assigned: age_bucket
       - name: generic.column_value_provider.column_value
         args:
-          db_connection: dst_db_conn
-          orm_class: orm.Countries
-          column_name: '"country_destination"'
+          - dst_db_conn
+          - orm.Countries
+          - '"country_destination"'
         columns_assigned: country_destination
       - name: generic.person.gender
-        args: null
         columns_assigned: gender
 
   users:
     num_rows_per_pass: 0
     row_generators:
       - name: generic.person.identifier
-        args:
+        kwargs:
           mask: '"@@##@@@@"'
         columns_assigned: id
       - name: airbnb_generators.user_dates_provider
-        args: null
         columns_assigned: ["date_account_created", "date_first_booking"]
       - name: airbnb_generators.user_age_provider
-        args:
+        kwargs:
           query_results: SRC_STATS["age_stats"]
         columns_assigned: age
       - name: generic.choice
         args:
-          items: ["Mac Desktop", "Windows Desktop", "iPhone"]
+          - ["'Mac Desktop'", "'Windows Desktop'", "'iPhone'"]
         columns_assigned: first_device_type
 
   sessions:
     num_rows_per_pass: 0
     row_generators:
       - name: generic.numeric.integer_number
-        args:
+        kwargs:
           start: 0
           end: 3600
         columns_assigned: secs_elapsed
       - name: generic.choice
         args:
-          items: ["show", "index", "personalize"]
+          - ["'show'", "'index'", "'personalize'"]
         columns_assigned: action
       - name: generic.choice
         args:
-          items: ["view", "data", "click"]
+          - ["'view'", "'data'", "'click'"]
         columns_assigned: action_type
       - name: generic.choice
         args:
-          items: ["view_search_results", "user_profile", "similar_listings"]
+          - ["'view_search_results'", "'user_profile'", "'similar_listings'"]
         columns_assigned: action_detail
       - name: generic.choice
         args:
-          items: ["Mac Desktop", "Windows Desktop", "iPhone"]
+          - ["'Mac Desktop'", "'Windows Desktop'", "'iPhone'"]
         columns_assigned: device_type
 smartnoise-sql:
   public:
@@ -86,6 +83,6 @@ src-stats:
 story_generators_module: airbnb_generators
 story_generators:
   - name: airbnb_generators.session_story
-    args:
+    kwargs:
       generic: generic
     num_stories_per_pass: 30
