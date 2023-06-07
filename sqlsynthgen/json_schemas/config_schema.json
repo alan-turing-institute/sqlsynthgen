@@ -71,6 +71,7 @@
       "items": {
         "additionalProperties": false,
         "type": "object",
+        "required": ["name", "num_stories_per_pass"],
         "properties": {
           "name": {
             "type": "string"
