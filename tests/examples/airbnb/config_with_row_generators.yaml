@@ -32,7 +32,7 @@ tables:
         columns_assigned: age
       - name: generic.choice
         args:
-          - ["'Mac Desktop'", "'Windows Desktop'", "'iPhone'"]
+          - ["Mac Desktop", "Windows Desktop", "iPhone"]
         columns_assigned: first_device_type
 
   sessions:
@@ -45,19 +45,19 @@ tables:
         columns_assigned: secs_elapsed
       - name: generic.choice
         args:
-          - ["'show'", "'index'", "'personalize'"]
+          - ["show", "index", "personalize"]
         columns_assigned: action
       - name: generic.choice
         args:
-          - ["'view'", "'data'", "'click'"]
+          - ["view", "data", "click"]
         columns_assigned: action_type
       - name: generic.choice
         args:
-          - ["'view_search_results'", "'user_profile'", "'similar_listings'"]
+          - ["view_search_results", "user_profile", "similar_listings"]
         columns_assigned: action_detail
       - name: generic.choice
         args:
-          - ["'Mac Desktop'", "'Windows Desktop'", "'iPhone'"]
+          - ["Mac Desktop", "Windows Desktop", "iPhone"]
         columns_assigned: device_type
 smartnoise-sql:
   public:
@@ -83,6 +83,4 @@ src-stats:
 story_generators_module: airbnb_generators
 story_generators:
   - name: airbnb_generators.session_story
-    kwargs:
-      generic: generic
     num_stories_per_pass: 30
