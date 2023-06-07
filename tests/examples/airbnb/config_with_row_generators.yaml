@@ -20,6 +20,7 @@ tables:
         columns_assigned: gender
 
   users:
+    num_rows_per_pass: 0
     row_generators:
       - name: generic.person.identifier
         args:
@@ -32,8 +33,13 @@ tables:
         args:
           query_results: SRC_STATS["age_stats"]
         columns_assigned: age
+      - name: generic.choice
+        args:
+          items: ["Mac Desktop", "Windows Desktop", "iPhone"]
+        columns_assigned: first_device_type
 
   sessions:
+    num_rows_per_pass: 0
     row_generators:
       - name: generic.numeric.integer_number
         args:
@@ -76,3 +82,10 @@ src-stats:
       where age <= 100
     epsilon: 0.1
     delta: 0.000001
+
+story_generators_module: airbnb_generators
+story_generators:
+  - name: airbnb_generators.session_story
+    args:
+      generic: generic
+    num_stories_per_pass: 30

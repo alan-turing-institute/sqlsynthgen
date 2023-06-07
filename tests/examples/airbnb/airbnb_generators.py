@@ -23,3 +23,17 @@ def user_age_provider(query_results):
     sigma: float = query_results[0][1]
 
     return random.gauss(mu, sigma)
+
+
+def session_story(generic):
+    user: dict = yield "users", {}
+
+    sessions_per_user: int = random.randint(10, 20)
+
+    for _ in range(sessions_per_user):
+        if random.random() < 0.8:
+            # most often, the session is from the user's sign-up device...
+            yield "sessions", {"device_type": user["first_device_type"]}
+        else:
+            # ...but sometimes it is from any device type
+            yield "sessions", {}
