@@ -306,7 +306,9 @@ class TestCLI(SSGTestCase):
         self.assertSuccess(result)
         with open(example_conf_path, "r", encoding="utf8") as f:
             config = yaml.safe_load(f)
-        mock_make.assert_called_once_with(get_test_settings().src_postgres_dsn, config)
+        mock_make.assert_called_once_with(
+            get_test_settings().src_postgres_dsn, config, None
+        )
         mock_path.return_value.write_text.assert_called_once_with(
             "a: 1\n", encoding="utf-8"
         )
@@ -386,7 +388,7 @@ class TestCLI(SSGTestCase):
                 )
 
                 mock_make.assert_called_once_with(
-                    test_settings.src_postgres_dsn, config_file_content
+                    test_settings.src_postgres_dsn, config_file_content, None
                 )
                 mock_path.return_value.write_text.assert_called_once_with(
                     "some_stat: 0\n", encoding="utf-8"
