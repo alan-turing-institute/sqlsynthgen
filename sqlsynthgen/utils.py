@@ -62,12 +62,14 @@ def create_db_engine(
     if use_asyncio:
         async_dsn = postgres_dsn.replace("postgresql://", "postgresql+asyncpg://")
         engine = create_async_engine(async_dsn, **kwargs)
+        event_engine = engine.sync_engine
     else:
         engine = create_engine(postgres_dsn, **kwargs)
+        event_engine = engine
 
     if schema_name is not None:
 
-        @event.listens_for(engine, "connect", insert=True)
+        @event.listens_for(event_engine, "connect", insert=True)
         def connect(dbapi_connection: Any, _: Any) -> None:
             set_search_path(dbapi_connection, schema_name)  # type: ignore
 

@@ -169,7 +169,7 @@ def make_stats(
         sys.exit(1)
 
     src_stats = asyncio.get_event_loop().run_until_complete(
-        make_src_stats(src_dsn, config)
+        make_src_stats(src_dsn, config, settings.src_schema)
     )
     stats_file_path.write_text(yaml.dump(src_stats), encoding="utf-8")
 
