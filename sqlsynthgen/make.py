@@ -419,7 +419,8 @@ async def make_src_stats(
         dp_config = config.get("smartnoise-sql", {})
         snsql_metadata = {"": dp_config}
 
-        async def execute_query(engine: Any, stat_data: Dict[str, Any]) -> Any:
+        async def execute_query(engine: Any, query_block: Dict[str, Any]) -> Any:
+            """Execute query using a synchronous SQLAlchemy engine."""
             privacy = snsql.Privacy(
                 epsilon=stat_data["epsilon"], delta=stat_data["delta"]
             )
@@ -436,15 +437,16 @@ async def make_src_stats(
 
     else:
 
-        async def execute_query(engine: Any, stat_data: Dict[str, Any]) -> Any:
+        async def execute_query(engine: Any, query_block: Dict[str, Any]) -> Any:
+            """Execute query using an asynchronous SQLAlchemy engine."""
             async with engine.connect() as conn:
                 raw_result = await conn.execute(text(stat_data["query"]))
                 result = raw_result.fetchall()
             return [list(r) for r in result]
 
-    queries = config.get("src-stats", [])
+    query_blocks = config.get("src-stats", [])
     results = await asyncio.gather(
-        *[execute_query(engine, stat_data) for stat_data in queries]
+        *[execute_query(engine, query_block) for query_block in query_blocks]
     )
-    src_stats = {query["name"]: result for query, result in zip(queries, results)}
+    src_stats = {query_block["name"]: result for query_block, result in zip(query_blocks, results)}
     return src_stats
