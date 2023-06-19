@@ -422,7 +422,7 @@ async def make_src_stats(
         async def execute_query(engine: Any, query_block: Dict[str, Any]) -> Any:
             """Execute query using a synchronous SQLAlchemy engine."""
             privacy = snsql.Privacy(
-                epsilon=stat_data["epsilon"], delta=stat_data["delta"]
+                epsilon=query_block["epsilon"], delta=query_block["delta"]
             )
             with engine.connect() as conn:
                 reader = snsql.from_connection(
@@ -431,7 +431,7 @@ async def make_src_stats(
                     privacy=privacy,
                     metadata=snsql_metadata,
                 )
-                private_result = reader.execute(stat_data["query"])
+                private_result = reader.execute(query_block["query"])
             # The first entry in the list names the columns, skip that.
             return private_result[1:]
 
@@ -440,7 +440,7 @@ async def make_src_stats(
         async def execute_query(engine: Any, query_block: Dict[str, Any]) -> Any:
             """Execute query using an asynchronous SQLAlchemy engine."""
             async with engine.connect() as conn:
-                raw_result = await conn.execute(text(stat_data["query"]))
+                raw_result = await conn.execute(text(query_block["query"]))
                 result = raw_result.fetchall()
             return [list(r) for r in result]
 
@@ -448,5 +448,8 @@ async def make_src_stats(
     results = await asyncio.gather(
         *[execute_query(engine, query_block) for query_block in query_blocks]
     )
-    src_stats = {query_block["name"]: result for query_block, result in zip(query_blocks, results)}
+    src_stats = {
+        query_block["name"]: result
+        for query_block, result in zip(query_blocks, results)
+    }
     return src_stats
