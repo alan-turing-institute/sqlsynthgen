@@ -33,7 +33,6 @@ and between `concept` and `domain` with, for example:
 
   alter table concept drop constraint concept.concept_domain_id_fkey
 
-
 Create a config file
 ++++++++++++++++++++
 
@@ -72,6 +71,30 @@ We can make a file of SQLSynthGen data generators called `ssg.py` by running
 
 This will also create one `.csv` file for each of the vocabulary tables listed in the config file.
 
+Create Synthetic Data
++++++++++++++++++++++
+
+We can now create an empty schema with
+
+.. code-block:: shell
+
+  sqlsynthgen create-tables
+
+this will use SQLAlchemy and the `orm.py` to make an empty copy of our source database.
+
+Next, we upload the vocabulary tables with
+
+.. code-block:: shell
+
+  sqlsynthgen create-vocab
+
+To create data for all of the other (non-vocabulary) tables, we run
+
+.. code-block:: shell
+
+  sqlsynthgen create-data
+
+There will now be data in each of our tables.
 
 Restore the circular foreign key
 ++++++++++++++++++++++++++++++++
