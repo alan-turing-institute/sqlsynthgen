@@ -1,5 +1,7 @@
 """Functions to make a module of generator classes."""
+import asyncio
 import inspect
+import logging
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -13,12 +15,12 @@ from jinja2 import Environment, FileSystemLoader, Template
 from mimesis.providers.base import BaseProvider
 from pydantic import PostgresDsn
 from sqlacodegen.generators import DeclarativeGenerator
-from sqlalchemy import MetaData, create_engine, text
+from sqlalchemy import MetaData, text
 from sqlalchemy.sql import sqltypes
 
 from sqlsynthgen import providers
 from sqlsynthgen.settings import get_settings
-from sqlsynthgen.utils import create_engine_with_search_path, download_table
+from sqlsynthgen.utils import create_db_engine, download_table
 
 PROVIDER_IMPORTS: Final[List[str]] = []
 for entry_name, entry in inspect.getmembers(providers, inspect.isclass):
@@ -286,12 +288,8 @@ def make_table_generators(
     story_generator_module_name = config.get("story_generators_module", None)
 
     settings = get_settings()
-    engine = (
-        create_engine_with_search_path(
-            settings.src_postgres_dsn, settings.src_schema  # type: ignore
-        )
-        if settings.src_schema
-        else create_engine(settings.src_postgres_dsn)
+    engine = create_db_engine(
+        settings.src_postgres_dsn, schema_name=settings.src_schema  # type: ignore
     )
 
     tables: List[TableGenerator] = []
@@ -373,11 +371,7 @@ def make_tables_file(db_dsn: PostgresDsn, schema_name: Optional[str]) -> str:
 
     Exists with an error if sqlacodegen is unsuccessful.
     """
-    engine = (
-        create_engine_with_search_path(db_dsn, schema_name)
-        if schema_name
-        else create_engine(db_dsn)
-    )
+    engine = create_db_engine(db_dsn, schema_name=schema_name)
 
     metadata = MetaData()
     metadata.reflect(engine)
@@ -396,7 +390,7 @@ def make_tables_file(db_dsn: PostgresDsn, schema_name: Optional[str]) -> str:
     return code
 
 
-def make_src_stats(
+async def make_src_stats(
     dsn: PostgresDsn, config: dict, schema_name: Optional[str] = None
 ) -> dict:
     """Run the src-stats queries specified by the configuration.
@@ -412,39 +406,50 @@ def make_src_stats(
     Returns:
         The dictionary of src-stats.
     """
-    if schema_name:
-        engine = create_engine_with_search_path(dsn, schema_name)
-    else:
-        engine = create_engine(dsn, echo=False, future=True)
-
     use_smartnoise_sql = config.get("use-smartnoise-sql", True)
+    # SmartNoiseSQL doesn't support asyncio
+    use_asyncio = not use_smartnoise_sql
+    engine = create_db_engine(dsn, schema_name=schema_name, use_asyncio=use_asyncio)
+
     if use_smartnoise_sql:
+        logging.warning(
+            "SmartNoiseSQL does not support asyncio, so make-stats queries"
+            " will be run sequentially."
+        )
         dp_config = config.get("smartnoise-sql", {})
         snsql_metadata = {"": dp_config}
 
-        def execute_query(conn: Any, stat_data: Dict[str, Any]) -> Any:
+        async def execute_query(engine: Any, query_block: Dict[str, Any]) -> Any:
+            """Execute query using a synchronous SQLAlchemy engine."""
             privacy = snsql.Privacy(
-                epsilon=stat_data["epsilon"], delta=stat_data["delta"]
+                epsilon=query_block["epsilon"], delta=query_block["delta"]
             )
-            reader = snsql.from_connection(
-                conn.connection,
-                engine="postgres",
-                privacy=privacy,
-                metadata=snsql_metadata,
-            )
-            private_result = reader.execute(stat_data["query"])
+            with engine.connect() as conn:
+                reader = snsql.from_connection(
+                    conn.connection,
+                    engine="postgres",
+                    privacy=privacy,
+                    metadata=snsql_metadata,
+                )
+                private_result = reader.execute(query_block["query"])
             # The first entry in the list names the columns, skip that.
             return private_result[1:]
 
     else:
 
-        def execute_query(conn: Any, stat_data: Dict[str, Any]) -> Any:
-            result = conn.execute(text(stat_data["query"])).fetchall()
+        async def execute_query(engine: Any, query_block: Dict[str, Any]) -> Any:
+            """Execute query using an asynchronous SQLAlchemy engine."""
+            async with engine.connect() as conn:
+                raw_result = await conn.execute(text(query_block["query"]))
+                result = raw_result.fetchall()
             return [list(r) for r in result]
 
-    with engine.connect() as conn:
-        src_stats = {
-            stat_data["name"]: execute_query(conn, stat_data)
-            for stat_data in config.get("src-stats", [])
-        }
+    query_blocks = config.get("src-stats", [])
+    results = await asyncio.gather(
+        *[execute_query(engine, query_block) for query_block in query_blocks]
+    )
+    src_stats = {
+        query_block["name"]: result
+        for query_block, result in zip(query_blocks, results)
+    }
     return src_stats

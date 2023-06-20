@@ -3,10 +3,12 @@ import os
 import sys
 from pathlib import Path
 
+from pydantic import PostgresDsn
+from pydantic.tools import parse_obj_as
 from sqlalchemy import Column, Integer, create_engine, insert
 from sqlalchemy.orm import declarative_base
 
-from sqlsynthgen.utils import download_table, import_file
+from sqlsynthgen.utils import create_db_engine, download_table, import_file
 from tests.utils import RequiresDBTestCase, SSGTestCase, run_psql
 
 # pylint: disable=invalid-name
@@ -91,3 +93,25 @@ class TestDownload(RequiresDBTestCase):
             actual = yamlfile.read().strip()
 
         self.assertEqual(expected, actual)
+
+
+class TestCreateDBEngine(RequiresDBTestCase):
+    """Tests for the create_db_engine function."""
+
+    dsn = parse_obj_as(PostgresDsn, "postgresql://postgres:password@localhost")
+
+    def test_connect_sync(self) -> None:
+        """Check that we can create a synchronous engine."""
+        # All default params
+        create_db_engine(self.dsn)
+
+        # With schema
+        create_db_engine(self.dsn, schema_name="public")
+
+    def test_connect_async(self) -> None:
+        """Check that we can create an asynchronous engine."""
+        # All default params
+        create_db_engine(self.dsn, use_asyncio=True)
+
+        # With schema
+        create_db_engine(self.dsn, schema_name="public", use_asyncio=True)

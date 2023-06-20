@@ -1,4 +1,5 @@
 """Tests for the main module."""
+import asyncio
 import os
 from io import StringIO
 from pathlib import Path
@@ -30,7 +31,7 @@ class TestMakeGenerators(SSGTestCase):
 
     @patch("sqlsynthgen.make.Path")
     @patch("sqlsynthgen.make.get_settings")
-    @patch("sqlsynthgen.make.create_engine")
+    @patch("sqlsynthgen.utils.create_engine")
     @patch("sqlsynthgen.make.download_table")
     def test_make_table_generators(
         self,
@@ -61,7 +62,7 @@ class TestMakeGenerators(SSGTestCase):
     @patch("sqlsynthgen.make.stderr", new_callable=StringIO)
     @patch("sqlsynthgen.make.Path")
     @patch("sqlsynthgen.make.get_settings")
-    @patch("sqlsynthgen.make.create_engine")
+    @patch("sqlsynthgen.utils.create_engine")
     def test_make_generators_do_not_overwrite(
         self,
         mock_create: MagicMock,
@@ -88,7 +89,7 @@ class TestMakeGenerators(SSGTestCase):
         )
 
     @patch("sqlsynthgen.make.download_table")
-    @patch("sqlsynthgen.make.create_engine")
+    @patch("sqlsynthgen.utils.create_engine")
     @patch("sqlsynthgen.make.get_settings")
     @patch("sqlsynthgen.make.Path")
     def test_make_generators_force_overwrite(
@@ -209,7 +210,9 @@ class TestMakeStats(RequiresDBTestCase):
             (connection_string, config, "public"),
             (connection_string, config_no_snsql),
         ):
-            src_stats = make_src_stats(*args)
+            src_stats = asyncio.get_event_loop().run_until_complete(
+                make_src_stats(*args)
+            )
 
             self.assertSetEqual({"count_opt_outs"}, set(src_stats.keys()))
             count_opt_outs = src_stats["count_opt_outs"]
