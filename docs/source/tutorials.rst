@@ -12,8 +12,8 @@ If you have an OMOP CDM style database, there are a couple of things to bear in 
 1. At least one version of the OMOP CDM contains a circular foreign key, between the `vocabulary` and `concept` tables.
 2. There are several standardized vocabulary tables (`concept`, `concept_relationship`, etc).
    These should be marked as such in the sqlsynthgen config file.
-   The tables will be exported to .csv files during the `make-tables` step.
-   However, you should check the license agreement of each standardized vocabulary before sharing any of the .csv files.
+   The tables will be exported to .yaml files during the `make-tables` step.
+   However, you should check the license agreement of each standardized vocabulary before sharing any of the .yaml files.
 
 Steps
 ~~~~~
@@ -69,7 +69,7 @@ We can make a file of SQLSynthGen data generators called `ssg.py` by running
 
   sqlsynthgen make-generators --config-file omop.yaml
 
-This will also create one `.csv` file for each of the vocabulary tables listed in the config file.
+This will also create one `.yaml` file for each of the vocabulary tables listed in the config file.
 
 Create Synthetic Data
 +++++++++++++++++++++
