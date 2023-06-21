@@ -24,7 +24,7 @@ First, we need to provide SSG with the connection parameters, using a ``.env`` f
 
 **.env**:
 
-.. code-block::
+.. code-block:: console
 
     SRC_HOST_NAME=localhost
     SRC_USER_NAME=postgres
@@ -67,15 +67,16 @@ For example, in line 6 we specify that the ``id`` column value should be created
 **ssg.py**:
 
 .. code-block:: python3
+   :linenos:
 
-    class usersGenerator:
-        num_rows_per_pass = 1
+   class usersGenerator:
+       num_rows_per_pass = 1
 
-        def __init__(self, src_db_conn, dst_db_conn):
-            pass
-            self.id = generic.person.password()
-            self.date_account_created = generic.datetime.date()
-            ...
+       def __init__(self, src_db_conn, dst_db_conn):
+           pass
+           self.id = generic.person.password()
+           self.date_account_created = generic.datetime.date()
+           ...
 
 Mimesis has a wide array of producers for different scenarios.
 See `this Python file <https://github.com/alan-turing-institute/sqlsynthgen/blob/migrate-adult-dataset-to-SQL/tests/examples/airbnb/ssg_manual_edit.py>`_ for the full changes.
@@ -112,13 +113,14 @@ For instance, in the AirBnB dataset, our relational database has a table for use
 Since the ``countries`` table doesn’t contain personal data, we can make it a vocabulary table.
 We identify ``countries`` as a vocabulary table in the ``config.yaml`` file:
 
-**config.yaml**
+**config.yaml**:
 
 .. code-block:: yaml
+   :linenos:
 
-    tables:
-        countries:
-        vocabulary_table: true
+   tables:
+     countries:
+       vocabulary_table: true
 
 The vocabulary tables are exported from the source database when the generator module is made, so we overwrite ``ssg.py`` with one that includes the vocabulary import classes, using the ``--force`` option::
 
@@ -127,22 +129,23 @@ The vocabulary tables are exported from the source database when the generator m
 This will export the ``countries`` table rows to a file called ``countries.yaml`` in your current working directory:
 
 .. code-block:: yaml
+   :linenos:
 
-    - country_destination: AU
-      destination_km2: 7741220
-      destination_language: eng
-      distance_km: 15297.744
-      language_levenshtein_distance: 0.0
-      lat_destination: -26.853388
-      lng_destination: 133.27516
-    - country_destination: CA
-      destination_km2: 9984670
-      destination_language: eng
-      distance_km: 2828.1333
-      language_levenshtein_distance: 0.0
-      lat_destination: 62.393303
-      lng_destination: -96.818146
-      ...
+   - country_destination: AU
+     destination_km2: 7741220
+     destination_language: eng
+     distance_km: 15297.744
+     language_levenshtein_distance: 0.0
+     lat_destination: -26.853388
+     lng_destination: 133.27516
+   - country_destination: CA
+     destination_km2: 9984670
+     destination_language: eng
+     distance_km: 2828.1333
+     language_levenshtein_distance: 0.0
+     lat_destination: 62.393303
+     lng_destination: -96.818146
+     ...
 
 
 We need to truncate any tables in our destination database before importing the countries data with::
@@ -170,17 +173,17 @@ Specifying row-based custom generators
 As we’ve seen above, ``ssg.py`` is overwritten whenever you re-run make-generators.
 To avoid this, we can map columns to “row generators” in the config file:
 
-**config.yaml**
+**config.yaml**:
 
 .. code-block:: yaml
+   :linenos:
 
-    ...
-    tables:
-        users:
-            row_generators:
-               - name: generic.person.password
-                 args: null
-                 columns_assigned: id
+   tables:
+     users:
+       row_generators:
+         - name: generic.person.password
+           args: null
+           columns_assigned: id
 
 The next time we run ``make-generators``, the config-specified row generator will override the default one and we will not need to edit the ``ssg.py`` directly any more.
 
@@ -188,23 +191,23 @@ We can also use the custom row generators to add more fidelity to the data.
 Examples include specifying that a column’s value should be an integer in a given range or should be chosen at random from a list of acceptable values.
 We see below that we have used these techniques to populate the ``sessions.secs_elapsed`` column with random integers in the range 0-3,600 and ``sessions.action`` with any one of the three most common action types from the source dataset:
 
-**config.yaml**
+**config.yaml**:
 
 .. code-block:: yaml
+   :linenos:
 
-    ...
-    tables:
-        sessions:
-            row_generators:
-              - name: generic.numeric.integer_number
-                args:
-                    start: 0
-                    end: 3600
-                columns_assigned: secs_elapsed
-              - name: generic.choice
-                args:
-                    items: ["show", "index", "personalize"]
-                columns_assigned: action
+   tables:
+     sessions:
+       row_generators:
+         - name: generic.numeric.integer_number
+           args:
+             start: 0
+             end: 3600
+           columns_assigned: secs_elapsed
+         - name: generic.choice
+           args:
+             items: ["show", "index", "personalize"]
+           columns_assigned: action
 
 We can also define our own custom generators in a separate module and then use them to generate values for one or more columns.
 For example, in the ``users`` table, we may want to ensure that the ``date_first_booking`` is optional and never comes before the ``date_account_created``.
@@ -212,39 +215,41 @@ To accomplish this, we define a custom generator, which is a function that retur
 a tuple with two dates.
 In this tuple, the second item may be ``None`` and always comes at least a calendar year after the first item:
 
-**airbnb_generators.py**
+**airbnb_generators.py**:
 
 .. code-block:: python3
+   :linenos:
 
-    def user_dates_provider():
-        generic = Generic()
-        date_account_created: datetime.date = generic.datetime.date(start=2010, end=2015)
+   def user_dates_provider():
+       generic = Generic()
+       date_account_created: datetime.date = generic.datetime.date(start=2010, end=2015)
 
-        booking_date: Optional[datetime.date] = None
-        if generic.choice([True, False]):
-            booking_date = generic.datetime.date(
-                start=date_account_created.year + 1, end=2016
-            )
+       booking_date: Optional[datetime.date] = None
+       if generic.choice([True, False]):
+           booking_date = generic.datetime.date(
+               start=date_account_created.year + 1, end=2016
+           )
 
-        return date_account_created, booking_date
+       return date_account_created, booking_date
 
 Then, we tell SSG to import our custom ``airbnb_generators.py`` and assign the return values of our generator function to the two columns in our ``users`` table:
 
-**config.yaml**
+**config.yaml**:
 
 .. code-block:: yaml
+   :linenos:
 
-    row_generators_module: airbnb_generators
+   row_generators_module: airbnb_generators
 
-    users:
-        row_generators:
-            - name: generic.person.identifier
-              args:
-                mask: '"@@##@@@@"'
-              columns_assigned: id
-            - name: airbnb_generators.user_dates_provider
-              args: null
-              columns_assigned: ["date_account_created", "date_first_booking"]
+   users:
+     row_generators:
+       - name: generic.person.identifier
+         args:
+         mask: '"@@##@@@@"'
+         columns_assigned: id
+       - name: airbnb_generators.user_dates_provider
+         args: null
+         columns_assigned: ["date_account_created", "date_first_booking"]
 
 Limitations to this approach are that rows can not be correlated with other rows in the same table, nor with any rows in other tables, except for trivially fulfilling foreign key constraints as in the default configuration.
 
@@ -295,63 +300,66 @@ In the AirBnb dataset, if we want to generate normally-distributed values for th
 2. Modify the config file to add a section to specify the query to run and the `differential privacy <https://en.wikipedia.org/wiki/Differential_privacy>`_ parameters epsilon and delta.
 3. Modify the config file to pass the query results to a custom generator via the ``SRC_STATS`` variable and assign the return value to the age column:
 
-    **config.yaml**
+    **config.yaml**:
 
     .. code-block:: yaml
+       :linenos:
 
-        ...
-        users:
-            row_generators:
-                ...
-                - name: airbnb_generators.user_age_provider
-                  args:
-                    query_results: SRC_STATS["age_stats"]
-                  columns_assigned: age
-        smartnoise-sql:
-            public:
-                users:
-                    age:
-                        type: float
-                        private_id: false
-                        lower: 0
-                        upper: 100
-                    id:
-                        type: string
-                        private_id: true
+       tables:
+         users:
+           row_generators:
+             - name: airbnb_generators.user_age_provider
+               args:
+                 query_results: SRC_STATS["age_stats"]
+               columns_assigned: age
 
-        src-stats:
-           - name: age_stats
-             query: >
-                select avg(age), stddev(age)
-                from users
-                where age <= 100
-             epsilon: 0.1
-             delta: 0.000001
+       smartnoise-sql:
+         public:
+           users:
+             age:
+               type: float
+               private_id: false
+               lower: 0
+               upper: 100
+             id:
+               type: string
+               private_id: true
+
+       src-stats:
+         - name: age_stats
+           query: >
+             select avg(age), stddev(age)
+             from users
+             where age <= 100
+           epsilon: 0.1
+           delta: 0.000001
 
 Note that the ``src-stats.name`` property of ``age_stats`` matches the ``SRC_STATS`` dictionary key ``age_stats``.
 
 4. Under this configuration, SSG generates the ``src-stats.yaml`` file containing the query results:
 
-    **src-stats.yaml**
+    **src-stats.yaml**:
 
     .. code-block:: yaml
+       :linenos:
 
-        age_stats:
-        - - 36.55849236836584
-          - 11.727350098614563
+       age_stats:
+         - - 36.55849236836584
+           - 11.727350098614563
 
 
 5. Write a custom row generator in our generators module to return a random age value based on the query results given to it:
 
-    **airbnb_generators.py**
+    **airbnb_generators.py**:
 
     .. code-block:: python3
+       :linenos:
 
-        def user_age_provider(query_results):
-            mu: float = query_results[0][0]
-            sigma: float = query_results[0][1]
+       def user_age_provider(query_results):
+           mu: float = query_results[0][0]
+           sigma: float = query_results[0][1]
 
-            return random.gauss(mu, sigma)
+           return random.gauss(mu, sigma)
 
 
 
@@ -366,3 +374,106 @@ The user can specify the ε and δ parameters that control the strength of the d
 To learn more about differential privacy and the meaning of its parameters, please read `this white paper from Microsoft <https://azure.microsoft.com/mediahandler/files/resourcefiles/microsoft-smartnoisedifferential-privacy-machine-learning-case-studies/SmartNoise%20Whitepaper%20Final%203.8.21.pdf>`_.
 At the time of writing, SmartNoiseSQL is somewhat limited in the kinds of queries it can run, but if it is capable of running the queries one needs, using it can be an extremely easy to way to add differential privacy guarantees to the synthetic data generated.
 Through the robustness to post-processing property of differential privacy, if the values in ``src-stats.yaml`` are generated in a differentially private way, the synthetic data generated based on those values can not break that guarantee.
+
+**raw vs synthetic ages histogram**:
+
+|pic1| |pic2|
+
+.. |pic1| image:: real_data_histogram.png
+   :width: 45%
+
+.. |pic2| image:: synthetic_data_histogram.png
+   :width: 45%
+
+
+"Stories" within the data
+-------------------------
+
+The final configuration option available to users of SSG is what we call "story generators".
+These address generating synthetic data with correlations that bridge different tables and multiple rows.
+
+A story generator is a Python generator (an unfortunate clash of terminology: Python uses the term "generator" to refer to objects that yield multiple values in a sequence), written by the user, that yields rows to be written into the synthetic database.
+For instance, it may first yield a row specifying a person in the `users` table, and then multiple rows for the `sessions` table that specify various browsing sessions this user has had:
+
+**airbnb_generators.py**:
+
+.. code-block:: python3
+   :linenos:
+
+   def sessions_story():
+       """Generate users and their sessions."""
+       device_types = ["Mac Desktop", "Windows Desktop", "iPhone"]
+
+       # a new user will be sent back to us with our randomly chosen device type
+       user: dict = yield (
+           "users",  # table name
+           {
+               "first_device_type": random.choice(device_types)
+           }  # see 1. below
+       )
+
+       # create between 10 and 19 sessions per user
+       sessions_per_user: int = random.randint(10, 20)
+
+       for _ in range(sessions_per_user):
+           if random.random() < 0.8:
+               # most often, the session is from the user's sign-up device...
+               yield (
+                   "sessions",
+                   {
+                       "user_id": user["id"],  # see 2. below
+                       "device_type": user["first_device_type"],
+                   }
+               )
+           else:
+               # ...but sometimes it is from any device type
+               yield (
+                   "sessions",
+                   {
+                       "user_id": user["id"],
+                       "first_device_type": random.choice(device_types)},
+               )
+
+Three features make story generators more practical than simply manually writing code that creates the synthetic data bit-by-bit:
+
+1. When a story generator yields a row, it can choose to only specify values for some of the columns. The values for the other columns will be filled by custom row generators (as explained in a previous section) or, if none are specified, by SSG's default generators. Above, we have chosen to specify the value for `first_device_type` but the date columns will still be handled by our `user_dates_provider` and the age column will still be populated by the `user_age_provider`.
+2. Any default values that are set when the rows yielded by the story generator are written into the database are available to the story generator when it resumes. In our example, the user's `id` is available so that we can respect the foreign key relationship between `users` and `sessions`, even though we did not explicitly set the user's `id` when creating the user.
+
+To use and get the most from story generators, we will need to make some changes to our configuration:
+
+**config.py**:
+
+.. code-block:: yaml
+   :linenos:
+
+   tables:
+     ...
+     users:
+        num_rows_per_pass: 0  # see 1 below
+        ...
+
+     sessions:
+        num_rows_per_pass: 0  # see 1 below
+        ...
+
+   story_generators_module: airbnb_generators  # see 2 below
+
+   story_generators:
+     - name: airbnb_generators.sessions_story
+       num_stories_per_pass: 30  # see 3 below
+
+1. By default, story generators will run in addition to custom row generators so we will set the number of row-generated users and sessions to 0. We could keep these >0 for a mix of row- and story-generated users and sessions.
+2. We specify the module that contains our story generators. In this case, it is the same Python file as the row generators.
+3. We specify that we have one story generator and that it will be called 30 times. Note that, unlike row generators, the story generator is not linked to any particular table as it specifies the table name whenever it ``yield`` s.
+
+Story generators allow for nearly unlimited fidelity, if enough work is put in to write them.
+Above, we have created a correlation between only two tables but one can create arbitrary correlations between many tables and variables, including complex time series such as a patient's test results or a customer's orders.
+This opens utility far beyond simple pipeline testing or showcasing, including fitting statistical models to the synthetic data that could perform non-trivially well on the real data.
+The output of the source statistics queries are available as arguments for the story generators, just like they are for the custom row generators.
+Thus the synthetic data generated can be made to match the original data, in whatever ways are desired.
+The only significant limitation is that referencing or updating rows created before the current story was run is not easy (although not entirely impossible either).
+
+Note that we make here the same trade off as we did before: generating very high fidelity data requires significant effort on the user's part, in writing the Python code for any story generators that are needed, and any source statistics SQL queries needed to inform those generators of properties of the original data. This is in contrast with other more automated synthetic data generators, such as GANs, which automatically learn various features of the source data and try to replicate them. However, what we gain are:
+
+* Full transparency and control over the ways in which the source data is utilised, and thus the ways in which privacy could in principle be at risk, including easy implementation of differential privacy guarantee.
+* The possibility of starting from very low fidelity data, and incrementally adding fidelity to particular aspects of the data, as is needed to serve the utility of whatever use case the synthetic data is created for.
