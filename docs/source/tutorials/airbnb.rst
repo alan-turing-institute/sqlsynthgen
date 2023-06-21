@@ -1,5 +1,5 @@
-Tutorial: The AirBnb Bookings Dataset
-=====================================
+An Introduction to SqlSynthGen
+===============================
 
 `SqlSynthGen <https://github.com/alan-turing-institute/sqlsynthgen/>`_, or SSG for short, is a software package that we have written for synthetic data generation, focussed on relational data.
 When pointed to an existing relational database, SSG creates another database with the same database schema, and populates it with synthetic data.
@@ -176,11 +176,11 @@ To avoid this, we can map columns to “row generators” in the config file:
 
     ...
     tables:
-    users:
-        row_generators:
-        - name: generic.person.password
-            args: null
-            columns_assigned: id
+        users:
+            row_generators:
+               - name: generic.person.password
+                 args: null
+                 columns_assigned: id
 
 The next time we run ``make-generators``, the config-specified row generator will override the default one and we will not need to edit the ``ssg.py`` directly any more.
 
@@ -194,17 +194,17 @@ We see below that we have used these techniques to populate the ``sessions.secs_
 
     ...
     tables:
-    sessions:
-        row_generators:
-        - name: generic.numeric.integer_number
-            args:
-            start: 0
-            end: 3600
-            columns_assigned: secs_elapsed
-        - name: generic.choice
-            args:
-            items: ["show", "index", "personalize"]
-            columns_assigned: action
+        sessions:
+            row_generators:
+              - name: generic.numeric.integer_number
+                args:
+                    start: 0
+                    end: 3600
+                columns_assigned: secs_elapsed
+              - name: generic.choice
+                args:
+                    items: ["show", "index", "personalize"]
+                columns_assigned: action
 
 We can also define our own custom generators in a separate module and then use them to generate values for one or more columns.
 For example, in the ``users`` table, we may want to ensure that the ``date_first_booking`` is optional and never comes before the ``date_account_created``.
@@ -237,14 +237,14 @@ Then, we tell SSG to import our custom ``airbnb_generators.py`` and assign the r
     row_generators_module: airbnb_generators
 
     users:
-    row_generators:
-        - name: generic.person.identifier
-        args:
-            mask: '"@@##@@@@"'
-        columns_assigned: id
-        - name: airbnb_generators.user_dates_provider
-        args: null
-        columns_assigned: ["date_account_created", "date_first_booking"]
+        row_generators:
+            - name: generic.person.identifier
+              args:
+                mask: '"@@##@@@@"'
+              columns_assigned: id
+            - name: airbnb_generators.user_dates_provider
+              args: null
+              columns_assigned: ["date_account_created", "date_first_booking"]
 
 Limitations to this approach are that rows can not be correlated with other rows in the same table, nor with any rows in other tables, except for trivially fulfilling foreign key constraints as in the default configuration.
 
@@ -277,3 +277,67 @@ The ``sessions.action`` column can have plausible actions rather than random str
      - ...
 
 Still there are no privacy implications, but data can be generated that e.g. passes various filters and ``WHERE`` clauses that one might realistically run on the data, opening new utility, especially in testing.
+
+Using aggregate statistics from the source data
+-----------------------------------------------
+
+Beyond copying vocabulary tables, SSG allows for the original data to affect the synthetic data generation process only through a particular mechanism we call source statistics.
+To use it, the user writes in the configuration file SQL queries that are executed on the source data, and their output is written into a file, typically called ``src-stats.yaml``.
+The file is both machine and human-readable, and its contents are available to be used as inputs into the custom generators we discussed above.
+
+In principle this allows moving over arbitrary information about the source data, but using the source statistics feature with row-by-row queries is considered an anti-pattern.
+Rather, the queries should compute some aggregate properties of the source data: the mean and standard deviation of the values in some column, the average age of a person, a histogram of relative frequencies of pairs of values in two different columns, etc.
+By using the outputs of these queries as arguments in the custom generators one can, for instance, match uni- or multi-variate distributions between the source data and the synthetic data, such as setting the average age of the synthetic people to be the same as that in the real data.
+
+In the AirBnb dataset, if we want to generate normally-distributed values for the ``users.age`` column, we would:
+
+1. Modify the config file to add a section that lists each of the columns we will query and any personal identifier columns.
+2. Modify the config file to add a section to specify the query to run and the `differential privacy <https://en.wikipedia.org/wiki/Differential_privacy>`_ parameters epsilon and delta.
+3. Modify the config file to pass the query results to a custom generator via the ``SRC_STATS`` variable and assign the return value to the age column:
+
+    **config.yaml**
+
+    .. code-block:: yaml
+
+        ...
+        users:
+            row_generators:
+                ...
+                - name: airbnb_generators.user_age_provider
+                  args:
+                    query_results: SRC_STATS["age_stats"]
+                  columns_assigned: age
+        smartnoise-sql:
+            public:
+                users:
+                    age:
+                        type: float
+                        private_id: false
+                        lower: 0
+                        upper: 100
+                    id:
+                        type: string
+                        private_id: true
+
+        src-stats:
+           - name: age_stats
+             query: >
+                select avg(age), stddev(age)
+                from users
+                where age <= 100
+             epsilon: 0.1
+             delta: 0.000001
+
+Note that the ``src-stats.name`` property of ``age_stats`` matches the ``SRC_STATS`` dictionary key ``age_stats``.
+
+4. Write a custom row generator in our generators module to return a random age value based on the query results given to it:
+
+    **airbnb_generators.py**
+
+    .. code-block:: python3
+
+        def user_age_provider(query_results):
+            mu: float = query_results[0][0]
+            sigma: float = query_results[0][1]
+
+            return random.gauss(mu, sigma)
