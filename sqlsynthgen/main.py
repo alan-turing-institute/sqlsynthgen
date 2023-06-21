@@ -13,6 +13,7 @@ from jsonschema.validators import validate
 
 from sqlsynthgen.create import create_db_data, create_db_tables, create_db_vocab
 from sqlsynthgen.make import make_src_stats, make_table_generators, make_tables_file
+from sqlsynthgen.remove import remove_db_data
 from sqlsynthgen.settings import get_settings
 from sqlsynthgen.utils import import_file, read_yaml_file
 
@@ -218,6 +219,17 @@ def validate_config(config_file: Path) -> None:
     except ValidationError as e:
         typer.echo(e, err=True)
         sys.exit(1)
+
+
+@app.command()
+def remove_data(
+    orm_file: str = typer.Option(ORM_FILENAME),
+    ssg_file: str = typer.Option(SSG_FILENAME),
+) -> None:
+    """Truncate all the non-vocabulary tables in the destination DB."""
+    orm_module = import_file(orm_file)
+    ssg_module = import_file(ssg_file)
+    remove_db_data(orm_module, ssg_module)
 
 
 if __name__ == "__main__":

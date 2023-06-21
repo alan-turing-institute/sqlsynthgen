@@ -417,3 +417,17 @@ class TestCLI(SSGTestCase):
         )
 
         self.assertEqual(1, result.exit_code)
+
+    @patch("sqlsynthgen.main.remove_db_data")
+    @patch("sqlsynthgen.main.import_file", side_effect=(1, 2))
+    def test_remove_data(self, _: MagicMock, mock_remove: MagicMock) -> None:
+        """Test the remove-data command."""
+        result = runner.invoke(
+            app,
+            [
+                "remove-data",
+            ],
+            catch_exceptions=False,
+        )
+        self.assertEqual(0, result.exit_code)
+        mock_remove.assert_called_once_with(1, 2)
