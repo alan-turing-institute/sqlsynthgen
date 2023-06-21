@@ -67,6 +67,10 @@ story_generators:
     args:
       - generic
     num_stories_per_pass: 3
+  - name: story_generators.full_row_story
+    args:
+      - generic
+    num_stories_per_pass: 1
   - name: story_generators.long_story
     kwargs:
       dst_db_conn: dst_db_conn

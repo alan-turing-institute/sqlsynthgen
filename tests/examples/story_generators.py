@@ -1,4 +1,5 @@
 import datetime as dt
+import random
 from typing import Any, Dict, Generator, Tuple
 import sqlalchemy as sqla
 
@@ -6,9 +7,24 @@ import sqlalchemy as sqla
 def short_story(
     generic: Any,
 ) -> Generator[Tuple[str, Dict[str, Any]], Dict[str, Any], None]:
-
     # Create one row in the person table and override the default name
     yield "person", {"name": generic.person.first_name()}
+
+
+def full_row_story(
+    generic: Any,
+) -> Generator[Tuple[str, Dict[str, Any]], Dict[str, Any], None]:
+    # Create a row in the person table, providing values for all columns. This used to
+    # crash, and is kept to prevent regression.
+    yield "person", {
+        # The randint thing could in principle cause a collision, but eh, we are not
+        # going to be _that_ unlucky are we? There should only ever be a handful of rows
+        # in the dst db.
+        "person_id": random.randint(666, 666666666),
+        "name": generic.person.first_name(),
+        "research_opt_out": False,
+        "stored_from": dt.datetime(year=1970, month=1, day=1),
+    }
 
 
 def long_story(
