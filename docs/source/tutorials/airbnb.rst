@@ -1,5 +1,5 @@
-Tutorial: The AirBnb Dataset
-============================
+Tutorial: The AirBnb Bookings Dataset
+=====================================
 
 `SqlSynthGen <https://github.com/alan-turing-institute/sqlsynthgen/>`_, or SSG for short, is a software package that we have written for synthetic data generation, focussed on relational data.
 When pointed to an existing relational database, SSG creates another database with the same database schema, and populates it with synthetic data.
@@ -163,3 +163,117 @@ From now on, whenever we make a change to ``config.yaml``, we should re-run thes
 To recap, “vocabularies” are tables that don’t need synthesising.
 By itself this adds only limited utility, since the interesting parts of the data are typically in the non-vocabulary tables, but it saves great amounts of work by fixing some tables with no privacy concerns to have perfect fidelity from the get-go.
 Note that one has to be careful in making sure that the tables marked as vocabulary tables truly do not hold privacy sensitive data, otherwise catastrophic privacy leaks are possible, where the original data is exposed raw and in full.
+
+Specifying row-based custom generators
+--------------------------------------
+
+As we’ve seen above, ``ssg.py`` is overwritten whenever you re-run make-generators.
+To avoid this, we can map columns to “row generators” in the config file:
+
+**config.yaml**
+
+.. code-block:: yaml
+
+    ...
+    tables:
+    users:
+        row_generators:
+        - name: generic.person.password
+            args: null
+            columns_assigned: id
+
+The next time we run ``make-generators``, the config-specified row generator will override the default one and we will not need to edit the ``ssg.py`` directly any more.
+
+We can also use the custom row generators to add more fidelity to the data.
+Examples include specifying that a column’s value should be an integer in a given range or should be chosen at random from a list of acceptable values.
+We see below that we have used these techniques to populate the ``sessions.secs_elapsed`` column with random integers in the range 0-3,600 and ``sessions.action`` with any one of the three most common action types from the source dataset:
+
+**config.yaml**
+
+.. code-block:: yaml
+
+    ...
+    tables:
+    sessions:
+        row_generators:
+        - name: generic.numeric.integer_number
+            args:
+            start: 0
+            end: 3600
+            columns_assigned: secs_elapsed
+        - name: generic.choice
+            args:
+            items: ["show", "index", "personalize"]
+            columns_assigned: action
+
+We can also define our own custom generators in a separate module and then use them to generate values for one or more columns.
+For example, in the ``users`` table, we may want to ensure that the ``date_first_booking`` is optional and never comes before the ``date_account_created``.
+To accomplish this, we define a custom generator, which is a function that returns
+a tuple with two dates.
+In this tuple, the second item may be ``None`` and always comes at least a calendar year after the first item:
+
+**airbnb_generators.py**
+
+.. code-block:: python3
+
+    def user_dates_provider():
+        generic = Generic()
+        date_account_created: datetime.date = generic.datetime.date(start=2010, end=2015)
+
+        booking_date: Optional[datetime.date] = None
+        if generic.choice([True, False]):
+            booking_date = generic.datetime.date(
+                start=date_account_created.year + 1, end=2016
+            )
+
+        return date_account_created, booking_date
+
+Then, we tell SSG to import our custom ``airbnb_generators.py`` and assign the return values of our generator function to the two columns in our ``users`` table:
+
+**config.yaml**
+
+.. code-block:: yaml
+
+    row_generators_module: airbnb_generators
+
+    users:
+    row_generators:
+        - name: generic.person.identifier
+        args:
+            mask: '"@@##@@@@"'
+        columns_assigned: id
+        - name: airbnb_generators.user_dates_provider
+        args: null
+        columns_assigned: ["date_account_created", "date_first_booking"]
+
+Limitations to this approach are that rows can not be correlated with other rows in the same table, nor with any rows in other tables, except for trivially fulfilling foreign key constraints as in the default configuration.
+
+This level of configuration allows us to make the data look much more plausible, especially when looked at locally on the level of individual rows.
+The ``sessions.action`` column can have plausible actions rather than random strings, a session’s duration can be in a plausible range of numbers and users don’t make bookings before creating an account:
+
+
+.. list-table:: users
+   :header-rows: 1
+
+   * - id
+     - date_account_created
+     - date_first_booking
+     - ...
+   * - TK53EDBJ
+     - 2011-10-21
+     -
+     - ...
+   * - BY13UILQ
+     - 2015-04-12
+     - 2016-12-29
+     - ...
+   * - WA25VOAU
+     - 2011-02-08
+     - 2013-07-03
+     - ...
+   * - YT49ANJT
+     - 2015-11-16
+     -
+     - ...
+
+Still there are no privacy implications, but data can be generated that e.g. passes various filters and ``WHERE`` clauses that one might realistically run on the data, opening new utility, especially in testing.
