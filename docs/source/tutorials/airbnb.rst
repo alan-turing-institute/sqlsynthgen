@@ -330,7 +330,18 @@ In the AirBnb dataset, if we want to generate normally-distributed values for th
 
 Note that the ``src-stats.name`` property of ``age_stats`` matches the ``SRC_STATS`` dictionary key ``age_stats``.
 
-4. Write a custom row generator in our generators module to return a random age value based on the query results given to it:
+4. Under this configuration, SSG generates the ``src-stats.yaml`` file containing the query results:
+
+    **src-stats.yaml**
+
+    .. code-block:: yaml
+
+        age_stats:
+        - - 36.55849236836584
+          - 11.727350098614563
+
+
+5. Write a custom row generator in our generators module to return a random age value based on the query results given to it:
 
     **airbnb_generators.py**
 
@@ -341,3 +352,17 @@ Note that the ``src-stats.name`` property of ``age_stats`` matches the ``SRC_STA
             sigma: float = query_results[0][1]
 
             return random.gauss(mu, sigma)
+
+
+
+Note the difference between this approach and some other approaches to synthetic data, such as those that use neural networks trained on the original data.
+Here, the user has to manually specify exactly which statistical properties of the original data are extracted, and exactly how they are used to inform the synthetic data.
+This means more manual work for the user, especially if many aspects of the synthetic data want to be matched with the original.
+However, it provides complete transparency and control over how the original data is used, and thus over possible privacy implications.
+One can look at the queries run to produce source statistics, and their outputs in the ``src-stats.yaml`` file, and if one is satisfied that publishing these results poses an acceptable privacy risk, then publishing any amount of synthetic data generated based on them can only pose less of a risk.
+
+In this example, we use SSG to run the source statistics SQL queries using a package called `SmartNoiseSQL <https://github.com/opendp/smartnoise-sdk>`_, that runs SQL queries and adds appropriate amounts of noise to the results to make them differentially private.
+The user can specify the ε and δ parameters that control the strength of the differential privacy guarantee.
+To learn more about differential privacy and the meaning of its parameters, please read `this white paper from Microsoft <https://azure.microsoft.com/mediahandler/files/resourcefiles/microsoft-smartnoisedifferential-privacy-machine-learning-case-studies/SmartNoise%20Whitepaper%20Final%203.8.21.pdf>`_.
+At the time of writing, SmartNoiseSQL is somewhat limited in the kinds of queries it can run, but if it is capable of running the queries one needs, using it can be an extremely easy to way to add differential privacy guarantees to the synthetic data generated.
+Through the robustness to post-processing property of differential privacy, if the values in ``src-stats.yaml`` are generated in a differentially private way, the synthetic data generated based on those values can not break that guarantee.
