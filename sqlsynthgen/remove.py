@@ -33,8 +33,10 @@ def remove_db_vocab(orm_module: ModuleType, ssg_module: ModuleType) -> None:
     )
 
     with dst_engine.connect() as dst_conn:
-        for table_name in ssg_module.vocab_dict.keys():
-            dst_conn.execute(delete(orm_module.Base.metadata.tables[table_name]))
+        for table in reversed(orm_module.Base.metadata.sorted_tables):
+            # We presume that all tables that are vocab should be truncated
+            if table.name in ssg_module.vocab_dict:
+                dst_conn.execute(delete(table))
 
 
 def remove_db_tables(orm_module: ModuleType) -> None:

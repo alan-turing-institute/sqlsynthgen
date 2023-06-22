@@ -219,7 +219,13 @@ class FunctionalTestCase(RequiresDBTestCase):
         self.assertSuccess(completed_process)
 
         completed_process = run(
-            ["sqlsynthgen", "remove-data", "--yes"],
+            [
+                "sqlsynthgen",
+                "remove-data",
+                "--yes",
+                f"--orm-file={self.alt_orm_file_path}",
+                f"--ssg-file={self.alt_ssg_file_path}",
+            ],
             capture_output=True,
             env=self.env,
         )
@@ -227,7 +233,13 @@ class FunctionalTestCase(RequiresDBTestCase):
         self.assertSuccess(completed_process)
 
         completed_process = run(
-            ["sqlsynthgen", "remove-vocab", "--yes"],
+            [
+                "sqlsynthgen",
+                "remove-vocab",
+                "--yes",
+                f"--orm-file={self.alt_orm_file_path}",
+                f"--ssg-file={self.alt_ssg_file_path}",
+            ],
             capture_output=True,
             env=self.env,
         )
@@ -235,7 +247,12 @@ class FunctionalTestCase(RequiresDBTestCase):
         self.assertSuccess(completed_process)
 
         completed_process = run(
-            ["sqlsynthgen", "remove-tables", "--yes"],
+            [
+                "sqlsynthgen",
+                "remove-tables",
+                "--yes",
+                f"--orm-file={self.alt_orm_file_path}",
+            ],
             capture_output=True,
             env=self.env,
         )
