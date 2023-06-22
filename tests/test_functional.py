@@ -113,6 +113,14 @@ class FunctionalTestCase(RequiresDBTestCase):
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
 
+        completed_process = run(
+            ["sqlsynthgen", "remove-vocab"],
+            capture_output=True,
+            env=self.env,
+        )
+        self.assertEqual("", completed_process.stderr.decode("utf-8"))
+        self.assertSuccess(completed_process)
+
     def test_workflow_maximal_args(self) -> None:
         """Test the CLI workflow runs with optional arguments."""
 
