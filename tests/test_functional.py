@@ -109,6 +109,7 @@ class FunctionalTestCase(RequiresDBTestCase):
             ["sqlsynthgen", "remove-data"],
             capture_output=True,
             env=self.env,
+            input=b"\n",  # To select the default prompt option
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
@@ -117,6 +118,7 @@ class FunctionalTestCase(RequiresDBTestCase):
             ["sqlsynthgen", "remove-vocab"],
             capture_output=True,
             env=self.env,
+            input=b"\n",  # To select the default prompt option
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
@@ -125,6 +127,7 @@ class FunctionalTestCase(RequiresDBTestCase):
             ["sqlsynthgen", "remove-tables"],
             capture_output=True,
             env=self.env,
+            input=b"\n",  # To select the default prompt option
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
@@ -209,6 +212,30 @@ class FunctionalTestCase(RequiresDBTestCase):
                 f"--ssg-file={self.alt_ssg_file_path}",
                 "--num-passes=2",
             ],
+            capture_output=True,
+            env=self.env,
+        )
+        self.assertEqual("", completed_process.stderr.decode("utf-8"))
+        self.assertSuccess(completed_process)
+
+        completed_process = run(
+            ["sqlsynthgen", "remove-data", "--yes"],
+            capture_output=True,
+            env=self.env,
+        )
+        self.assertEqual("", completed_process.stderr.decode("utf-8"))
+        self.assertSuccess(completed_process)
+
+        completed_process = run(
+            ["sqlsynthgen", "remove-vocab", "--yes"],
+            capture_output=True,
+            env=self.env,
+        )
+        self.assertEqual("", completed_process.stderr.decode("utf-8"))
+        self.assertSuccess(completed_process)
+
+        completed_process = run(
+            ["sqlsynthgen", "remove-tables", "--yes"],
             capture_output=True,
             env=self.env,
         )

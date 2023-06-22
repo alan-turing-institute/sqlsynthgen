@@ -227,34 +227,46 @@ def validate_config(config_file: Path) -> None:
 def remove_data(
     orm_file: str = typer.Option(ORM_FILENAME),
     ssg_file: str = typer.Option(SSG_FILENAME),
+    yes: bool = typer.Option(False, "--yes", prompt="Are you sure?"),
 ) -> None:
     """Truncate non-vocabulary tables in the destination schema."""
-    orm_module = import_file(orm_file)
-    ssg_module = import_file(ssg_file)
-    remove_db_data(orm_module, ssg_module)
+    if yes:
+        orm_module = import_file(orm_file)
+        ssg_module = import_file(ssg_file)
+        remove_db_data(orm_module, ssg_module)
+    else:
+        typer.echo("Would truncate non-vocabulary tables if called with --yes")
 
 
 @app.command()
 def remove_vocab(
     orm_file: str = typer.Option(ORM_FILENAME),
     ssg_file: str = typer.Option(SSG_FILENAME),
+    yes: bool = typer.Option(False, "--yes", prompt="Are you sure?"),
 ) -> None:
     """Truncate vocabulary tables in the destination schema."""
-    orm_module = import_file(orm_file)
-    ssg_module = import_file(ssg_file)
-    remove_db_vocab(orm_module, ssg_module)
+    if yes:
+        orm_module = import_file(orm_file)
+        ssg_module = import_file(ssg_file)
+        remove_db_vocab(orm_module, ssg_module)
+    else:
+        typer.echo("Would truncate vocabulary tables if called with --yes")
 
 
 @app.command()
 def remove_tables(
     orm_file: str = typer.Option(ORM_FILENAME),
+    yes: bool = typer.Option(False, "--yes", prompt="Are you sure?"),
 ) -> None:
     """Drop all tables in the destination schema.
 
     Does not drop the schema itself.
     """
-    orm_module = import_file(orm_file)
-    remove_db_tables(orm_module)
+    if yes:
+        orm_module = import_file(orm_file)
+        remove_db_tables(orm_module)
+    else:
+        typer.echo("Would remove tables if called with --yes")
 
 
 if __name__ == "__main__":

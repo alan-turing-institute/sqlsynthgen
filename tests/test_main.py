@@ -424,9 +424,7 @@ class TestCLI(SSGTestCase):
         """Test the remove-data command."""
         result = runner.invoke(
             app,
-            [
-                "remove-data",
-            ],
+            ["remove-data", "--yes"],
             catch_exceptions=False,
         )
         self.assertEqual(0, result.exit_code)
@@ -438,9 +436,7 @@ class TestCLI(SSGTestCase):
         """Test the remove-vocab command."""
         result = runner.invoke(
             app,
-            [
-                "remove-vocab",
-            ],
+            ["remove-vocab", "--yes"],
             catch_exceptions=False,
         )
         self.assertEqual(0, result.exit_code)
@@ -452,9 +448,7 @@ class TestCLI(SSGTestCase):
         """Test the remove-tables command."""
         result = runner.invoke(
             app,
-            [
-                "remove-tables",
-            ],
+            ["remove-tables", "--yes"],
             catch_exceptions=False,
         )
         self.assertEqual(0, result.exit_code)
