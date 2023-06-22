@@ -21,3 +21,17 @@ def remove_db_data(orm_module: ModuleType, ssg_module: ModuleType) -> None:
             # We presume that all tables that aren't vocab should be truncated
             if table.name not in ssg_module.vocab_dict:
                 dst_conn.execute(delete(table))
+
+
+def remove_db_vocab(orm_module: ModuleType, ssg_module: ModuleType) -> None:
+    """Truncate the vocabulary tables."""
+    settings = get_settings()
+
+    assert settings.dst_postgres_dsn, "Missing destination database settings"
+    dst_engine = create_db_engine(
+        settings.dst_postgres_dsn, schema_name=settings.dst_schema
+    )
+
+    with dst_engine.connect() as dst_conn:
+        for table_name in ssg_module.vocab_dict.keys():
+            dst_conn.execute(delete(orm_module.Base.metadata.tables[table_name]))
