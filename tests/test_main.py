@@ -445,3 +445,17 @@ class TestCLI(SSGTestCase):
         )
         self.assertEqual(0, result.exit_code)
         mock_remove.assert_called_once_with(1, 2)
+
+    @patch("sqlsynthgen.main.remove_db_tables")
+    @patch("sqlsynthgen.main.import_file", side_effect=(1,))
+    def test_remove_tables(self, _: MagicMock, mock_remove: MagicMock) -> None:
+        """Test the remove-tables command."""
+        result = runner.invoke(
+            app,
+            [
+                "remove-tables",
+            ],
+            catch_exceptions=False,
+        )
+        self.assertEqual(0, result.exit_code)
+        mock_remove.assert_called_once_with(1)

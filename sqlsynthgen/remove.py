@@ -35,3 +35,16 @@ def remove_db_vocab(orm_module: ModuleType, ssg_module: ModuleType) -> None:
     with dst_engine.connect() as dst_conn:
         for table_name in ssg_module.vocab_dict.keys():
             dst_conn.execute(delete(orm_module.Base.metadata.tables[table_name]))
+
+
+def remove_db_tables(orm_module: ModuleType) -> None:
+    """Drop the tables in the destination schema."""
+    settings = get_settings()
+
+    assert settings.dst_postgres_dsn, "Missing destination database settings"
+    dst_engine = create_db_engine(
+        settings.dst_postgres_dsn, schema_name=settings.dst_schema
+    )
+
+    metadata = orm_module.Base.metadata
+    metadata.drop_all(dst_engine)

@@ -13,7 +13,7 @@ from jsonschema.validators import validate
 
 from sqlsynthgen.create import create_db_data, create_db_tables, create_db_vocab
 from sqlsynthgen.make import make_src_stats, make_table_generators, make_tables_file
-from sqlsynthgen.remove import remove_db_data, remove_db_vocab
+from sqlsynthgen.remove import remove_db_data, remove_db_tables, remove_db_vocab
 from sqlsynthgen.settings import get_settings
 from sqlsynthgen.utils import import_file, read_yaml_file
 
@@ -241,6 +241,15 @@ def remove_vocab(
     orm_module = import_file(orm_file)
     ssg_module = import_file(ssg_file)
     remove_db_vocab(orm_module, ssg_module)
+
+
+@app.command()
+def remove_tables(
+    orm_file: str = typer.Option(ORM_FILENAME),
+) -> None:
+    """Drop the tables (but not the schema)."""
+    orm_module = import_file(orm_file)
+    remove_db_tables(orm_module)
 
 
 if __name__ == "__main__":

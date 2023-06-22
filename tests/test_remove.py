@@ -1,7 +1,7 @@
 """Tests for the remove module."""
 from unittest.mock import MagicMock, call, patch
 
-from sqlsynthgen.remove import remove_db_data, remove_db_vocab
+from sqlsynthgen.remove import remove_db_data, remove_db_tables, remove_db_vocab
 from sqlsynthgen.settings import Settings
 from tests.examples import example_orm, remove_ssg
 from tests.utils import SSGTestCase, get_test_settings
@@ -63,6 +63,21 @@ class RemoveTestCase(SSGTestCase):
             context_manager.exception.args[0], "Missing destination database settings"
         )
 
-    def test_remove_tables(self) -> None:
+    @patch("sqlsynthgen.remove.get_settings", side_effect=get_test_settings)
+    @patch("sqlsynthgen.remove.create_db_engine")
+    def test_remove_tables(self, mock_engine: MagicMock, _: MagicMock) -> None:
         """Test the remove_db_tables function."""
-        # ToDo
+        mock_orm = MagicMock()
+        remove_db_tables(mock_orm)
+        dst_engine = mock_engine.return_value
+        mock_orm.Base.metadata.drop_all.assert_called_once_with(dst_engine)
+
+    @patch("sqlsynthgen.remove.get_settings")
+    def test_remove_db_tables_raises(self, mock_get: MagicMock) -> None:
+        """Check that remove_db_tables raises if dst DSN is missing."""
+        mock_get.return_value = Settings(dst_user_name=None, _env_file=None)
+        with self.assertRaises(AssertionError) as context_manager:
+            remove_db_tables(example_orm)
+        self.assertEqual(
+            context_manager.exception.args[0], "Missing destination database settings"
+        )
