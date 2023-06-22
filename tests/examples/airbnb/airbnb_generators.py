@@ -2,11 +2,9 @@ import datetime
 import random
 from typing import Optional, Generator, Tuple
 
-from mimesis import Generic
 
 
-def user_dates_provider():
-    generic = Generic()
+def user_dates_provider(generic):
     date_account_created: datetime.date = generic.datetime.date(start=2010, end=2015)
 
     booking_date: Optional[datetime.date] = None
