@@ -151,7 +151,9 @@ def make_stats(
     stats_file: str = typer.Option(STATS_FILENAME),
     force: bool = typer.Option(False, "--force", "-f"),
 ) -> None:
-    """Compute summary statistics from the source database, write them to a YAML file.
+    """Compute summary statistics from the source database.
+
+    Writes the statistics to a YAML file.
 
     Example:
         $ sqlsynthgen make_stats --config-file=example_config.yaml
@@ -226,7 +228,7 @@ def remove_data(
     orm_file: str = typer.Option(ORM_FILENAME),
     ssg_file: str = typer.Option(SSG_FILENAME),
 ) -> None:
-    """Truncate all the non-vocabulary tables in the destination DB."""
+    """Truncate non-vocabulary tables in the destination schema."""
     orm_module = import_file(orm_file)
     ssg_module = import_file(ssg_file)
     remove_db_data(orm_module, ssg_module)
@@ -237,7 +239,7 @@ def remove_vocab(
     orm_file: str = typer.Option(ORM_FILENAME),
     ssg_file: str = typer.Option(SSG_FILENAME),
 ) -> None:
-    """Truncate all the vocabulary tables in the destination DB."""
+    """Truncate vocabulary tables in the destination schema."""
     orm_module = import_file(orm_file)
     ssg_module = import_file(ssg_file)
     remove_db_vocab(orm_module, ssg_module)
@@ -247,7 +249,10 @@ def remove_vocab(
 def remove_tables(
     orm_file: str = typer.Option(ORM_FILENAME),
 ) -> None:
-    """Drop the tables (but not the schema)."""
+    """Drop all tables in the destination schema.
+
+    Does not drop the schema itself.
+    """
     orm_module = import_file(orm_file)
     remove_db_tables(orm_module)
 
