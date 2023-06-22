@@ -1,23 +1,27 @@
 Quick Start
 ===========
 
-After :ref:`Installation <enduser>`, we can run sqlsynthgen with the `--help` option to see the available commands:
+After :ref:`Installation <enduser>`, we can run ``sqlsynthgen`` to see the available commands:
 
 .. code-block:: console
 
-   $ sqlsynthgen --help
+   $ sqlsynthgen
    Usage: sqlsynthgen [OPTIONS] COMMAND [ARGS]...
 
    Options:
-     --help           Show this message and exit.
+     --help                          Show this message and exit.
 
    Commands:
      create-data      Populate schema with synthetic data.
      create-tables    Create schema from Python classes.
      create-vocab     Create tables using the SQLAlchemy file.
      make-generators  Make a SQLSynthGen file of generator classes.
-     make-stats       Compute summary statistics from the source database,...
+     make-stats       Compute summary statistics from the source database.
      make-tables      Make a SQLAlchemy file of Table classes.
+     remove-data      Truncate all non-vocabulary tables in the dst schema.
+     remove-tables    Drop all tables in the dst schema.
+     remove-vocab     Truncate all vocabulary tables in the dst schema.
+     validate-config  Validate the format of a config file.
 
 For the simplest case, we will need `make-tables`, `make-generators`, `create-tables` and `create-data` but, first,
 we need to set environment variables to tell sqlsynthgen how to access our source database (where the real data resides now) and destination database (where the synthetic data will go).
