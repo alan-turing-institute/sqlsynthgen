@@ -11,7 +11,7 @@ def remove_db_data(orm_module: ModuleType, ssg_module: ModuleType) -> None:
     """Truncate the synthetic data tables but not the vocabularies."""
     settings = get_settings()
 
-    assert settings.dst_postgres_dsn
+    assert settings.dst_postgres_dsn, "Missing destination database settings"
     dst_engine = create_db_engine(
         settings.dst_postgres_dsn, schema_name=settings.dst_schema
     )
