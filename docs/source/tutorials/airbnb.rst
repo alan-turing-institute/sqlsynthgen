@@ -291,70 +291,66 @@ In principle this allows moving over arbitrary information about the source data
 Rather, the queries should compute some aggregate properties of the source data: the mean and standard deviation of the values in some column, the average age of a person, a histogram of relative frequencies of pairs of values in two different columns, etc.
 By using the outputs of these queries as arguments in the custom generators one can, for instance, match uni- or multi-variate distributions between the source data and the synthetic data, such as setting the average age of the synthetic people to be the same as that in the real data.
 
-In the AirBnb dataset, if we want to generate normally-distributed values for the ``users.age`` column, we would:
-
-1. Modify the config file to add a section that lists each of the columns we will query and any personal identifier columns.
-2. Modify the config file to add a section to specify the query to run and the `differential privacy <https://en.wikipedia.org/wiki/Differential_privacy>`_ parameters epsilon and delta.
-3. Modify the config file to pass the query results to a custom generator via the ``SRC_STATS`` variable and assign the return value to the age column:
+In the AirBnb dataset, if we want to generate normally-distributed values for the ``users.age`` column, we would define a ``config.yaml`` with the following content:
 
    **config.yaml**:
 
-   .. code-block:: yaml
-      :linenos:
+.. code-block:: yaml
+    :linenos:
 
-      tables:
+    tables:
         users:
-          row_generators:
-            - name: airbnb_generators.user_age_provider
-              args:
-                query_results: SRC_STATS["age_stats"]
-              columns_assigned: age
+            row_generators:
+              - name: airbnb_generators.user_age_provider
+                kwargs:
+                    query_results: SRC_STATS["age_stats"]
+                columns_assigned: age
 
-      smartnoise-sql:
+    smartnoise-sql:
         public:
-          users:
-            age:
-              type: float
-              private_id: false
-              lower: 0
-              upper: 100
-            id:
-              type: string
-              private_id: true
+            users:
+                age:
+                    type: float
+                    private_id: false
+                    lower: 0
+                    upper: 100
+                id:
+                    type: string
+                    private_id: true
 
-      src-stats:
-        - name: age_stats
-          query: >
+    src-stats:
+      - name: age_stats
+        query: >
             select avg(age), stddev(age)
             from users
             where age <= 100
-          epsilon: 0.1
-          delta: 0.000001
+        epsilon: 0.1
+        delta: 0.000001
 
-   Note that the ``src-stats.name`` property of ``age_stats`` matches the ``SRC_STATS`` dictionary key ``age_stats``.
+Note that the ``src-stats.name`` property of ``age_stats`` (line 22) matches the ``SRC_STATS`` dictionary key ``age_stats``.
+In line 6, we pass the query results (defined in lines 24 - 26)  to a custom generator via the ``SRC_STATS`` variable and assign the return value to the ``age`` column in line 7.
+The custom generator is the function ``airbnb_generators.user_age_provider``  (line 4), whose content is the following:
 
-4. Under this configuration, SSG generates the ``src-stats.yaml`` file containing the query results:
+**airbnb_generators.py**:
 
-   **src-stats.yaml**:
+.. code-block:: python3
+    :linenos:
 
-   .. code-block:: yaml
-      :linenos:
+    def user_age_provider(query_results):
+        mu: float = query_results[0][0]
+        sigma: float = query_results[0][1]
+        return random.gauss(mu, sigma)
 
-      age_stats:
-        - - 36.55849236836584
-          - 11.727350098614563
+Thus function returns a random age value based on the query results stored in the ``src-stats.yaml`` file. Using ``config.yaml`` over the AirBnb dataset, ``src-stats.yaml`` contains the following:
 
-5. Write a custom row generator in our generators module to return a random age value based on the query results given to it:
+**src-stats.yaml**:
 
-   **airbnb_generators.py**:
+.. code-block:: yaml
+    :linenos:
 
-   .. code-block:: python3
-      :linenos:
-
-      def user_age_provider(query_results):
-          mu: float = query_results[0][0]
-          sigma: float = query_results[0][1]
-          return random.gauss(mu, sigma)
+    age_stats:
+      - - 36.55849236836584
+        - 11.727350098614563
 
 Note the difference between this approach and some other approaches to synthetic data, such as those that use neural networks trained on the original data.
 Here, the user has to manually specify exactly which statistical properties of the original data are extracted, and exactly how they are used to inform the synthetic data.
@@ -362,8 +358,9 @@ This means more manual work for the user, especially if many aspects of the synt
 However, it provides complete transparency and control over how the original data is used, and thus over possible privacy implications.
 One can look at the queries run to produce source statistics, and their outputs in the ``src-stats.yaml`` file, and if one is satisfied that publishing these results poses an acceptable privacy risk, then publishing any amount of synthetic data generated based on them can only pose less of a risk.
 
-In this example, we use SSG to run the source statistics SQL queries using a package called `SmartNoiseSQL <https://github.com/opendp/smartnoise-sdk>`_, that runs SQL queries and adds appropriate amounts of noise to the results to make them differentially private.
-The user can specify the ε and δ parameters that control the strength of the differential privacy guarantee.
+In this example, we use SSG to run the source statistics SQL queries using a package called `SmartNoiseSQL <https://github.com/opendp/smartnoise-sdk>`_, that runs SQL queries and adds appropriate amounts of noise to the results to make them `differentially private <https://en.wikipedia.org/wiki/Differential_privacy>`_.
+The user can specify the ε and δ parameters that control the strength of the differential privacy guarantee (lines 27-28 of ``config.yaml``).
+Also , ``config.yaml`` should specify each of the columns we will query and any personal identifier columns (lines 9 -19).
 To learn more about differential privacy and the meaning of its parameters, please read `this white paper from Microsoft <https://azure.microsoft.com/mediahandler/files/resourcefiles/microsoft-smartnoisedifferential-privacy-machine-learning-case-studies/SmartNoise%20Whitepaper%20Final%203.8.21.pdf>`_.
 At the time of writing, SmartNoiseSQL is somewhat limited in the kinds of queries it can run, but if it is capable of running the queries one needs, using it can be an extremely easy to way to add differential privacy guarantees to the synthetic data generated.
 Through the robustness to post-processing property of differential privacy, if the values in ``src-stats.yaml`` are generated in a differentially private way, the synthetic data generated based on those values can not break that guarantee.
