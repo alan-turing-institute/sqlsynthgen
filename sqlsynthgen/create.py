@@ -98,7 +98,8 @@ def _populate_story(
             cursor = dst_conn.execute(stmt)
             # We need to return all the default values etc. to the generator,
             # because other parts of the story may refer to them.
-            final_values = {**insert_values, **dict(cursor.returned_defaults)}
+            return_values = dict(cursor.returned_defaults or {})
+            final_values = {**insert_values, **return_values}
             table_name, provided_values = story.send(final_values)
     except StopIteration:
         # The story has finished, it has no more rows to generate

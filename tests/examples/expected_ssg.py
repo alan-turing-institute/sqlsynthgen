@@ -97,6 +97,10 @@ def run_story_generators_short_story(dst_db_conn):
     return story_generators.short_story(generic)
 
 
+def run_story_generators_full_row_story(dst_db_conn):
+    return story_generators.full_row_story(generic)
+
+
 def run_story_generators_long_story(dst_db_conn):
     return story_generators.long_story(
         dst_db_conn=dst_db_conn,
@@ -109,6 +113,10 @@ story_generator_list = [
     {
         "name": run_story_generators_short_story,
         "num_stories_per_pass": 3,
+    },
+    {
+        "name": run_story_generators_full_row_story,
+        "num_stories_per_pass": 1,
     },
     {
         "name": run_story_generators_long_story,
