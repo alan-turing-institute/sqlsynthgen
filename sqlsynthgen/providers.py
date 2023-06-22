@@ -56,7 +56,7 @@ class TimedeltaProvider(BaseProvider):
         """Return a random timedelta object."""
         min_s = min_dt.total_seconds()
         max_s = max_dt.total_seconds()
-        seconds = random.randint(min_s, max_s)
+        seconds = random.randint(int(min_s), int(max_s))
         return dt.timedelta(seconds=seconds)
 
 

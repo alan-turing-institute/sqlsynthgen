@@ -20,7 +20,6 @@ metadata = Base.metadata
 
 class Person(Base):
     __tablename__ = "person"
-    __table_args__ = {"schema": "myschema"}
 
     person_id = Column(
         Integer,
@@ -35,13 +34,12 @@ class Person(Base):
 
 class HopsitalVisit(Base):
     __tablename__ = "hospital_visit"
-    __table_args__ = {"schema": "myschema"}
 
     hospital_visit_id = Column(
         BigInteger,
         primary_key=True,
     )
-    person_id = Column(ForeignKey("myschema.person.person_id"))
+    person_id = Column(ForeignKey("person.person_id"))
     visit_start = Column(DateTime(True))
     visit_end = Column(Date)
     visit_duration_seconds = Column(Float)
@@ -50,7 +48,6 @@ class HopsitalVisit(Base):
 
 class Entity(Base):
     __tablename__ = "entity"
-    __table_args__ = {"schema": "myschema"}
 
     # NB Do not add any more columns to this table as
     # we use it to test what happens in the one-column case
@@ -62,7 +59,6 @@ class Entity(Base):
 
 class TestEntity(Base):
     __tablename__ = "test_entity"
-    __table_args__ = {"schema": "myschema"}
 
     test_entity_id = Column(
         Integer,
@@ -74,7 +70,6 @@ class TestEntity(Base):
 
 class Concept(Base):
     __tablename__ = "concept"
-    __table_args__ = {"schema": "myschema"}
 
     concept_id = Column(
         Integer,
