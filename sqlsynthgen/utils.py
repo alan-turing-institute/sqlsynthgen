@@ -19,20 +19,20 @@ def read_yaml_file(path: str) -> Any:
     return config
 
 
-def import_file(file_name: str) -> ModuleType:
+def import_file(file_path: str) -> ModuleType:
     """Import a file.
 
-    This utility function returns file_name imported as a module.
+    This utility function returns file_path imported as a module.
 
     Args:
-        file_name (str): The name of a file in the current working directory.
+        file_path (str): The path of a file to import.
 
     Returns:
         ModuleType
     """
-    module_name = file_name[:-3]
+    module_name = os.path.splitext(os.path.basename(file_path))[0]
 
-    sys.path.append(os.getcwd())
+    sys.path.append(os.path.dirname(os.path.abspath(file_path)))
 
     try:
         module = import_module(module_name)

@@ -10,10 +10,11 @@ import typer
 import yaml
 from jsonschema.exceptions import ValidationError
 from jsonschema.validators import validate
+from pydantic import PostgresDsn
 
 from sqlsynthgen.create import create_db_data, create_db_tables, create_db_vocab
 from sqlsynthgen.make import make_src_stats, make_table_generators, make_tables_file
-from sqlsynthgen.settings import get_settings
+from sqlsynthgen.settings import Settings, get_settings
 from sqlsynthgen.utils import import_file, read_yaml_file
 
 ORM_FILENAME: Final[str] = "orm.py"
@@ -24,6 +25,24 @@ CONFIG_SCHEMA_PATH: Final[Path] = (
 )
 
 app = typer.Typer()
+
+
+def _check_file_non_existence(file_path: Path) -> None:
+    """Check that a given file does not exist. Exit with an error message if it does."""
+    if file_path.exists():
+        typer.echo(f"{file_path} should not already exist. Exiting...", err=True)
+        sys.exit(1)
+
+
+def _get_src_postgres_dsn(settings: Settings) -> PostgresDsn:
+    """Return the source DB Postgres DSN.
+
+    Check that source db details have been set. Exit with error message if not.
+    """
+    if (src_dsn := settings.src_postgres_dsn) is None:
+        typer.echo("Missing source database connection details.", err=True)
+        sys.exit(1)
+    return src_dsn
 
 
 @app.command()
@@ -125,15 +144,11 @@ def make_generators(
         force (bool): Overwrite the ORM file if exists. Default to False.
     """
     ssg_file_path = Path(ssg_file)
-    if ssg_file_path.exists() and not force:
-        typer.echo(f"{ssg_file} should not already exist. Exiting...", err=True)
-        sys.exit(1)
-
+    if not force:
+        _check_file_non_existence(ssg_file_path)
     settings = get_settings()
-    src_dsn = settings.src_postgres_dsn
-    if src_dsn is None:
-        typer.echo("Missing source database connection details.", err=True)
-        sys.exit(1)
+    # Check that src_dsn is set, even though we don't need it here.
+    _get_src_postgres_dsn(settings)
 
     orm_module: ModuleType = import_file(orm_file)
     generator_config = read_yaml_file(config_file) if config_file is not None else {}
@@ -156,17 +171,13 @@ def make_stats(
         $ sqlsynthgen make_stats --config-file=example_config.yaml
     """
     stats_file_path = Path(stats_file)
-    if stats_file_path.exists() and not force:
-        typer.echo(f"{stats_file} should not already exist. Exiting...", err=True)
-        sys.exit(1)
+    if not force:
+        _check_file_non_existence(stats_file_path)
 
     config = read_yaml_file(config_file) if config_file is not None else {}
 
     settings = get_settings()
-    src_dsn = settings.src_postgres_dsn
-    if src_dsn is None:
-        typer.echo("Missing source database connection details.", err=True)
-        sys.exit(1)
+    src_dsn: PostgresDsn = _get_src_postgres_dsn(settings)
 
     src_stats = asyncio.get_event_loop().run_until_complete(
         make_src_stats(src_dsn, config, settings.src_schema)
@@ -193,16 +204,11 @@ def make_tables(
         force (bool): Overwrite ORM file, if exists. Default to False.
     """
     orm_file_path = Path(orm_file)
-    if orm_file_path.exists() and not force:
-        typer.echo(f"{orm_file} should not already exist. Exiting...", err=True)
-        sys.exit(1)
+    if not force:
+        _check_file_non_existence(orm_file_path)
 
     settings = get_settings()
-    if settings.src_postgres_dsn is None:
-        typer.echo("Missing source database connection details.", err=True)
-        sys.exit(1)
-
-    src_dsn = settings.src_postgres_dsn
+    src_dsn: PostgresDsn = _get_src_postgres_dsn(settings)
 
     content = make_tables_file(src_dsn, settings.src_schema)
     orm_file_path.write_text(content, encoding="utf-8")
