@@ -197,6 +197,16 @@ def _get_default_generator(tables_module: ModuleType, column: Any) -> ColumnGene
 
 
 def _get_mimesis_function_for_colum(column: Any) -> Tuple[str, str, List[str]]:
+    """
+    Get a default Mimesis provider and its arguments for a SQL column type.
+
+    Args:
+        column: SQLAlchemy column object
+
+    Returns:
+        Tuple[str, str, List[str]]: Tuple containing the variable names to assign to,
+        generator function and any generator arguments.
+    """
     variable_names: str = f"self.{column.name}"
     generator_arguments: List[str] = []
     generator_function: str = ""
@@ -223,6 +233,8 @@ def _get_mimesis_function_for_colum(column: Any) -> Tuple[str, str, List[str]]:
     elif column_type in {sqltypes.String, sqltypes.Text} and column_size is not None:
         generator_function = "generic.person.password"
         generator_arguments.append(str(column_size))
+    else:
+        raise ValueError(f"Unsupported SQLAlchemy type: {column_type}")
 
     return variable_names, generator_function, generator_arguments
 
