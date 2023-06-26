@@ -246,12 +246,12 @@ Then, we tell SSG to import our custom ``airbnb_generators.py`` and assign the r
     users:
         row_generators:
            - name: generic.person.identifier
-             args:
-             mask: '"@@##@@@@"' # Using this provider, we generate alpha-numeric IDs.
+             kwargs:
+                mask: '"@@##@@@@"' # Using this provider, we generate alpha-numeric IDs.
              columns_assigned: id
            - name: airbnb_generators.user_dates_provider
              kwargs:
-             generic: generic
+                generic: generic
              columns_assigned: ["date_account_created", "date_first_booking"]
 
 Limitations to this approach are that rows can not be correlated with other rows in the same table, nor with any rows in other tables, except for trivially fulfilling foreign key constraints as in the default configuration.
@@ -359,11 +359,15 @@ However, it provides complete transparency and control over how the original dat
 One can look at the queries run to produce source statistics, and their outputs in the ``src-stats.yaml`` file, and if one is satisfied that publishing these results poses an acceptable privacy risk, then publishing any amount of synthetic data generated based on them can only pose less of a risk.
 
 In this example, we use SSG to run the source statistics SQL queries using a package called `SmartNoiseSQL <https://github.com/opendp/smartnoise-sdk>`_, that runs SQL queries and adds appropriate amounts of noise to the results to make them `differentially private <https://en.wikipedia.org/wiki/Differential_privacy>`_.
-The user can specify the ε and δ parameters that control the strength of the differential privacy guarantee (lines 27-28 of ``config.yaml``).
+The user can specify the ε and δ parameters that control the strength of the differential privacy guarantee (lines 27-28 of ``config.yaml``. Please refer to the `SmartNoiseSQL documentation <https://pypi.org/project/smartnoise-sql/>`_ for a detailed explanation of the privacy parameters.).
 Also , ``config.yaml`` should specify each of the columns we will query and any personal identifier columns (lines 9 -19).
-To learn more about differential privacy and the meaning of its parameters, please read `this white paper from Microsoft <https://azure.microsoft.com/mediahandler/files/resourcefiles/microsoft-smartnoisedifferential-privacy-machine-learning-case-studies/SmartNoise%20Whitepaper%20Final%203.8.21.pdf>`_.
-At the time of writing, SmartNoiseSQL is somewhat limited in the kinds of queries it can run, but if it is capable of running the queries one needs, using it can be an extremely easy to way to add differential privacy guarantees to the synthetic data generated.
 Through the robustness to post-processing property of differential privacy, if the values in ``src-stats.yaml`` are generated in a differentially private way, the synthetic data generated based on those values can not break that guarantee.
+To learn more about differential privacy and the meaning of its parameters, please read `this white paper from Microsoft <https://azure.microsoft.com/mediahandler/files/resourcefiles/microsoft-smartnoisedifferential-privacy-machine-learning-case-studies/SmartNoise%20Whitepaper%20Final%203.8.21.pdf>`_.
+
+At the time of writing, SmartNoiseSQL is somewhat limited in the kinds of queries it can run, but if it is capable of running the queries one needs, using it can be an extremely easy way to add differential privacy guarantees to the synthetic data generated.
+If, for example, the query you need exceeds SmartNoiseSQL capabilities, you can always disable it by omitting the ``smartnoise-sql`` block in ``config.yaml`` and including the ``use-smartnoise-sql: False`` option.
+
+
 
 **raw vs synthetic ages histogram**:
 
