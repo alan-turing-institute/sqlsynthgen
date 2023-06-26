@@ -83,7 +83,7 @@ def set_search_path(connection: Any, schema: str) -> None:
     connection.autocommit = True
 
     cursor = connection.cursor()
-    cursor.execute(f'SET search_path to "{schema}";')
+    cursor.execute("SET search_path to %s;", (schema,))
     cursor.close()
 
     connection.autocommit = existing_autocommit
