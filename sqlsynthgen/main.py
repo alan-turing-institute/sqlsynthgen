@@ -14,6 +14,7 @@ from pydantic import PostgresDsn
 
 from sqlsynthgen.create import create_db_data, create_db_tables, create_db_vocab
 from sqlsynthgen.make import make_src_stats, make_table_generators, make_tables_file
+from sqlsynthgen.remove import remove_db_data, remove_db_tables, remove_db_vocab
 from sqlsynthgen.settings import Settings, get_settings
 from sqlsynthgen.utils import import_file, read_yaml_file
 
@@ -24,7 +25,7 @@ CONFIG_SCHEMA_PATH: Final[Path] = (
     Path(__file__).parent / "json_schemas/config_schema.json"
 )
 
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True)
 
 
 def _check_file_non_existence(file_path: Path) -> None:
@@ -165,7 +166,9 @@ def make_stats(
     stats_file: str = typer.Option(STATS_FILENAME),
     force: bool = typer.Option(False, "--force", "-f"),
 ) -> None:
-    """Compute summary statistics from the source database, write them to a YAML file.
+    """Compute summary statistics from the source database.
+
+    Writes the statistics to a YAML file.
 
     Example:
         $ sqlsynthgen make_stats --config-file=example_config.yaml
@@ -224,6 +227,52 @@ def validate_config(config_file: Path) -> None:
     except ValidationError as e:
         typer.echo(e, err=True)
         sys.exit(1)
+
+
+@app.command()
+def remove_data(
+    orm_file: str = typer.Option(ORM_FILENAME),
+    ssg_file: str = typer.Option(SSG_FILENAME),
+    yes: bool = typer.Option(False, "--yes", prompt="Are you sure?"),
+) -> None:
+    """Truncate non-vocabulary tables in the destination schema."""
+    if yes:
+        orm_module = import_file(orm_file)
+        ssg_module = import_file(ssg_file)
+        remove_db_data(orm_module, ssg_module)
+    else:
+        typer.echo("Would truncate non-vocabulary tables if called with --yes")
+
+
+@app.command()
+def remove_vocab(
+    orm_file: str = typer.Option(ORM_FILENAME),
+    ssg_file: str = typer.Option(SSG_FILENAME),
+    yes: bool = typer.Option(False, "--yes", prompt="Are you sure?"),
+) -> None:
+    """Truncate vocabulary tables in the destination schema."""
+    if yes:
+        orm_module = import_file(orm_file)
+        ssg_module = import_file(ssg_file)
+        remove_db_vocab(orm_module, ssg_module)
+    else:
+        typer.echo("Would truncate vocabulary tables if called with --yes")
+
+
+@app.command()
+def remove_tables(
+    orm_file: str = typer.Option(ORM_FILENAME),
+    yes: bool = typer.Option(False, "--yes", prompt="Are you sure?"),
+) -> None:
+    """Drop all tables in the destination schema.
+
+    Does not drop the schema itself.
+    """
+    if yes:
+        orm_module = import_file(orm_file)
+        remove_db_tables(orm_module)
+    else:
+        typer.echo("Would remove tables if called with --yes")
 
 
 if __name__ == "__main__":

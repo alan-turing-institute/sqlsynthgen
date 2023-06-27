@@ -85,7 +85,7 @@ class TestMakeGenerators(SSGTestCase):
 
         mock_create.assert_called_once()
         self.assertEqual(
-            "myschema.concept.yaml already exists. Exiting...\n", mock_stderr.getvalue()
+            "concept.yaml already exists. Exiting...\n", mock_stderr.getvalue()
         )
 
     @patch("sqlsynthgen.make.download_table")
