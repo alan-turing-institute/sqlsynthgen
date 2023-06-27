@@ -1,8 +1,5 @@
-Tutorials
-=========
-
-OMOP CDM
---------
+Tutorial: OMOP CDM
+==================
 
 Even though the OMOP CDM schema is publicly available, there are sometimes variations with certain implementations (at schema and data levels).
 `sqlsynthgen` allows you to generate data irrespective of your schema peculiarities.
@@ -14,9 +11,6 @@ If you have an OMOP CDM style database, there are a couple of things to bear in 
    These should be marked as such in the sqlsynthgen config file.
    The tables will be exported to .yaml files during the `make-tables` step.
    However, you should check the license agreement of each standardized vocabulary before sharing any of the .yaml files.
-
-Steps
-~~~~~
 
 Remove the circular foreign key
 +++++++++++++++++++++++++++++++
@@ -39,7 +33,7 @@ Create a config file
 Make a config file called `omop.yaml`.
 At the very least, our config file will need to specify the tables that need to be copied over in their entirety:
 
-.. literalinclude:: ../../tests/examples/omop/config.yaml
+.. literalinclude:: ../../../tests/examples/omop/config.yaml
    :language: yaml
 
 Create a custom generators file
@@ -48,7 +42,7 @@ Create a custom generators file
 Make a python file called `custom_generators.py`.
 We will define a generator which produces a maximum of one row in the `death` table per row in the `person` table.
 
-.. literalinclude:: ../../tests/examples/omop/custom_generators.py
+.. literalinclude:: ../../../tests/examples/omop/custom_generators.py
    :language: python
 
 Make SQLAlchemy file

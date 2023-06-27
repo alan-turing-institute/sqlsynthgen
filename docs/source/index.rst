@@ -23,11 +23,12 @@ Contents:
 ---------
 
 .. toctree::
+   :glob:
    :maxdepth: 2
 
    installation
    quickstart
-   tutorials
+   tutorials/*
    configuration
    sqlsynthgen
    faq
