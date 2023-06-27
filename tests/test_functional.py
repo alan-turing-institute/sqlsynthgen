@@ -201,7 +201,10 @@ class FunctionalTestCase(RequiresDBTestCase):
             capture_output=True,
             env=self.env,
         )
-        self.assertEqual("", completed_process.stderr.decode("utf-8"))
+        self.assertEqual(
+            "WARNING:root:No rows in empty_vocabulary.yaml. Skipping...\n",
+            completed_process.stderr.decode("utf-8"),
+        )
         self.assertSuccess(completed_process)
 
         completed_process = run(
