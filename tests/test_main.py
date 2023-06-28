@@ -72,6 +72,7 @@ class TestCLI(SSGTestCase):
         """Test the make-generators sub-command doesn't overwrite."""
 
         mock_path.return_value.exists.return_value = True
+        mock_path.return_value.__str__.return_value = "ssg.py"
 
         result = runner.invoke(
             app,
@@ -219,6 +220,7 @@ class TestCLI(SSGTestCase):
         """Test the make-tables sub-command doesn't overwrite."""
 
         mock_path.return_value.exists.return_value = True
+        mock_path.return_value.__str__.return_value = "orm.py"
 
         result = runner.invoke(
             app,
@@ -322,6 +324,7 @@ class TestCLI(SSGTestCase):
         mock_path.return_value.exists.return_value = True
         example_conf_path = "tests/examples/example_config.yaml"
         output_path = "make_stats_output.yaml"
+        mock_path.return_value.__str__.return_value = output_path
 
         result = runner.invoke(
             app,
