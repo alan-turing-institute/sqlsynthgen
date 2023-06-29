@@ -10,7 +10,6 @@ import typer
 import yaml
 from jsonschema.exceptions import ValidationError
 from jsonschema.validators import validate
-from pydantic import PostgresDsn
 
 from sqlsynthgen.create import create_db_data, create_db_tables, create_db_vocab
 from sqlsynthgen.make import make_src_stats, make_table_generators, make_tables_file
@@ -35,12 +34,12 @@ def _check_file_non_existence(file_path: Path) -> None:
         sys.exit(1)
 
 
-def _get_src_postgres_dsn(settings: Settings) -> PostgresDsn:
+def _get_src_postgres_dsn(settings: Settings) -> str:
     """Return the source DB Postgres DSN.
 
     Check that source db details have been set. Exit with error message if not.
     """
-    if (src_dsn := settings.src_postgres_dsn) is None:
+    if (src_dsn := settings.src_dsn) is None:
         typer.echo("Missing source database connection details.", err=True)
         sys.exit(1)
     return src_dsn
@@ -180,7 +179,7 @@ def make_stats(
     config = read_yaml_file(config_file) if config_file is not None else {}
 
     settings = get_settings()
-    src_dsn: PostgresDsn = _get_src_postgres_dsn(settings)
+    src_dsn: str = _get_src_postgres_dsn(settings)
 
     src_stats = asyncio.get_event_loop().run_until_complete(
         make_src_stats(src_dsn, config, settings.src_schema)
@@ -211,7 +210,7 @@ def make_tables(
         _check_file_non_existence(orm_file_path)
 
     settings = get_settings()
-    src_dsn: PostgresDsn = _get_src_postgres_dsn(settings)
+    src_dsn: str = _get_src_postgres_dsn(settings)
 
     content = make_tables_file(src_dsn, settings.src_schema)
     orm_file_path.write_text(content, encoding="utf-8")

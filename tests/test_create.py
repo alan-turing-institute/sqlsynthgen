@@ -44,7 +44,7 @@ class MyTestCase(SSGTestCase):
 
         create_db_tables(mock_meta)
         mock_create_engine.assert_called_once_with(
-            mock_get_settings.return_value.dst_postgres_dsn
+            mock_get_settings.return_value.dst_dsn
         )
         mock_meta.create_all.assert_called_once_with(mock_create_engine.return_value)
 
@@ -127,7 +127,7 @@ class MyTestCase(SSGTestCase):
             mock_create_engine.return_value.connect.return_value.__enter__.return_value
         )
         mock_create_engine.assert_called_once_with(
-            mock_get_settings.return_value.dst_postgres_dsn
+            mock_get_settings.return_value.dst_dsn
         )
         # Running the same insert twice should be fine.
         create_db_vocab(vocab_list)
