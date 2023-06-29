@@ -90,7 +90,7 @@ def _populate_story(
             table = table_dict[table_name]
             if table.name in table_generator_dict:
                 table_generator = table_generator_dict[table.name]
-                default_values = table_generator(dst_conn).__dict__
+                default_values = table_generator(dst_conn)
             else:
                 default_values = {}
             insert_values = {**default_values, **provided_values}
@@ -140,5 +140,5 @@ def populate(
         # Run all the inserts for one table in a transaction
         with dst_conn.begin():
             for _ in range(table_generator.num_rows_per_pass):
-                stmt = insert(table).values(table_generator(dst_conn).__dict__)
+                stmt = insert(table).values(table_generator(dst_conn))
                 dst_conn.execute(stmt)

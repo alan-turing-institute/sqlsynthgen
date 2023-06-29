@@ -53,7 +53,7 @@ class FunctionCall:
 class ColumnGenerator:
     """Contains the ssg.py content related to columns of a table."""
 
-    variable_names: str
+    variable_names: List[str]
     function_call: FunctionCall
     primary_key: bool = False
 
@@ -127,7 +127,7 @@ def _get_row_generator(
         if isinstance(columns_assigned, str):
             columns_assigned = [columns_assigned]
 
-        variable_names: str = ", ".join(map(lambda x: f"self.{x}", columns_assigned))
+        variable_names: List[str] = columns_assigned
         try:
             columns_covered += columns_assigned
         except TypeError:
@@ -152,7 +152,7 @@ def _get_default_generator(tables_module: ModuleType, column: Any) -> ColumnGene
 
     # If it's a foreign key column, pull random values from the column it
     # references.
-    variable_names: str = ""
+    variable_names: List[str] = []
     generator_function: str = ""
     generator_arguments: List[str] = []
 
@@ -171,7 +171,7 @@ def _get_default_generator(tables_module: ModuleType, column: Any) -> ColumnGene
 
         target_orm_class, _ = class_and_name
 
-        variable_names = f"self.{column.name}"
+        variable_names = [column.name]
         generator_function = "generic.column_value_provider.column_value"
         generator_arguments = [
             "dst_db_conn",
@@ -196,7 +196,7 @@ def _get_default_generator(tables_module: ModuleType, column: Any) -> ColumnGene
     )
 
 
-def _get_mimesis_function_for_colum(column: Any) -> Tuple[str, str, List[str]]:
+def _get_mimesis_function_for_colum(column: Any) -> Tuple[List[str], str, List[str]]:
     """
     Get a default Mimesis provider and its arguments for a SQL column type.
 
@@ -207,7 +207,7 @@ def _get_mimesis_function_for_colum(column: Any) -> Tuple[str, str, List[str]]:
         Tuple[str, str, List[str]]: Tuple containing the variable names to assign to,
         generator function and any generator arguments.
     """
-    variable_names: str = f"self.{column.name}"
+    variable_names: List[str] = [column.name]
     generator_arguments: List[str] = []
     generator_function: str = ""
 

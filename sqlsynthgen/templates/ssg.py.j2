@@ -32,19 +32,21 @@ with open("{{ src_stats_filename }}", "r", encoding="utf-8") as f:
 class {{ table_data.class_name }}:
     num_rows_per_pass = {{ table_data.rows_per_pass }}
 
-    def __init__(self, dst_db_conn):
-    {% for column_data in table_data.columns %}
-        {% if column_data.primary_key %}
-        pass
-        {% else %}
-        {{ column_data.variable_names}} = {{ column_data.function_call.function_name }}({{ column_data.function_call.argument_values| join(", ") }})
+    def __call__(self, dst_db_conn):
+        result = {}
+        {% for column_data in table_data.columns %}
+        {% if not column_data.primary_key %}
+        {% for vn in column_data.variable_names %}
+        result["{{vn}}"]{%- if not loop.last %}, {% endif %}
+        {% endfor %} = {{ column_data.function_call.function_name }}({{ column_data.function_call.argument_values| join(", ") }})
         {% endif %}
-    {% endfor %}
+        {% endfor %}
+        return result
 {% endfor %}
 
 table_generator_dict = {
 {% for table_data in tables %}
-    "{{ table_data.table_name }}": {{ table_data.class_name }},
+    "{{ table_data.table_name }}": {{ table_data.class_name }}(),
 {% endfor %}
 }
 
