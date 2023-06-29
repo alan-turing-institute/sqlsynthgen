@@ -13,7 +13,6 @@ import snsql
 from black import FileMode, format_str
 from jinja2 import Environment, FileSystemLoader, Template
 from mimesis.providers.base import BaseProvider
-from pydantic import PostgresDsn
 from sqlacodegen.generators import DeclarativeGenerator
 from sqlalchemy import MetaData, UniqueConstraint, text
 from sqlalchemy.sql import sqltypes
@@ -351,7 +350,7 @@ def make_table_generators(
 
     settings = get_settings()
     engine = create_db_engine(
-        settings.src_postgres_dsn, schema_name=settings.src_schema  # type: ignore
+        settings.src_dsn, schema_name=settings.src_schema  # type: ignore
     )
 
     tables: List[TableGenerator] = []
@@ -430,7 +429,7 @@ def _get_generator_for_vocabulary_table(
     )
 
 
-def make_tables_file(db_dsn: PostgresDsn, schema_name: Optional[str]) -> str:
+def make_tables_file(db_dsn: str, schema_name: Optional[str]) -> str:
     """Write a file with the SQLAlchemy ORM classes.
 
     Exists with an error if sqlacodegen is unsuccessful.
@@ -455,7 +454,7 @@ def make_tables_file(db_dsn: PostgresDsn, schema_name: Optional[str]) -> str:
 
 
 async def make_src_stats(
-    dsn: PostgresDsn, config: dict, schema_name: Optional[str] = None
+    dsn: str, config: dict, schema_name: Optional[str] = None
 ) -> dict:
     """Run the src-stats queries specified by the configuration.
 

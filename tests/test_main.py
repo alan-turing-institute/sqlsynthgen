@@ -274,7 +274,7 @@ class TestCLI(SSGTestCase):
                 result: Result = runner.invoke(app, ["make-tables", force_option])
 
                 mock_make_tables.assert_called_once_with(
-                    test_settings.src_postgres_dsn, test_settings.src_schema
+                    test_settings.src_dsn, test_settings.src_schema
                 )
                 mock_path.return_value.write_text.assert_called_once_with(
                     mock_tables_output, encoding="utf-8"
@@ -308,9 +308,7 @@ class TestCLI(SSGTestCase):
         self.assertSuccess(result)
         with open(example_conf_path, "r", encoding="utf8") as f:
             config = yaml.safe_load(f)
-        mock_make.assert_called_once_with(
-            get_test_settings().src_postgres_dsn, config, None
-        )
+        mock_make.assert_called_once_with(get_test_settings().src_dsn, config, None)
         mock_path.return_value.write_text.assert_called_once_with(
             "a: 1\n", encoding="utf-8"
         )
@@ -391,7 +389,7 @@ class TestCLI(SSGTestCase):
                 )
 
                 mock_make.assert_called_once_with(
-                    test_settings.src_postgres_dsn, config_file_content, None
+                    test_settings.src_dsn, config_file_content, None
                 )
                 mock_path.return_value.write_text.assert_called_once_with(
                     "some_stat: 0\n", encoding="utf-8"

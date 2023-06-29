@@ -16,7 +16,7 @@ def create_db_tables(metadata: Any) -> Any:
     """Create tables described by the sqlalchemy metadata object."""
     settings = get_settings()
 
-    engine = create_db_engine(settings.dst_postgres_dsn)  # type: ignore
+    engine = create_db_engine(settings.dst_dsn)  # type: ignore
 
     # Create schema, if necessary.
     if settings.dst_schema:
@@ -26,7 +26,7 @@ def create_db_tables(metadata: Any) -> Any:
 
         # Recreate the engine, this time with a schema specified
         engine = create_db_engine(
-            settings.dst_postgres_dsn, schema_name=schema_name  # type: ignore
+            settings.dst_dsn, schema_name=schema_name  # type: ignore
         )
 
     metadata.create_all(engine)
@@ -37,7 +37,7 @@ def create_db_vocab(vocab_dict: Dict[str, Any]) -> None:
     settings = get_settings()
 
     dst_engine = create_db_engine(
-        settings.dst_postgres_dsn, schema_name=settings.dst_schema  # type: ignore
+        settings.dst_dsn, schema_name=settings.dst_schema  # type: ignore
     )
 
     with dst_engine.connect() as dst_conn:
@@ -60,7 +60,7 @@ def create_db_data(
     settings = get_settings()
 
     dst_engine = create_db_engine(
-        settings.dst_postgres_dsn, schema_name=settings.dst_schema  # type: ignore
+        settings.dst_dsn, schema_name=settings.dst_schema  # type: ignore
     )
 
     with dst_engine.connect() as dst_conn:
