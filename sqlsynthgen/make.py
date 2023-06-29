@@ -214,7 +214,11 @@ def _get_mimesis_function_for_colum(column: Any) -> Tuple[List[str], str, List[s
     column_type = type(column.type)
     column_size: Optional[int] = getattr(column.type, "length", None)
 
+    # ToDo Add tests and then add issubclass for all of these
+    # sqlalchemy.dialects.mysql.types.INTEGER
     if column_type == sqltypes.BigInteger:
+        generator_function = "generic.numeric.integer_number"
+    if column_type == sqltypes.Integer or issubclass(column_type, sqltypes.Integer):
         generator_function = "generic.numeric.integer_number"
     elif column_type == sqltypes.Boolean:
         generator_function = "generic.development.boolean"
