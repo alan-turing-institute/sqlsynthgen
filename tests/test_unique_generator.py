@@ -33,7 +33,12 @@ class TestTable(Base):  # type: ignore
 
 
 class UniqueGeneratorTestCase(RequiresDBTestCase):
-    """Tests for the UniqueGenerator class."""
+    """Tests for the UniqueGenerator class.
+
+    The tests utilise the table defined above called test_table. It has three columns, a
+    and b which are boolean, and c which is a text column. There is a joint unique
+    constraint on a and b, and a separate unique constraint on c.
+    """
 
     def setUp(self) -> None:
         """Pre-test setup."""
@@ -43,13 +48,8 @@ class UniqueGeneratorTestCase(RequiresDBTestCase):
         )
         metadata.create_all(self.engine)
 
-    def test_unique_generator(self) -> None:
-        """Test the key method.
-
-        This utilises table made defined above called test_table. It has three columns,
-        a and b which are boolean, and c which is a text column. There is a join unique
-        constraint on a and b, and a separate unique constraint on c.
-        """
+    def test_unique_generator_empty_table(self) -> None:
+        """Test finding non-conflicting values for an empty database."""
 
         table_name = TestTable.__tablename__
         uniq_ab = UniqueGenerator(["a", "b"], table_name)
@@ -59,38 +59,64 @@ class UniqueGeneratorTestCase(RequiresDBTestCase):
             # Find a couple of different values that could be inserted, then try to do
             # one duplicate.
             test_ab1 = [True, False]
-            return_value = uniq_ab(conn, [0, 1], lambda: test_ab1)
-            self.assertEqual(return_value, test_ab1)
-
             test_ab2 = [False, False]
-            return_value = uniq_ab(conn, [0, 1], lambda: test_ab2)
-            self.assertEqual(return_value, test_ab2)
+            self.assertEqual(uniq_ab(conn, [0, 1], lambda: test_ab1), test_ab1)
+            self.assertEqual(uniq_ab(conn, [0, 1], lambda: test_ab2), test_ab2)
             self.assertRaises(RuntimeError, uniq_ab, conn, [0, 1], lambda: test_ab2)
 
             # Same for the string column
             string1 = "String 1"
-            return_value = uniq_c(conn, None, lambda: string1)
-            self.assertEqual(return_value, string1)
-
             string2 = "String 2"
-            return_value = uniq_c(conn, None, lambda: string2)
-            self.assertEqual(return_value, string2)
+            self.assertEqual(uniq_c(conn, None, lambda: string1), string1)
+            self.assertEqual(uniq_c(conn, None, lambda: string2), string2)
             self.assertRaises(RuntimeError, uniq_c, conn, None, lambda: string2)
 
-            # Now actually write some data into the database and then create new
-            # UniqueGenerators for these same columns and tables, and test that they can
-            # handle things like above. This simulates running create-data when there
-            # already is data in the database.
+    def test_unique_generator_nonempty_table(self) -> None:
+        """Test finding non-conflicting values for a prepopulated database.
+
+        Write some data into the database and then create UniqueGenerators, test that
+        they can handle catch conflicts with the prepopulated values. This simulates
+        running create-data when there already is data in the database.
+        """
+
+        table_name = TestTable.__tablename__
+        uniq_ab = UniqueGenerator(["a", "b"], table_name)
+        uniq_c = UniqueGenerator(["c"], table_name, max_tries=10)
+
+        with self.engine.connect() as conn:
+            test_ab1 = [True, False]
+            test_ab2 = [False, False]
+            string1 = "String 1"
+            string2 = "String 2"
             conn.execute(
                 insert(TestTable).values(a=test_ab1[0], b=test_ab1[1], c=string1)
             )
-            uniq_ab2 = UniqueGenerator(["a", "b"], table_name)
-            uniq_c2 = UniqueGenerator(["c"], table_name, max_tries=10)
+            # First check a value that doesn't conflict with the one we just wrote, then
+            # the one that does.
+            self.assertEqual(uniq_ab(conn, [0, 1], lambda: test_ab2), test_ab2)
+            self.assertRaises(RuntimeError, uniq_ab, conn, [0, 1], lambda: test_ab1)
 
-            return_value = uniq_ab2(conn, [0, 1], lambda: test_ab2)
-            self.assertEqual(return_value, test_ab2)
-            self.assertRaises(RuntimeError, uniq_ab2, conn, [0, 1], lambda: test_ab1)
+            # Same for the string column.
+            self.assertEqual(uniq_c(conn, None, lambda: string2), string2)
+            self.assertRaises(RuntimeError, uniq_c, conn, None, lambda: string1)
 
-            return_value = uniq_c2(conn, None, lambda: string2)
-            self.assertEqual(return_value, string2)
-            self.assertRaises(RuntimeError, uniq_c2, conn, None, lambda: string1)
+    def test_unique_generator_multivalue_generator(self) -> None:
+        """Test that UniqueGenerator can handle row generators that return multiple
+        values.
+        """
+
+        table_name = TestTable.__tablename__
+        uniq_ab = UniqueGenerator(["a", "b"], table_name)
+        uniq_c = UniqueGenerator(["c"], table_name, max_tries=10)
+
+        with self.engine.connect() as conn:
+            test_val1 = (True, False, "String 1")
+            test_val2 = (True, False, "String 2")  # Conflicts on (a, b)
+            test_val3 = (False, False, "String 1")  # Conflicts on c
+            self.assertEqual(uniq_ab(conn, [0, 1], lambda: test_val1), test_val1)
+            self.assertEqual(uniq_ab(conn, [0, 1], lambda: test_val3), test_val3)
+            self.assertRaises(RuntimeError, uniq_ab, conn, [0, 1], lambda: test_val2)
+
+            self.assertEqual(uniq_c(conn, [2], lambda: test_val1), test_val1)
+            self.assertEqual(uniq_c(conn, [2], lambda: test_val2), test_val2)
+            self.assertRaises(RuntimeError, uniq_c, conn, [2], lambda: test_val3)

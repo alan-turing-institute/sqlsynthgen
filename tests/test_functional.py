@@ -78,15 +78,21 @@ class FunctionalTestCase(RequiresDBTestCase):
             capture_output=True,
             env=self.env,
         )
-        # The database has a two-column uniqueness constraint, but the minimal
+        # The database has some multi-column unique constraints, but the minimal
         # configuration here generates values for each column individually. In principle
-        # this could mean that we might accidentally violate the uniqueness constraint.
-        # In practice this won't happen because we only write one row to an empty table.
+        # this could mean that we might accidentally violate the constraints. In
+        # practice this won't happen because we only write one row to an empty table.
         self.assertEqual(
-            "WARNING:root:A unique constraint (ab_uniq) isn't fully covered by one row "
-            "generator (['a']). Enforcement of the constraint may not work.\n"
-            "WARNING:root:A unique constraint (ab_uniq) isn't fully covered by one row "
-            "generator (['b']). Enforcement of the constraint may not work.\n",
+            "WARNING:root:A unique constraint (ab_uniq) isn't fully covered by one "
+            "row generator (['a']). Enforcement of the constraint may not work.\n"
+            "WARNING:root:A unique constraint (ab_uniq) isn't fully covered by one "
+            "row generator (['b']). Enforcement of the constraint may not work.\n"
+            "WARNING:root:A unique constraint (abc_uniq2) isn't fully covered by one "
+            "row generator (['a']). Enforcement of the constraint may not work.\n"
+            "WARNING:root:A unique constraint (abc_uniq2) isn't fully covered by one "
+            "row generator (['b']). Enforcement of the constraint may not work.\n"
+            "WARNING:root:A unique constraint (abc_uniq2) isn't fully covered by one "
+            "row generator (['c']). Enforcement of the constraint may not work.\n",
             completed_process.stderr.decode("utf-8"),
         )
         self.assertSuccess(completed_process)
@@ -340,8 +346,8 @@ class FunctionalTestCase(RequiresDBTestCase):
             env=self.env,
         )
 
-        # First a couple of successfull create-data. Note the num-passes, which add up
-        # to 4.
+        # First a couple of successful create-data calls. Note the num-passes, which add
+        # up to 4.
         completed_process = run(
             [
                 "sqlsynthgen",

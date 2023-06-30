@@ -61,6 +61,15 @@ tables:
           - a
           - b
 
+  unique_constraint_test2:
+    num_rows_per_pass: 1
+    row_generators:
+      - name: row_generators.unique_constraint_test2
+        columns_assigned:
+          - a
+          - b
+          - c
+
   concept:
     vocabulary_table: true
   concept_type:

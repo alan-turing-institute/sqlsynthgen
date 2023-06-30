@@ -162,6 +162,21 @@ CREATE TABLE public.unique_constraint_test (
 
 ALTER TABLE public.unique_constraint_test OWNER TO postgres;
 
+
+--
+-- Name: unique_constraint_test2; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.unique_constraint_test2 (
+    id integer NOT NULL,
+    a text NOT NULL,
+    b text NOT NULL,
+    c text NOT NULL
+);
+
+
+ALTER TABLE public.unique_constraint_test2 OWNER TO postgres;
+
 --
 -- Data for Name: concept; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -1222,6 +1237,22 @@ ALTER TABLE ONLY public.unique_constraint_test
 
 
 --
+-- Name: unique_constraint_test2 a_uniq2; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.unique_constraint_test2
+    ADD CONSTRAINT a_uniq2 UNIQUE (a);
+
+
+--
+-- Name: unique_constraint_test2 abc_uniq2; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.unique_constraint_test2
+    ADD CONSTRAINT abc_uniq2 UNIQUE (a, b, c);
+
+
+--
 -- Name: concept concept_name_uniq; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1281,6 +1312,14 @@ ALTER TABLE ONLY public.person
 
 ALTER TABLE ONLY public.unique_constraint_test
     ADD CONSTRAINT unique_constraint_test_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: unique_constraint_test2 unique_constraint_test2_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.unique_constraint_test2
+    ADD CONSTRAINT unique_constraint_test_pkey2 PRIMARY KEY (id);
 
 
 --
