@@ -2,6 +2,7 @@
 from mimesis import Generic
 from mimesis.locales import Locale
 from sqlsynthgen.base import FileUploader
+from sqlsynthgen.unique_generator import UniqueGenerator
 
 generic = Generic(locale=Locale.EN_GB)
 
@@ -32,13 +33,23 @@ with open("{{ src_stats_filename }}", "r", encoding="utf-8") as f:
 class {{ table_data.class_name }}:
     num_rows_per_pass = {{ table_data.rows_per_pass }}
 
+    def __init__(self):
+        pass
+        {% for constraint in table_data.unique_constraints %}
+        self.unique_{{constraint.name}} = UniqueGenerator([
+        {% for col in constraint.columns %}
+        "{{col.name}}"{%- if not loop.last %}, {% endif %}
+        {% endfor %}
+        ], "{{table_data.table_name}}")
+        {% endfor %}
+
     def __call__(self, dst_db_conn):
         result = {}
-        {% for column_data in table_data.columns %}
-        {% if not column_data.primary_key %}
-        {% for vn in column_data.variable_names %}
+        {% for row_gen in table_data.row_gens %}
+        {% if not row_gen.primary_key %}
+        {% for vn in row_gen.variable_names %}
         result["{{vn}}"]{%- if not loop.last %}, {% endif %}
-        {% endfor %} = {{ column_data.function_call.function_name }}({{ column_data.function_call.argument_values| join(", ") }})
+        {% endfor %} = {{ row_gen.function_call.function_name }}({{ row_gen.function_call.argument_values| join(", ") }})
         {% endif %}
         {% endfor %}
         return result

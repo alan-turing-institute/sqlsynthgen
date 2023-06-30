@@ -2,6 +2,7 @@
 from mimesis import Generic
 from mimesis.locales import Locale
 from sqlsynthgen.base import FileUploader
+from sqlsynthgen.unique_generator import UniqueGenerator
 
 generic = Generic(locale=Locale.EN_GB)
 
@@ -36,6 +37,9 @@ concept_vocab = FileUploader(tests.examples.example_orm.Concept.__table__)
 class entityGenerator:
     num_rows_per_pass = 1
 
+    def __init__(self):
+        pass
+
     def __call__(self, dst_db_conn):
         result = {}
         return result
@@ -44,6 +48,10 @@ class entityGenerator:
 class personGenerator:
     num_rows_per_pass = 2
 
+    def __init__(self):
+        pass
+        self.unique_nhs_number_uniq = UniqueGenerator(["nhs_number"], "person")
+
     def __call__(self, dst_db_conn):
         result = {}
         result["name"] = generic.person.full_name()
@@ -51,13 +59,18 @@ class personGenerator:
         result["research_opt_out"] = row_generators.boolean_from_src_stats_generator(
             generic=generic, src_stats=SRC_STATS["count_opt_outs"]
         )
-        result["nhs_number"] = generic.text.color()
+        result["nhs_number"] = self.unique_nhs_number_uniq(
+            dst_db_conn, [0], generic.text.color
+        )
         result["source_system"] = generic.text.color()
         return result
 
 
 class test_entityGenerator:
     num_rows_per_pass = 1
+
+    def __init__(self):
+        pass
 
     def __call__(self, dst_db_conn):
         result = {}
@@ -67,6 +80,9 @@ class test_entityGenerator:
 
 class hospital_visitGenerator:
     num_rows_per_pass = 3
+
+    def __init__(self):
+        pass
 
     def __call__(self, dst_db_conn):
         result = {}
