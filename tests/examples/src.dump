@@ -149,6 +149,20 @@ CREATE TABLE public.person (
 ALTER TABLE public.person OWNER TO postgres;
 
 --
+-- Name: unique_constraint_test; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.unique_constraint_test (
+    id integer NOT NULL,
+    a boolean NOT NULL,
+    b boolean NOT NULL,
+    c text NOT NULL
+);
+
+
+ALTER TABLE public.unique_constraint_test OWNER TO postgres;
+
+--
 -- Data for Name: concept; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -1192,6 +1206,29 @@ INSERT INTO public.person VALUES (1000, 'Randy Random', true, '2023-03-01 00:00:
 
 
 --
+-- Name: unique_constraint_test ab_uniq; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.unique_constraint_test
+    ADD CONSTRAINT ab_uniq UNIQUE (a, b);
+
+
+--
+-- Name: unique_constraint_test c_uniq; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.unique_constraint_test
+    ADD CONSTRAINT c_uniq UNIQUE (c);
+
+
+--
+-- Name: concept concept_name_uniq; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.concept
+    ADD CONSTRAINT concept_name_uniq UNIQUE (concept_name);
+
+--
 -- Name: concept concept_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1236,6 +1273,14 @@ ALTER TABLE ONLY public.mitigation_type
 
 ALTER TABLE ONLY public.person
     ADD CONSTRAINT person_pkey PRIMARY KEY (person_id);
+
+
+--
+-- Name: unique_constraint_test unique_constraint_test_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.unique_constraint_test
+    ADD CONSTRAINT unique_constraint_test_pkey PRIMARY KEY (id);
 
 
 --
