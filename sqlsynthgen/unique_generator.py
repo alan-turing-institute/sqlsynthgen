@@ -93,7 +93,7 @@ class UniqueGenerator:
                 # concerns this unique constraint.
                 candidate_key = tuple(candidate_value[i] for i in output_indices)
             else:
-                candidate_key = candidate_value
+                candidate_key = (candidate_value,)
             if candidate_key not in self.existing_keys:
                 self.existing_keys.add(candidate_key)
                 return candidate_value
