@@ -66,7 +66,7 @@ class TableGenerator:
     table_name: str
     rows_per_pass: int
     row_gens: List[RowGenerator] = field(default_factory=list)
-    unique_constraints: List[UniqueConstraint] = field(default_factory=list)
+    unique_constraints: List[Any] = field(default_factory=list)
 
 
 @dataclass
@@ -240,6 +240,56 @@ def _get_mimesis_function_for_colum(column: Any) -> Tuple[List[str], str, List[s
     return variable_names, generator_function, generator_arguments
 
 
+def _enforce_unique_constraints(table_data: TableGenerator) -> None:
+    """Wrap row generators of `table_data` in `UniqueGenerator`s to enforce constraints.
+
+    The given `table_data` is modified in place.
+    """
+    # For each row generator that assigns values to a column that has a unique
+    # constraint, wrap it in a UniqueGenerator that ensures the values generated are
+    # unique.
+    for row_gen in table_data.row_gens:
+        # Find all the constraints that concern the columns that this row generator
+        # assigns to.
+        relevant_constraints = (
+            constraint
+            for constraint in table_data.unique_constraints
+            # If the constraint and row_gen have columns in common.
+            if set(c.name for c in constraint.columns) & set(row_gen.variable_names)
+        )
+        for constraint in relevant_constraints:
+            # Find the indices of the outputs of the row generator that this constraint
+            # concerns. E.g. if the output of the row generator is to be assigned to
+            # columns a, b, and c, and there's a uniqueness constraint on a and c, then
+            # this output_indices should be (0, 2).
+            output_indices: List[int] = []
+            for column in constraint.columns:
+                try:
+                    output_indices.append(row_gen.variable_names.index(column.name))
+                except ValueError:
+                    msg = (
+                        "A unique constraint (%s) isn't fully covered by one row "
+                        "generator (%s). Enforcement of the constraint may not work."
+                    )
+                    logging.warning(msg, constraint.name, row_gen.variable_names)
+            # If the whole output is assigned to a single column we mark this with None.
+            opt_output_indices = None if output_indices == [0] else output_indices
+            # Make a new function call that wraps the old one in a UniqueGenerator
+            old_function_call = row_gen.function_call
+            new_arguments = [
+                "dst_db_conn",
+                str(opt_output_indices),
+                old_function_call.function_name,
+            ] + old_function_call.argument_values
+            # The self.unique_{constraint_name} will be a UniqueGenerator, initialized
+            # in the __init__ of the table generator.
+            new_function_call = FunctionCall(
+                function_name=f"self.unique_{constraint.name}",
+                argument_values=new_arguments,
+            )
+            row_gen.function_call = new_function_call
+
+
 def _get_generator_for_table(
     tables_module: ModuleType, table_config: dict, table: Any
 ) -> TableGenerator:
@@ -264,55 +314,7 @@ def _get_generator_for_table(
             # No generator for this column in the user config.
             table_data.row_gens.append(_get_default_generator(tables_module, column))
 
-    # Make a dictionary of uniqueness constraints by column name.
-    constraints_by_column = {}
-    for constraint in table_data.unique_constraints:
-        for column in constraint.columns:
-            existing_constraints = constraints_by_column.get(column.name, [])
-            constraints_by_column[column.name] = existing_constraints + [constraint]
-
-    # For each row generator that assigns values to a column that has a unique
-    # constraint, wrap it in a UniqueGenerator that ensures the values generated are
-    # unique.
-    for row_gen in table_data.row_gens:
-        relevant_constraints = sum(
-            [
-                v
-                for k, v in constraints_by_column.items()
-                if k in row_gen.variable_names
-            ],
-            [],
-        )
-        for constraint in relevant_constraints:
-            # Find the indices of the outputs of the row generator that this constraint
-            # concerns. E.g. if the output of the row generator is to be assigned to
-            # columns a, b, and c, and there's a uniqueness constraint on a and c, then
-            # this list should be (0, 2).
-            output_indices = []
-            for column in constraint.columns:
-                try:
-                    output_indices.append(row_gen.variable_names.index(column.name))
-                except ValueError:
-                    # TODO May not work or will not work?
-                    msg = (
-                        "A unique constraint ({}) straddles multiple row generators. "
-                        "Enforcement of the constraint may not work."
-                    )
-                    logging.warning(msg, constraint.name)
-            # Make a new function call that wraps the old one in a UniqueGenerator
-            old_function_call = row_gen.function_call
-            new_arguments = [
-                "dst_db_conn",
-                output_indices,
-                old_function_call.function_name,
-            ] + old_function_call.argument_values
-            # The self.unique_{constraint_name} will be a UniqueGenerator, initialized
-            # in the __init__ of the table generator.
-            new_function_call = FunctionCall(
-                function_name=f"self.unique_{constraint.name}",
-                argument_values=new_arguments,
-            )
-            row_gen.function_call = new_function_call
+    _enforce_unique_constraints(table_data)
     return table_data
 
 

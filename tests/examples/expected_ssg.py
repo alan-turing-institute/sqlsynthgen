@@ -60,7 +60,7 @@ class personGenerator:
             generic=generic, src_stats=SRC_STATS["count_opt_outs"]
         )
         result["nhs_number"] = self.unique_nhs_number_uniq(
-            dst_db_conn, [0], generic.text.color
+            dst_db_conn, None, generic.text.color
         )
         result["source_system"] = generic.text.color()
         return result

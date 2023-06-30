@@ -20,3 +20,7 @@ def boolean_from_src_stats_generator(generic, src_stats):
     num_false = int(next(x for x, y in src_stats if y is False))
     num_true = int(next(x for x, y in src_stats if y is True))
     return generic.weighted_boolean_provider.bool(num_true / num_false)
+
+
+def boolean_pair(generic):
+    return tuple(generic.random.choice([True, False]) for _ in range(2))

@@ -52,6 +52,15 @@ tables:
           - visit_end
           - visit_duration_seconds
 
+  unique_constraint_test:
+    num_rows_per_pass: 1
+    row_generators:
+      - name: row_generators.boolean_pair
+        args: [generic]
+        columns_assigned:
+          - a
+          - b
+
   concept:
     vocabulary_table: true
   concept_type:
