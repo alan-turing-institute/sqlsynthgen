@@ -249,11 +249,11 @@ def _enforce_unique_constraints(table_data: TableGenerator) -> None:
     # constraint, wrap it in a UniqueGenerator that ensures the values generated are
     # unique.
     for row_gen in table_data.row_gens:
+        row_gen_column_set = set(row_gen.variable_names)
         for constraint in table_data.unique_constraints:
             # Set of column names that this constraint affects.
             constraint_column_set = set(c.name for c in constraint.columns)
             # Set of column names that this row_gen assigns to.
-            row_gen_column_set = set(row_gen.variable_names)
             if not constraint_column_set & row_gen_column_set:
                 # The intersection is empty, this constraint isn't relevant for this
                 # row_gen.
@@ -386,6 +386,7 @@ def make_table_generators(
 
     story_generators = _get_story_generators(config)
 
+    max_unique_constraint_tries = config.get("max-unique-constraint-tries", None)
     return generate_ssg_content(
         {
             "provider_imports": PROVIDER_IMPORTS,
@@ -396,6 +397,7 @@ def make_table_generators(
             "tables": tables,
             "vocabulary_tables": vocabulary_tables,
             "story_generators": story_generators,
+            "max_unique_constraint_tries": max_unique_constraint_tries,
         }
     )
 

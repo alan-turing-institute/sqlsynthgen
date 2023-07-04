@@ -1,5 +1,6 @@
 """Tests for the unique_generator module."""
 from pathlib import Path
+from unittest.mock import MagicMock
 
 from sqlalchemy import (
     Boolean,
@@ -120,3 +121,18 @@ class UniqueGeneratorTestCase(RequiresDBTestCase):
             self.assertEqual(uniq_c(conn, [2], lambda: test_val1), test_val1)
             self.assertEqual(uniq_c(conn, [2], lambda: test_val2), test_val2)
             self.assertRaises(RuntimeError, uniq_c, conn, [2], lambda: test_val3)
+
+    def test_unique_generator_max_tries(self) -> None:
+        """Test that UniqueGenerator the max_tries argument is respected."""
+
+        max_tries = 23
+        table_name = TestTable.__tablename__
+        uniq_ab = UniqueGenerator(["a", "b"], table_name, max_tries=max_tries)
+        mock_generator = MagicMock()
+        test_val = (True, False, "String 1")
+        mock_generator.return_value = test_val
+
+        with self.engine.connect() as conn:
+            self.assertEqual(uniq_ab(conn, [0, 1], mock_generator), test_val)
+            self.assertRaises(RuntimeError, uniq_ab, conn, [0, 1], mock_generator)
+            self.assertEqual(len(mock_generator.mock_calls), max_tries + 1)

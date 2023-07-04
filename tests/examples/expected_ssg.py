@@ -50,7 +50,11 @@ class personGenerator:
 
     def __init__(self):
         pass
-        self.unique_nhs_number_uniq = UniqueGenerator(["nhs_number"], "person")
+        self.unique_nhs_number_uniq = UniqueGenerator(
+            ["nhs_number"],
+            "person",
+            max_tries=50,
+        )
 
     def __call__(self, dst_db_conn):
         result = {}

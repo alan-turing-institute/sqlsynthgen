@@ -21,6 +21,8 @@ src-stats:
     epsilon: 0.1
     delta: 0.0001
 
+max-unique-constraint-tries: 50
+
 row_generators_module: row_generators
 tables:
   person:

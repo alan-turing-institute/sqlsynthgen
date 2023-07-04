@@ -37,10 +37,15 @@ class {{ table_data.class_name }}:
         pass
         {% for constraint in table_data.unique_constraints %}
         self.unique_{{constraint.name}} = UniqueGenerator([
-        {% for col in constraint.columns %}
-        "{{col.name}}"{%- if not loop.last %}, {% endif %}
-        {% endfor %}
-        ], "{{table_data.table_name}}")
+                {% for col in constraint.columns %}
+                "{{col.name}}"{%- if not loop.last %}, {% endif %}
+                {% endfor %}
+            ],
+            "{{table_data.table_name}}",
+            {% if max_unique_constraint_tries is not none %}
+            max_tries={{max_unique_constraint_tries}},
+            {% endif %}
+        )
         {% endfor %}
 
     def __call__(self, dst_db_conn):
