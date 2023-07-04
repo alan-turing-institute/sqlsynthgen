@@ -1,5 +1,6 @@
 """Module for the UniqueGenerator class."""
-from typing import Any, Callable, Iterable, List, Optional, Set
+import logging
+from typing import Any, Callable, List, Optional, Set
 
 import sqlalchemy as sqla
 
@@ -51,7 +52,7 @@ class UniqueGenerator:
     def __call__(
         self,
         dst_db_conn: Any,
-        output_indices: Optional[Iterable[int]],
+        columns_assigned: List[str],
         inner_generator: Callable[..., Any],
         *args: Any,
         **kwargs: Any,
@@ -64,13 +65,9 @@ class UniqueGenerator:
 
         Args:
             dst_db_conn: Connection to the destination database.
-            output_indices (Optional[Iterable[int]]): Indices of the inner generator's
-                output that hold the values that should be unique. E.g. if
-                `self.column_names = ["a", "b"]` and `output_indices = [2, 3]` then
-                `inner_generator(*args, **kwargs)[2]` is the value intended for column
-                `"a"` and similarly for `3` and `"b"`. If the whole output of
-                `inner_generator` is assigned to the only column that the constraint
-                concerns then `output_indices` is `None`.
+            columns_assigned (List[str]): Names of columns to which inner_generator's
+                output will be assigned. Used to deterimine which outputs of
+                inner_generator are relevant for the constraint.
             inner_generator: The generator function that we wrap.
             *args: Variable length argument list passed to `inner_generator`.
             **kwargs: Arbitrary keyword arguments passed to `inner_generator`.
@@ -86,14 +83,37 @@ class UniqueGenerator:
         if self.existing_keys is None:
             self.existing_keys = self.get_existing_keys(dst_db_conn)
 
+        # Check if inner_generator returns multiple values.
+        single_output = len(columns_assigned) == 1
+        enforceable = True
+        output_indices: List[int] = []
+        if not single_output:
+            # Find the indices of the outputs of inner_generator that this constraint
+            # concerns. E.g. if the output of inner_generator is to be assigned to
+            # columns a, b, and c, and there's a uniqueness constraint on a and c, then
+            # output_indices should be (0, 2).
+            for constraint_column in self.column_names:
+                try:
+                    output_indices.append(columns_assigned.index(constraint_column))
+                except ValueError:
+                    # This means that one of the constraint columns isn't part of the
+                    # output of inner_generator. This means we can't guarantee enforcing
+                    # the constraint.
+                    enforceable = False
+                    logging.warning("Unenforceable unique constraint")
+                    break
+
         for _ in range(self.max_tries):
             candidate_value = inner_generator(*args, **kwargs)
-            if output_indices is not None:
-                # Take the part of the return value of inner_generator that
-                # concerns this unique constraint.
-                candidate_key = tuple(candidate_value[i] for i in output_indices)
+            if not enforceable:
+                # We bypass the logic of trying to enforce the constraint at all.
+                return candidate_value
+            if single_output:
+                candidate_key: Any = (candidate_value,)
             else:
-                candidate_key = (candidate_value,)
+                # Take the part of the return value of inner_generator that concerns
+                # this unique constraint.
+                candidate_key = tuple(candidate_value[i] for i in output_indices)
             if candidate_key not in self.existing_keys:
                 self.existing_keys.add(candidate_key)
                 return candidate_value

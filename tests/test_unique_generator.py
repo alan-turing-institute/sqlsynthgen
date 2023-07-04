@@ -61,16 +61,16 @@ class UniqueGeneratorTestCase(RequiresDBTestCase):
             # one duplicate.
             test_ab1 = [True, False]
             test_ab2 = [False, False]
-            self.assertEqual(uniq_ab(conn, [0, 1], lambda: test_ab1), test_ab1)
-            self.assertEqual(uniq_ab(conn, [0, 1], lambda: test_ab2), test_ab2)
-            self.assertRaises(RuntimeError, uniq_ab, conn, [0, 1], lambda: test_ab2)
+            self.assertEqual(uniq_ab(conn, ["a", "b"], lambda: test_ab1), test_ab1)
+            self.assertEqual(uniq_ab(conn, ["a", "b"], lambda: test_ab2), test_ab2)
+            self.assertRaises(RuntimeError, uniq_ab, conn, ["a", "b"], lambda: test_ab2)
 
             # Same for the string column
             string1 = "String 1"
             string2 = "String 2"
-            self.assertEqual(uniq_c(conn, None, lambda: string1), string1)
-            self.assertEqual(uniq_c(conn, None, lambda: string2), string2)
-            self.assertRaises(RuntimeError, uniq_c, conn, None, lambda: string2)
+            self.assertEqual(uniq_c(conn, ["c"], lambda: string1), string1)
+            self.assertEqual(uniq_c(conn, ["c"], lambda: string2), string2)
+            self.assertRaises(RuntimeError, uniq_c, conn, ["c"], lambda: string2)
 
     def test_unique_generator_nonempty_table(self) -> None:
         """Test finding non-conflicting values for a prepopulated database.
@@ -94,12 +94,12 @@ class UniqueGeneratorTestCase(RequiresDBTestCase):
             )
             # First check a value that doesn't conflict with the one we just wrote, then
             # the one that does.
-            self.assertEqual(uniq_ab(conn, [0, 1], lambda: test_ab2), test_ab2)
-            self.assertRaises(RuntimeError, uniq_ab, conn, [0, 1], lambda: test_ab1)
+            self.assertEqual(uniq_ab(conn, ["a", "b"], lambda: test_ab2), test_ab2)
+            self.assertRaises(RuntimeError, uniq_ab, conn, ["a", "b"], lambda: test_ab1)
 
             # Same for the string column.
-            self.assertEqual(uniq_c(conn, None, lambda: string2), string2)
-            self.assertRaises(RuntimeError, uniq_c, conn, None, lambda: string1)
+            self.assertEqual(uniq_c(conn, ["c"], lambda: string2), string2)
+            self.assertRaises(RuntimeError, uniq_c, conn, ["c"], lambda: string1)
 
     def test_unique_generator_multivalue_generator(self) -> None:
         """Test that UniqueGenerator can handle row generators that return multiple
@@ -114,13 +114,25 @@ class UniqueGeneratorTestCase(RequiresDBTestCase):
             test_val1 = (True, False, "String 1")
             test_val2 = (True, False, "String 2")  # Conflicts on (a, b)
             test_val3 = (False, False, "String 1")  # Conflicts on c
-            self.assertEqual(uniq_ab(conn, [0, 1], lambda: test_val1), test_val1)
-            self.assertEqual(uniq_ab(conn, [0, 1], lambda: test_val3), test_val3)
-            self.assertRaises(RuntimeError, uniq_ab, conn, [0, 1], lambda: test_val2)
+            self.assertEqual(
+                uniq_ab(conn, ["a", "b", "c"], lambda: test_val1), test_val1
+            )
+            self.assertEqual(
+                uniq_ab(conn, ["a", "b", "c"], lambda: test_val3), test_val3
+            )
+            self.assertRaises(
+                RuntimeError, uniq_ab, conn, ["a", "b", "c"], lambda: test_val2
+            )
 
-            self.assertEqual(uniq_c(conn, [2], lambda: test_val1), test_val1)
-            self.assertEqual(uniq_c(conn, [2], lambda: test_val2), test_val2)
-            self.assertRaises(RuntimeError, uniq_c, conn, [2], lambda: test_val3)
+            self.assertEqual(
+                uniq_c(conn, ["a", "b", "c"], lambda: test_val1), test_val1
+            )
+            self.assertEqual(
+                uniq_c(conn, ["a", "b", "c"], lambda: test_val2), test_val2
+            )
+            self.assertRaises(
+                RuntimeError, uniq_c, conn, ["a", "b", "c"], lambda: test_val3
+            )
 
     def test_unique_generator_max_tries(self) -> None:
         """Test that UniqueGenerator the max_tries argument is respected."""
@@ -133,6 +145,8 @@ class UniqueGeneratorTestCase(RequiresDBTestCase):
         mock_generator.return_value = test_val
 
         with self.engine.connect() as conn:
-            self.assertEqual(uniq_ab(conn, [0, 1], mock_generator), test_val)
-            self.assertRaises(RuntimeError, uniq_ab, conn, [0, 1], mock_generator)
+            self.assertEqual(uniq_ab(conn, ["a", "b", "c"], mock_generator), test_val)
+            self.assertRaises(
+                RuntimeError, uniq_ab, conn, ["a", "b", "c"], mock_generator
+            )
             self.assertEqual(len(mock_generator.mock_calls), max_tries + 1)

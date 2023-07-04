@@ -249,11 +249,11 @@ def _enforce_unique_constraints(table_data: TableGenerator) -> None:
     # constraint, wrap it in a UniqueGenerator that ensures the values generated are
     # unique.
     for row_gen in table_data.row_gens:
+        # Set of column names that this row_gen assigns to.
         row_gen_column_set = set(row_gen.variable_names)
         for constraint in table_data.unique_constraints:
             # Set of column names that this constraint affects.
             constraint_column_set = set(c.name for c in constraint.columns)
-            # Set of column names that this row_gen assigns to.
             if not constraint_column_set & row_gen_column_set:
                 # The intersection is empty, this constraint isn't relevant for this
                 # row_gen.
@@ -265,26 +265,11 @@ def _enforce_unique_constraints(table_data: TableGenerator) -> None:
                 )
                 logging.warning(msg, constraint.name, row_gen.variable_names)
 
-            # Find the indices of the outputs of the row generator that this constraint
-            # concerns. E.g. if the output of the row generator is to be assigned to
-            # columns a, b, and c, and there's a uniqueness constraint on a and c, then
-            # this output_indices should be (0, 2). If the whole output is assigned to a
-            # single column we mark this with None.
-            if len(row_gen.variable_names) == 1:
-                output_indices = None
-            else:
-                output_indices = []
-                for column in constraint.columns:
-                    try:
-                        output_indices.append(row_gen.variable_names.index(column.name))
-                    except ValueError:
-                        pass
-
             # Make a new function call that wraps the old one in a UniqueGenerator
             old_function_call = row_gen.function_call
             new_arguments = [
                 "dst_db_conn",
-                str(output_indices),
+                str(row_gen.variable_names),
                 old_function_call.function_name,
             ] + old_function_call.argument_values
             # The self.unique_{constraint_name} will be a UniqueGenerator, initialized
