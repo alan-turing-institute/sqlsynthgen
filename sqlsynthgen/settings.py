@@ -44,13 +44,15 @@ class Settings(BaseSettings):
             The destination database schema to use, if applicable.
     """
 
-    # Connection parameters for the source database. See also
+    src_schema: Optional[str]
+    dst_schema: Optional[str]
+
+    # DSNs for the databases. For example:
+    # postgresql://user:secret@localhost:6789/dbname
+    # See also
     # https://www.postgresql.org/docs/11/libpq-connect.html#LIBPQ-PARAMKEYWORDS
     src_dsn: Optional[str]
     dst_dsn: Optional[str]
-
-    src_schema: Optional[str]
-    dst_schema: Optional[str]
 
     @validator("src_dsn")
     def validate_src_dsn(cls, dsn: Optional[str], values: Any) -> Optional[str]:
