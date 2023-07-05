@@ -10,7 +10,7 @@ To use sqlsynthgen, first install it:
 
 .. code-block:: console
 
-   $ pip install git+https://github.com/alan-turing-institute/sqlsynthgen.git
+   $ pip install sqlsynthgen
 
 and check that you can view the help message with:
 
