@@ -9,8 +9,15 @@ from unittest.mock import MagicMock, patch
 import yaml
 from pydantic import PostgresDsn
 from pydantic.tools import parse_obj_as
+from sqlalchemy import BigInteger, Column, String
+from sqlalchemy.dialects.mysql.types import INTEGER
 
-from sqlsynthgen.make import make_src_stats, make_table_generators, make_tables_file
+from sqlsynthgen.make import (
+    _get_provider_for_column,
+    make_src_stats,
+    make_table_generators,
+    make_tables_file,
+)
 from tests.examples import example_orm
 from tests.utils import RequiresDBTestCase, SSGTestCase, get_test_settings
 
@@ -118,6 +125,54 @@ class TestMakeGenerators(SSGTestCase):
         mock_download.assert_called_once()
 
         self.assertEqual(expected, actual)
+
+    def test__get_provider_for_column(self) -> None:
+        """Test the _get_provider_for_column function."""
+
+        # Simple case
+        (
+            variable_name,
+            generator_function,
+            generator_arguments,
+        ) = _get_provider_for_column(Column("myint", BigInteger))
+        self.assertListEqual(
+            variable_name,
+            ["myint"],
+        )
+        self.assertEqual(
+            generator_function,
+            "generic.numeric.integer_number",
+        )
+        self.assertEqual(
+            generator_arguments,
+            [],
+        )
+
+        # Column type from another dialect
+        _, generator_function, __ = _get_provider_for_column(Column("myint", INTEGER))
+        self.assertEqual(
+            generator_function,
+            "generic.numeric.integer_number",
+        )
+
+        # Text value with length
+        (
+            variable_name,
+            generator_function,
+            generator_arguments,
+        ) = _get_provider_for_column(Column("mystring", String(100)))
+        self.assertEqual(
+            variable_name,
+            ["mystring"],
+        )
+        self.assertEqual(
+            generator_function,
+            "generic.person.password",
+        )
+        self.assertEqual(
+            generator_arguments,
+            ["100"],
+        )
 
 
 class TestMakeTables(SSGTestCase):
