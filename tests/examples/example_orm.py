@@ -11,6 +11,7 @@ from sqlalchemy import (
     Date,
     Float,
     LargeBinary,
+    UniqueConstraint,
 )
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -20,6 +21,7 @@ metadata = Base.metadata
 
 class Person(Base):
     __tablename__ = "person"
+    __table_args__ = (UniqueConstraint("nhs_number", name="nhs_number_uniq"),)
 
     person_id = Column(
         Integer,

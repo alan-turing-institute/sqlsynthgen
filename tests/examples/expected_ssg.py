@@ -2,6 +2,7 @@
 from mimesis import Generic
 from mimesis.locales import Locale
 from sqlsynthgen.base import FileUploader
+from sqlsynthgen.unique_generator import UniqueGenerator
 
 generic = Generic(locale=Locale.EN_GB)
 
@@ -36,55 +37,78 @@ concept_vocab = FileUploader(tests.examples.example_orm.Concept.__table__)
 class entityGenerator:
     num_rows_per_pass = 1
 
-    def __init__(self, dst_db_conn):
+    def __init__(self):
         pass
+
+    def __call__(self, dst_db_conn):
+        result = {}
+        return result
 
 
 class personGenerator:
     num_rows_per_pass = 2
 
-    def __init__(self, dst_db_conn):
-        self.name = generic.person.full_name()
-        self.stored_from = generic.datetime.datetime(2022, 2022)
-        self.research_opt_out = row_generators.boolean_from_src_stats_generator(
+    def __init__(self):
+        pass
+        self.unique_nhs_number_uniq = UniqueGenerator(
+            ["nhs_number"],
+            "person",
+            max_tries=50,
+        )
+
+    def __call__(self, dst_db_conn):
+        result = {}
+        result["name"] = generic.person.full_name()
+        result["stored_from"] = generic.datetime.datetime(2022, 2022)
+        result["research_opt_out"] = row_generators.boolean_from_src_stats_generator(
             generic=generic, src_stats=SRC_STATS["count_opt_outs"]
         )
-        pass
-        self.nhs_number = generic.text.color()
-        self.source_system = generic.text.color()
+        result["nhs_number"] = self.unique_nhs_number_uniq(
+            dst_db_conn, ["nhs_number"], generic.text.color
+        )
+        result["source_system"] = generic.text.color()
+        return result
 
 
 class test_entityGenerator:
     num_rows_per_pass = 1
 
-    def __init__(self, dst_db_conn):
+    def __init__(self):
         pass
-        self.single_letter_column = generic.person.password(1)
+
+    def __call__(self, dst_db_conn):
+        result = {}
+        result["single_letter_column"] = generic.person.password(1)
+        return result
 
 
 class hospital_visitGenerator:
     num_rows_per_pass = 3
 
-    def __init__(self, dst_db_conn):
+    def __init__(self):
+        pass
+
+    def __call__(self, dst_db_conn):
+        result = {}
         (
-            self.visit_start,
-            self.visit_end,
-            self.visit_duration_seconds,
+            result["visit_start"],
+            result["visit_end"],
+            result["visit_duration_seconds"],
         ) = row_generators.timespan_generator(
             generic, 2021, 2022, min_dt_days=1, max_dt_days=30
         )
-        pass
-        self.person_id = generic.column_value_provider.column_value(
+        result["person_id"] = generic.column_value_provider.column_value(
             dst_db_conn, tests.examples.example_orm.Person, "person_id"
         )
-        self.visit_image = generic.bytes_provider.bytes()
+        result["visit_image"] = generic.bytes_provider.bytes()
+        return result
 
 
 table_generator_dict = {
-    "entity": entityGenerator,
-    "person": personGenerator,
-    "test_entity": test_entityGenerator,
-    "hospital_visit": hospital_visitGenerator,
+    "entity": entityGenerator(),
+    "person": personGenerator(),
+    "test_entity": test_entityGenerator(),
+    "hospital_visit": hospital_visitGenerator(),
 }
 
 

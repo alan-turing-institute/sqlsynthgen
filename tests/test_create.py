@@ -68,7 +68,7 @@ class MyTestCase(SSGTestCase):
             mock_table.name = table_name
             mock_gen = MagicMock()
             mock_gen.num_rows_per_pass = num_rows_per_pass
-            mock_gen.return_value.__dict__ = {}
+            mock_gen.return_value = {}
 
             tables = [mock_table]
             row_generators = {table_name: mock_gen}
@@ -83,7 +83,7 @@ class MyTestCase(SSGTestCase):
                 [call(mock_dst_conn)] * (num_stories_per_pass + num_rows_per_pass)
             )
             mock_insert.return_value.values.assert_has_calls(
-                [call(mock_gen.return_value.__dict__)]
+                [call(mock_gen.return_value)]
                 * (num_stories_per_pass + num_rows_per_pass)
             )
             mock_dst_conn.execute.assert_has_calls(
