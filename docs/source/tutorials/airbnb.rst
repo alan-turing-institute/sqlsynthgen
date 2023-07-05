@@ -1,6 +1,8 @@
 An Introduction to SqlSynthGen
 ==============================
 
+.. _introduction:
+
 `SqlSynthGen <https://github.com/alan-turing-institute/sqlsynthgen/>`_, or SSG for short, is a software package that we have written for synthetic data generation, focussed on relational data.
 When pointed to an existing relational database, SSG creates another database with the same database schema, and populates it with synthetic data.
 By default the synthetic data is crudely low fidelity, but the user is given various ways to configure the behavior of SSG to increase fidelity, while maintaining transparency and control over how the original data is used to inform the synthetic data, to control privacy risks.
