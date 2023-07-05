@@ -389,7 +389,7 @@ class FunctionalTestCase(RequiresDBTestCase):
         )
         expected_error = (
             "RuntimeError: Failed to generate a value that satisfies unique constraint "
-            "for ['a', 'b'] in unique_constraint_test after 100 attempts."
+            "for ['a', 'b'] in unique_constraint_test after 50 attempts."
         )
         self.assertIn(expected_error, completed_process.stderr.decode("utf-8"))
         self.assertFailure(completed_process)
