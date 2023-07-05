@@ -36,14 +36,8 @@ class FunctionalTestCase(RequiresDBTestCase):
     env = os.environ.copy()
     env = {
         **env,
-        "src_host_name": "localhost",
-        "src_user_name": "postgres",
-        "src_password": "password",
-        "src_db_name": "src",
-        "dst_host_name": "localhost",
-        "dst_user_name": "postgres",
-        "dst_password": "password",
-        "dst_db_name": "dst",
+        "src_dsn": "postgresql://postgres:password@localhost/src",
+        "dst_dsn": "postgresql://postgres:password@localhost/dst",
     }
 
     def setUp(self) -> None:
