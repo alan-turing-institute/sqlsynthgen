@@ -28,14 +28,8 @@ First, we need to provide SSG with the connection parameters, using a ``.env`` f
 
 .. code-block:: console
 
-    SRC_HOST_NAME=localhost
-    SRC_USER_NAME=postgres
-    SRC_PASSWORD=password
-    SRC_DB_NAME=airbnb
-    DST_HOST_NAME=localhost
-    DST_USER_NAME=postgres
-    DST_PASSWORD=password
-    DST_DB_NAME=dst
+    SRC_DSN='postgresql://postgres:password@localhost/airbnb'
+    DST_DSN='postgresql://postgres:password@localhost/dst'
 
 We can start the schema migration process by running the following command::
 

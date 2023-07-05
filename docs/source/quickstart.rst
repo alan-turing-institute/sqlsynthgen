@@ -27,21 +27,16 @@ For the simplest case, we will need `make-tables`, `make-generators`, `create-ta
 we need to set environment variables to tell sqlsynthgen how to access our source database (where the real data resides now) and destination database (where the synthetic data will go).
 We can do that in the terminal with the `export` keyword, as shown below, or in a file called `.env`.
 The source and destination may be on the same database server, as long as the database or schema names differ.
+If the source and destination schemas are the default schema for the user on that database, you should not set those variables.
+If you are using a DBMS that does not support schemas (e.g. MariaDB), you must not set those variables.
 
 .. code-block:: console
 
-   $ export SRC_HOST_NAME='myserver@mydomain.com'
-   $ export SRC_USER_NAME='someuser'
-   $ export SRC_PASSWORD='secretpassword'
+   $ export SRC_DSN="postgresql://someuser:somepassword@myserver.mydomain.com"
    $ export SRC_SCHEMA='myschema'
-   $ export SRC_DB_NAME='source_db'
 
-   $ export DST_HOST_NAME='myserver@mydomain.com'
-   $ export DST_USER_NAME='someuser'
-   $ export DST_PASSWORD='secretpassword'
+   $ export DST_DSN="postgresql://someuser:somepassword@myserver.mydomain.com/dst_db"
    $ export DST_SCHEMA='myschema'
-   $ export DST_DB_NAME='destination_db'
-
 
 Next, we make a SQLAlchemy file that defines the structure of your database using the `make-tables` command:
 
