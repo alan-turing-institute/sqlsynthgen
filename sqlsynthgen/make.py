@@ -185,7 +185,7 @@ def _get_default_generator(tables_module: ModuleType, column: Any) -> RowGenerat
             variable_names,
             generator_function,
             generator_arguments,
-        ) = _get_mimesis_function_for_colum(column)
+        ) = _get_provider_for_column(column)
 
     return RowGenerator(
         primary_key=column.primary_key,
@@ -196,7 +196,7 @@ def _get_default_generator(tables_module: ModuleType, column: Any) -> RowGenerat
     )
 
 
-def _get_mimesis_function_for_colum(column: Any) -> Tuple[List[str], str, List[str]]:
+def _get_provider_for_column(column: Any) -> Tuple[List[str], str, List[str]]:
     """
     Get a default Mimesis provider and its arguments for a SQL column type.
 
@@ -209,36 +209,34 @@ def _get_mimesis_function_for_colum(column: Any) -> Tuple[List[str], str, List[s
     """
     variable_names: List[str] = [column.name]
     generator_arguments: List[str] = []
-    generator_function: str = ""
 
     column_type = type(column.type)
     column_size: Optional[int] = getattr(column.type, "length", None)
 
-    # ToDo Add tests and then add issubclass for all of these
-    # sqlalchemy.dialects.mysql.types.INTEGER
-    if column_type == sqltypes.BigInteger:
-        generator_function = "generic.numeric.integer_number"
-    if column_type == sqltypes.Integer or issubclass(column_type, sqltypes.Integer):
-        generator_function = "generic.numeric.integer_number"
-    elif column_type == sqltypes.Boolean:
-        generator_function = "generic.development.boolean"
-    elif column_type == sqltypes.Date:
-        generator_function = "generic.datetime.date"
-    elif column_type == sqltypes.DateTime:
-        generator_function = "generic.datetime.datetime"
-    elif column_type in {sqltypes.Float, sqltypes.Numeric}:
-        generator_function = "generic.numeric.float_number"
-    elif column_type == sqltypes.Integer:
-        generator_function = "generic.numeric.integer_number"
-    elif column_type == sqltypes.LargeBinary:
-        generator_function = "generic.bytes_provider.bytes"
-    elif column_type in {sqltypes.String, sqltypes.Text} and column_size is None:
-        generator_function = "generic.text.color"
-    elif column_type in {sqltypes.String, sqltypes.Text} and column_size is not None:
-        generator_function = "generic.person.password"
-        generator_arguments.append(str(column_size))
-    else:
+    mapping = {
+        (sqltypes.Integer, False): "generic.numeric.integer_number",
+        (sqltypes.Boolean, False): "generic.development.boolean",
+        (sqltypes.Date, False): "generic.datetime.date",
+        (sqltypes.DateTime, False): "generic.datetime.datetime",
+        (sqltypes.Numeric, False): "generic.numeric.float_number",
+        (sqltypes.LargeBinary, False): "generic.bytes_provider.bytes",
+        (sqltypes.String, False): "generic.text.color",
+        (sqltypes.String, True): "generic.person.password",
+    }
+
+    generator_function = mapping.get((column_type, column_size is not None), None)
+
+    if not generator_function:
+        for key, value in mapping.items():
+            if issubclass(column_type, key[0]) and key[1] == (column_size is not None):
+                generator_function = value
+                break
+
+    if not generator_function:
         raise ValueError(f"Unsupported SQLAlchemy type: {column_type}")
+
+    if column_size:
+        generator_arguments.append(str(column_size))
 
     return variable_names, generator_function, generator_arguments
 
