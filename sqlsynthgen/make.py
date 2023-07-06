@@ -464,7 +464,7 @@ async def make_src_stats(
     dictionary, using the differential privacy parameters set in the `smartnoise-sql`
     block of `config`. Record the results in a dictionary and returns it.
     Args:
-        dsn: postgres connection string
+        dsn: database connection string
         config: a dictionary with the necessary configuration
         schema_name: name of the database schema
 

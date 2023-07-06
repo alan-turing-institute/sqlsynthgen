@@ -34,10 +34,10 @@ def _check_file_non_existence(file_path: Path) -> None:
         sys.exit(1)
 
 
-def _get_src_postgres_dsn(settings: Settings) -> str:
-    """Return the source DB Postgres DSN.
+def _require_src_db_dsn(settings: Settings) -> str:
+    """Return the source DB DSN.
 
-    Check that source db details have been set. Exit with error message if not.
+    Check that source DB details have been set. Exit with error message if not.
     """
     if (src_dsn := settings.src_dsn) is None:
         typer.echo("Missing source database connection details.", err=True)
@@ -105,8 +105,8 @@ def create_vocab(ssg_file: str = typer.Option(SSG_FILENAME)) -> None:
 def create_tables(orm_file: str = typer.Option(ORM_FILENAME)) -> None:
     """Create schema from Python classes.
 
-    This CLI command creates Postgresql schema using object relational model
-    declared as Python tables. (eg.)
+    This CLI command creates the destination schema using object
+    relational model declared as Python tables.
 
     Example:
         $ sqlsynthgen create-tables
@@ -148,7 +148,7 @@ def make_generators(
         _check_file_non_existence(ssg_file_path)
     settings = get_settings()
     # Check that src_dsn is set, even though we don't need it here.
-    _get_src_postgres_dsn(settings)
+    _require_src_db_dsn(settings)
 
     orm_module: ModuleType = import_file(orm_file)
     generator_config = read_yaml_file(config_file) if config_file is not None else {}
@@ -179,7 +179,7 @@ def make_stats(
     config = read_yaml_file(config_file) if config_file is not None else {}
 
     settings = get_settings()
-    src_dsn: str = _get_src_postgres_dsn(settings)
+    src_dsn: str = _require_src_db_dsn(settings)
 
     src_stats = asyncio.get_event_loop().run_until_complete(
         make_src_stats(src_dsn, config, settings.src_schema)
@@ -210,7 +210,7 @@ def make_tables(
         _check_file_non_existence(orm_file_path)
 
     settings = get_settings()
-    src_dsn: str = _get_src_postgres_dsn(settings)
+    src_dsn: str = _require_src_db_dsn(settings)
 
     content = make_tables_file(src_dsn, settings.src_schema)
     orm_file_path.write_text(content, encoding="utf-8")
