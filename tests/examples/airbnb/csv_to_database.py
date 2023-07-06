@@ -1,6 +1,7 @@
 from typing import Any, Callable, List, Type
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 from sqlalchemy import (
     Column,
     Date,
@@ -113,7 +114,7 @@ def upload_csv_to_database(
     dataframe: pd.DataFrame = dataframe_function(filename)
     dataframe = dataframe.replace({np.nan: None})
 
-    for _, data_as_series in dataframe.iterrows():
+    for _, data_as_series in tqdm(dataframe.iterrows()):
         model_instance = mapped_class(**data_as_series)
         if filter_function(model_instance, session):
             session.add(model_instance)
