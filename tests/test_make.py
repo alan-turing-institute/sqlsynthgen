@@ -126,7 +126,7 @@ class TestMakeGenerators(SSGTestCase):
 
         self.assertEqual(expected, actual)
 
-    def test__get_provider_for_column(self) -> None:
+    def test_get_provider_for_column(self) -> None:
         """Test the _get_provider_for_column function."""
 
         # Simple case
