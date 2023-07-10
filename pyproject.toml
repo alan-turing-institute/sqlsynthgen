@@ -38,6 +38,7 @@ json-schema-for-humans = "^0.44.5"
 
 [tool.poetry.extras]
 docs = ["sphinx-rtd-theme", "sphinxcontrib-napoleon"]
+poetry add tqdm --group=extras
 
 [build-system]
 requires = ["poetry-core"]
