@@ -2,6 +2,7 @@
 from mimesis import Generic
 from mimesis.locales import Locale
 from sqlsynthgen.base import FileUploader
+from sqlsynthgen.unique_generator import UniqueGenerator
 
 generic = Generic(locale=Locale.EN_GB)
 
@@ -27,74 +28,91 @@ import orm
 class countriesGenerator:
     num_rows_per_pass = 1
 
-    def __init__(self, src_db_conn, dst_db_conn):
-        self.country_destination = generic.person.password()
-        self.lat_destination = generic.numeric.float_number()
-        self.lng_destination = generic.numeric.float_number()
-        self.distance_km = generic.numeric.float_number()
-        self.destination_km2 = generic.numeric.integer_number()
-        self.destination_language = generic.text.color()
-        self.language_levenshtein_distance = generic.numeric.float_number()
+    def __init__(self):
+        pass
+
+    def __call__(self, dst_db_conn):
+        result = {}
+        result["country_destination"] = generic.person.password()
+        result["lat_destination"] = generic.numeric.float_number()
+        result["lng_destination"] = generic.numeric.float_number()
+        result["distance_km"] = generic.numeric.float_number()
+        result["destination_km2"] = generic.numeric.integer_number()
+        result["destination_language"] = generic.text.color()
+        result["language_levenshtein_distance"] = generic.numeric.float_number()
+        return result
 
 
 class age_gender_bktsGenerator:
     num_rows_per_pass = 1
 
-    def __init__(self, src_db_conn, dst_db_conn):
-        self.age_bucket = generic.person.password()
-        self.country_destination = ColumnValueProvider().column_value(
-            dst_db_conn, orm.Countries, "country_destination"
-        )
-        self.gender = generic.person.password()
-        self.population_in_thousands = generic.numeric.integer_number()
-        self.year = generic.numeric.integer_number()
+    def __init__(self):
+        pass
+
+    def __call__(self, dst_db_conn):
+        result = {}
+        result["gender"] = generic.person.password()
+        result["age_bucket"] = generic.person.password()
+        result["population_in_thousands"] = generic.numeric.integer_number()
+        result["year"] = generic.numeric.integer_number()
+        result["country_destination"] = generic.column_value_provider.column_value(
+            dst_db_conn, orm.Countries, "country_destination")
+        return result
 
 
 class usersGenerator:
     num_rows_per_pass = 1
 
-    def __init__(self, src_db_conn, dst_db_conn):
+    def __init__(self):
         pass
-        self.id = generic.person.password()
-        self.date_account_created = generic.datetime.date()
-        self.timestamp_first_active = generic.datetime.datetime()
-        self.date_first_booking = generic.datetime.date()
-        self.gender = generic.text.color()
-        self.age = generic.numeric.integer_number()
-        self.signup_method = generic.text.color()
-        self.signup_flow = generic.numeric.integer_number()
-        self.language = generic.text.color()
-        self.affiliate_channel = generic.text.color()
-        self.affiliate_provider = generic.text.color()
-        self.first_affiliate_tracked = generic.text.color()
-        self.signup_app = generic.text.color()
-        self.first_device_type = generic.text.color()
-        self.first_browser = generic.text.color()
-        self.country_destination = generic.column_value_provider.column_value(
+
+    def __call__(self, dst_db_conn):
+        result = {}
+        result["id"] = generic.person.password()
+        result["date_account_created"] = generic.datetime.date()
+        result["timestamp_first_active"] = generic.datetime.datetime()
+        result["date_first_booking"] = generic.datetime.date()
+        result["gender"] = generic.text.color()
+        result["age"] = generic.numeric.integer_number()
+        result["signup_method"] = generic.text.color()
+        result["signup_flow"] = generic.numeric.integer_number()
+        result["language"] = generic.text.color()
+        result["affiliate_channel"] = generic.text.color()
+        result["affiliate_provider"] = generic.text.color()
+        result["first_affiliate_tracked"] = generic.text.color()
+        result["signup_app"] = generic.text.color()
+        result["first_device_type"] = generic.text.color()
+        result["first_browser"] = generic.text.color()
+        result["country_destination"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Countries, "country_destination"
         )
+        return result
 
 
 class sessionsGenerator:
     num_rows_per_pass = 1
 
-    def __init__(self, src_db_conn, dst_db_conn):
+    def __init__(self):
         pass
-        self.user_id = generic.column_value_provider.column_value(
+
+    def __call__(self, dst_db_conn):
+        result = {}
+        result["user_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Users, "id"
         )
-        self.action = generic.text.color()
-        self.action_type = generic.text.color()
-        self.action_detail = generic.text.color()
-        self.device_type = generic.text.color()
-        self.secs_elapsed = generic.numeric.float_number()
+        result["action"] = generic.text.color()
+        result["action_type"] = generic.text.color()
+        result["action_detail"] = generic.text.color()
+        result["device_type"] = generic.text.color()
+        result["secs_elapsed"] = generic.numeric.float_number()
+        return result
 
 
 table_generator_dict = {
-    "countries": countriesGenerator,
-    "age_gender_bkts": age_gender_bktsGenerator,
-    "users": usersGenerator,
-    "sessions": sessionsGenerator,
+    "countries": countriesGenerator(),
+    "age_gender_bkts": age_gender_bktsGenerator(),
+    "users": usersGenerator(),
+    "sessions": sessionsGenerator(),
 }
 
 
