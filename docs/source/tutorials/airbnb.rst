@@ -1,6 +1,8 @@
 An Introduction to SqlSynthGen
 ==============================
 
+.. _introduction:
+
 `SqlSynthGen <https://github.com/alan-turing-institute/sqlsynthgen/>`_, or SSG for short, is a software package that we have written for synthetic data generation, focussed on relational data.
 When pointed to an existing relational database, SSG creates another database with the same database schema, and populates it with synthetic data.
 By default the synthetic data is crudely low fidelity, but the user is given various ways to configure the behavior of SSG to increase fidelity, while maintaining transparency and control over how the original data is used to inform the synthetic data, to control privacy risks.
@@ -26,14 +28,8 @@ First, we need to provide SSG with the connection parameters, using a ``.env`` f
 
 .. code-block:: console
 
-    SRC_HOST_NAME=localhost
-    SRC_USER_NAME=postgres
-    SRC_PASSWORD=password
-    SRC_DB_NAME=airbnb
-    DST_HOST_NAME=localhost
-    DST_USER_NAME=postgres
-    DST_PASSWORD=password
-    DST_DB_NAME=dst
+    SRC_DSN='postgresql://postgres:password@localhost/airbnb'
+    DST_DSN='postgresql://postgres:password@localhost/dst'
 
 We can start the schema migration process by running the following command::
 

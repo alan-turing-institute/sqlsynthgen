@@ -18,14 +18,8 @@ def get_test_settings() -> settings.Settings:
     """Get a Settings object that ignores .env files and environment variables."""
 
     return settings.Settings(
-        src_host_name="shost",
-        src_user_name="suser",
-        src_password="spassword",
-        src_db_name="sdbname",
-        dst_host_name="dhost",
-        dst_user_name="duser",
-        dst_password="dpassword",
-        dst_db_name="ddbname",
+        src_dsn="postgresql://suser:spassword@shost:5432/sdbname",
+        dst_dsn="postgresql://duser:dpassword@dhost:5432/ddbname",
         # To stop any local .env files influencing the test
         _env_file=None,
     )
@@ -68,13 +62,23 @@ class SSGTestCase(TestCase):
         self.maxDiff = None  # pylint: disable=invalid-name
         super().__init__(*args, **kwargs)
 
-    def assertSuccess(self, result: Any) -> None:  # pylint: disable=invalid-name
-        """Give details for a subprocess result and raise if the result isn't good."""
+    def assertReturnCode(  # pylint: disable=invalid-name
+        self, result: Any, expected_code: int
+    ) -> None:
+        """Give details for a subprocess result and raise if it's not as expected."""
         code = result.exit_code if hasattr(result, "exit_code") else result.returncode
-        if code != 0:
+        if code != expected_code:
             print(result.stdout)
             print(result.stderr)
-            self.assertEqual(0, code)
+            self.assertEqual(expected_code, code)
+
+    def assertSuccess(self, result: Any) -> None:  # pylint: disable=invalid-name
+        """Give details for a subprocess result and raise if the result isn't good."""
+        self.assertReturnCode(result, 0)
+
+    def assertFailure(self, result: Any) -> None:  # pylint: disable=invalid-name
+        """Give details for a subprocess result and raise if the result isn't bad."""
+        self.assertReturnCode(result, 1)
 
 
 @skipUnless(os.environ.get("REQUIRES_DB") == "1", "Set 'REQUIRES_DB=1' to enable.")

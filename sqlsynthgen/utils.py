@@ -7,7 +7,6 @@ from types import ModuleType
 from typing import Any, Optional
 
 import yaml
-from pydantic import PostgresDsn
 from sqlalchemy import create_engine, event, select
 from sqlalchemy.ext.asyncio import create_async_engine
 
@@ -53,18 +52,18 @@ def download_table(table: Any, engine: Any, yaml_file_name: str) -> None:
 
 
 def create_db_engine(
-    postgres_dsn: PostgresDsn,
+    db_dsn: str,
     schema_name: Optional[str] = None,
     use_asyncio: bool = False,
     **kwargs: dict,
 ) -> Any:
     """Create a SQLAlchemy Engine."""
     if use_asyncio:
-        async_dsn = postgres_dsn.replace("postgresql://", "postgresql+asyncpg://")
+        async_dsn = db_dsn.replace("postgresql://", "postgresql+asyncpg://")
         engine = create_async_engine(async_dsn, **kwargs)
         event_engine = engine.sync_engine
     else:
-        engine = create_engine(postgres_dsn, **kwargs)
+        engine = create_engine(db_dsn, **kwargs)
         event_engine = engine
 
     if schema_name is not None:

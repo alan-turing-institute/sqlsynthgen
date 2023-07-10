@@ -13,9 +13,8 @@ import snsql
 from black import FileMode, format_str
 from jinja2 import Environment, FileSystemLoader, Template
 from mimesis.providers.base import BaseProvider
-from pydantic import PostgresDsn
 from sqlacodegen.generators import DeclarativeGenerator
-from sqlalchemy import MetaData, text
+from sqlalchemy import MetaData, UniqueConstraint, text
 from sqlalchemy.sql import sqltypes
 
 from sqlsynthgen import providers
@@ -50,10 +49,10 @@ class FunctionCall:
 
 
 @dataclass
-class ColumnGenerator:
-    """Contains the ssg.py content related to columns of a table."""
+class RowGenerator:
+    """Contains the ssg.py content related to row generators of a table."""
 
-    variable_names: str
+    variable_names: List[str]
     function_call: FunctionCall
     primary_key: bool = False
 
@@ -65,7 +64,8 @@ class TableGenerator:
     class_name: str
     table_name: str
     rows_per_pass: int
-    columns: List[ColumnGenerator] = field(default_factory=list)
+    row_gens: List[RowGenerator] = field(default_factory=list)
+    unique_constraints: List[Any] = field(default_factory=list)
 
 
 @dataclass
@@ -113,9 +113,9 @@ def _get_function_call(
 
 def _get_row_generator(
     table_config: dict,
-) -> tuple[List[ColumnGenerator], list[str]]:
+) -> tuple[List[RowGenerator], list[str]]:
     """Get the row generators information, for the given table."""
-    column_info: List[ColumnGenerator] = []
+    row_gen_info: List[RowGenerator] = []
     config = table_config.get("row_generators", {})
     columns_covered = []
     for gen_conf in config:
@@ -127,32 +127,32 @@ def _get_row_generator(
         if isinstance(columns_assigned, str):
             columns_assigned = [columns_assigned]
 
-        variable_names: str = ", ".join(map(lambda x: f"self.{x}", columns_assigned))
+        variable_names: List[str] = columns_assigned
         try:
             columns_covered += columns_assigned
         except TypeError:
             # Might be a single string, rather than a list of strings.
             columns_covered.append(columns_assigned)
 
-        column_info.append(
-            ColumnGenerator(
+        row_gen_info.append(
+            RowGenerator(
                 variable_names=variable_names,
                 function_call=_get_function_call(
                     name, positional_arguments, keyword_arguments
                 ),
             )
         )
-    return column_info, columns_covered
+    return row_gen_info, columns_covered
 
 
-def _get_default_generator(tables_module: ModuleType, column: Any) -> ColumnGenerator:
+def _get_default_generator(tables_module: ModuleType, column: Any) -> RowGenerator:
     """Get default generator information, for the given column."""
     # If it's a primary key column, we presume that primary keys are populated
     # automatically.
 
     # If it's a foreign key column, pull random values from the column it
     # references.
-    variable_names: str = ""
+    variable_names: List[str] = []
     generator_function: str = ""
     generator_arguments: List[str] = []
 
@@ -171,7 +171,7 @@ def _get_default_generator(tables_module: ModuleType, column: Any) -> ColumnGene
 
         target_orm_class, _ = class_and_name
 
-        variable_names = f"self.{column.name}"
+        variable_names = [column.name]
         generator_function = "generic.column_value_provider.column_value"
         generator_arguments = [
             "dst_db_conn",
@@ -185,9 +185,9 @@ def _get_default_generator(tables_module: ModuleType, column: Any) -> ColumnGene
             variable_names,
             generator_function,
             generator_arguments,
-        ) = _get_mimesis_function_for_colum(column)
+        ) = _get_provider_for_column(column)
 
-    return ColumnGenerator(
+    return RowGenerator(
         primary_key=column.primary_key,
         variable_names=variable_names,
         function_call=_get_function_call(
@@ -196,7 +196,7 @@ def _get_default_generator(tables_module: ModuleType, column: Any) -> ColumnGene
     )
 
 
-def _get_mimesis_function_for_colum(column: Any) -> Tuple[str, str, List[str]]:
+def _get_provider_for_column(column: Any) -> Tuple[List[str], str, List[str]]:
     """
     Get a default Mimesis provider and its arguments for a SQL column type.
 
@@ -207,55 +207,106 @@ def _get_mimesis_function_for_colum(column: Any) -> Tuple[str, str, List[str]]:
         Tuple[str, str, List[str]]: Tuple containing the variable names to assign to,
         generator function and any generator arguments.
     """
-    variable_names: str = f"self.{column.name}"
+    variable_names: List[str] = [column.name]
     generator_arguments: List[str] = []
-    generator_function: str = ""
 
     column_type = type(column.type)
     column_size: Optional[int] = getattr(column.type, "length", None)
 
-    if column_type == sqltypes.BigInteger:
-        generator_function = "generic.numeric.integer_number"
-    elif column_type == sqltypes.Boolean:
-        generator_function = "generic.development.boolean"
-    elif column_type == sqltypes.Date:
-        generator_function = "generic.datetime.date"
-    elif column_type == sqltypes.DateTime:
-        generator_function = "generic.datetime.datetime"
-    elif column_type in {sqltypes.Float, sqltypes.Numeric}:
-        generator_function = "generic.numeric.float_number"
-    elif column_type == sqltypes.Integer:
-        generator_function = "generic.numeric.integer_number"
-    elif column_type == sqltypes.LargeBinary:
-        generator_function = "generic.bytes_provider.bytes"
-    elif column_type in {sqltypes.String, sqltypes.Text} and column_size is None:
-        generator_function = "generic.text.color"
-    elif column_type in {sqltypes.String, sqltypes.Text} and column_size is not None:
-        generator_function = "generic.person.password"
-        generator_arguments.append(str(column_size))
-    else:
+    mapping = {
+        (sqltypes.Integer, False): "generic.numeric.integer_number",
+        (sqltypes.Boolean, False): "generic.development.boolean",
+        (sqltypes.Date, False): "generic.datetime.date",
+        (sqltypes.DateTime, False): "generic.datetime.datetime",
+        (sqltypes.Numeric, False): "generic.numeric.float_number",
+        (sqltypes.LargeBinary, False): "generic.bytes_provider.bytes",
+        (sqltypes.String, False): "generic.text.color",
+        (sqltypes.String, True): "generic.person.password",
+    }
+
+    generator_function = mapping.get((column_type, column_size is not None), None)
+
+    if not generator_function:
+        for key, value in mapping.items():
+            if issubclass(column_type, key[0]) and key[1] == (column_size is not None):
+                generator_function = value
+                break
+
+    if not generator_function:
         raise ValueError(f"Unsupported SQLAlchemy type: {column_type}")
 
+    if column_size:
+        generator_arguments.append(str(column_size))
+
     return variable_names, generator_function, generator_arguments
+
+
+def _enforce_unique_constraints(table_data: TableGenerator) -> None:
+    """Wrap row generators of `table_data` in `UniqueGenerator`s to enforce constraints.
+
+    The given `table_data` is modified in place.
+    """
+    # For each row generator that assigns values to a column that has a unique
+    # constraint, wrap it in a UniqueGenerator that ensures the values generated are
+    # unique.
+    for row_gen in table_data.row_gens:
+        # Set of column names that this row_gen assigns to.
+        row_gen_column_set = set(row_gen.variable_names)
+        for constraint in table_data.unique_constraints:
+            # Set of column names that this constraint affects.
+            constraint_column_set = set(c.name for c in constraint.columns)
+            if not constraint_column_set & row_gen_column_set:
+                # The intersection is empty, this constraint isn't relevant for this
+                # row_gen.
+                continue
+            if not constraint_column_set.issubset(row_gen_column_set):
+                msg = (
+                    "A unique constraint (%s) isn't fully covered by one row "
+                    "generator (%s). Enforcement of the constraint may not work."
+                )
+                logging.warning(msg, constraint.name, row_gen.variable_names)
+
+            # Make a new function call that wraps the old one in a UniqueGenerator
+            old_function_call = row_gen.function_call
+            new_arguments = [
+                "dst_db_conn",
+                str(row_gen.variable_names),
+                old_function_call.function_name,
+            ] + old_function_call.argument_values
+            # The self.unique_{constraint_name} will be a UniqueGenerator, initialized
+            # in the __init__ of the table generator.
+            new_function_call = FunctionCall(
+                function_name=f"self.unique_{constraint.name}",
+                argument_values=new_arguments,
+            )
+            row_gen.function_call = new_function_call
 
 
 def _get_generator_for_table(
     tables_module: ModuleType, table_config: dict, table: Any
 ) -> TableGenerator:
     """Get generator information for the given table."""
+    unique_constraints = [
+        constraint
+        for constraint in table.constraints
+        if isinstance(constraint, UniqueConstraint)
+    ]
     table_data: TableGenerator = TableGenerator(
         table_name=table.name,
         class_name=table.name + "Generator",
         rows_per_pass=table_config.get("num_rows_per_pass", 1),
+        unique_constraints=unique_constraints,
     )
 
-    column_info_data, columns_covered = _get_row_generator(table_config)
-    table_data.columns.extend(column_info_data)
+    row_gen_info_data, columns_covered = _get_row_generator(table_config)
+    table_data.row_gens.extend(row_gen_info_data)
 
     for column in table.columns:
         if column.name not in columns_covered:
             # No generator for this column in the user config.
-            table_data.columns.append(_get_default_generator(tables_module, column))
+            table_data.row_gens.append(_get_default_generator(tables_module, column))
+
+    _enforce_unique_constraints(table_data)
     return table_data
 
 
@@ -301,7 +352,7 @@ def make_table_generators(
 
     settings = get_settings()
     engine = create_db_engine(
-        settings.src_postgres_dsn, schema_name=settings.src_schema  # type: ignore
+        settings.src_dsn, schema_name=settings.src_schema  # type: ignore
     )
 
     tables: List[TableGenerator] = []
@@ -321,6 +372,7 @@ def make_table_generators(
 
     story_generators = _get_story_generators(config)
 
+    max_unique_constraint_tries = config.get("max-unique-constraint-tries", None)
     return generate_ssg_content(
         {
             "provider_imports": PROVIDER_IMPORTS,
@@ -331,6 +383,7 @@ def make_table_generators(
             "tables": tables,
             "vocabulary_tables": vocabulary_tables,
             "story_generators": story_generators,
+            "max_unique_constraint_tries": max_unique_constraint_tries,
         }
     )
 
@@ -378,7 +431,7 @@ def _get_generator_for_vocabulary_table(
     )
 
 
-def make_tables_file(db_dsn: PostgresDsn, schema_name: Optional[str]) -> str:
+def make_tables_file(db_dsn: str, schema_name: Optional[str]) -> str:
     """Write a file with the SQLAlchemy ORM classes.
 
     Exists with an error if sqlacodegen is unsuccessful.
@@ -403,7 +456,7 @@ def make_tables_file(db_dsn: PostgresDsn, schema_name: Optional[str]) -> str:
 
 
 async def make_src_stats(
-    dsn: PostgresDsn, config: dict, schema_name: Optional[str] = None
+    dsn: str, config: dict, schema_name: Optional[str] = None
 ) -> dict:
     """Run the src-stats queries specified by the configuration.
 
@@ -411,7 +464,7 @@ async def make_src_stats(
     dictionary, using the differential privacy parameters set in the `smartnoise-sql`
     block of `config`. Record the results in a dictionary and returns it.
     Args:
-        dsn: postgres connection string
+        dsn: database connection string
         config: a dictionary with the necessary configuration
         schema_name: name of the database schema
 

@@ -44,7 +44,7 @@ class MyTestCase(SSGTestCase):
 
         create_db_tables(mock_meta)
         mock_create_engine.assert_called_once_with(
-            mock_get_settings.return_value.dst_postgres_dsn
+            mock_get_settings.return_value.dst_dsn
         )
         mock_meta.create_all.assert_called_once_with(mock_create_engine.return_value)
 
@@ -68,7 +68,7 @@ class MyTestCase(SSGTestCase):
             mock_table.name = table_name
             mock_gen = MagicMock()
             mock_gen.num_rows_per_pass = num_rows_per_pass
-            mock_gen.return_value.__dict__ = {}
+            mock_gen.return_value = {}
 
             tables = [mock_table]
             row_generators = {table_name: mock_gen}
@@ -83,7 +83,7 @@ class MyTestCase(SSGTestCase):
                 [call(mock_dst_conn)] * (num_stories_per_pass + num_rows_per_pass)
             )
             mock_insert.return_value.values.assert_has_calls(
-                [call(mock_gen.return_value.__dict__)]
+                [call(mock_gen.return_value)]
                 * (num_stories_per_pass + num_rows_per_pass)
             )
             mock_dst_conn.execute.assert_has_calls(
@@ -127,7 +127,7 @@ class MyTestCase(SSGTestCase):
             mock_create_engine.return_value.connect.return_value.__enter__.return_value
         )
         mock_create_engine.assert_called_once_with(
-            mock_get_settings.return_value.dst_postgres_dsn
+            mock_get_settings.return_value.dst_dsn
         )
         # Running the same insert twice should be fine.
         create_db_vocab(vocab_list)

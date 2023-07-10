@@ -1,4 +1,6 @@
 """Tests for the settings module."""
+from pydantic import ValidationError
+
 from sqlsynthgen.settings import Settings
 from tests.utils import SSGTestCase
 
@@ -12,67 +14,31 @@ class TestSettings(SSGTestCase):
             # To stop any local .env files influencing the test
             _env_file=None,
         )
-        self.assertIsNone(settings.src_postgres_dsn)
-        self.assertEqual(5432, settings.src_port)
-        self.assertEqual(False, settings.src_ssl_required)
+        self.assertIsNone(settings.src_dsn)
+        self.assertIsNone(settings.src_schema)
 
-        self.assertIsNone(settings.dst_postgres_dsn)
-        self.assertEqual(5432, settings.dst_port)
-        self.assertEqual(False, settings.dst_ssl_required)
+        self.assertIsNone(settings.dst_dsn)
+        self.assertIsNone(settings.dst_schema)
 
     def test_maximal_settings(self) -> None:
         """Test the full settings."""
-        settings = Settings(
-            src_host_name="shost",
-            src_port=1234,
-            src_user_name="suser",
-            src_password="spassword",
-            src_db_name="sdbname",
-            src_ssl_required=True,
-            dst_host_name="dhost",
-            dst_port=4321,
-            dst_user_name="duser",
-            dst_password="dpassword",
-            dst_db_name="ddbname",
-            dst_schema="dschema",
-            dst_ssl_required=True,
+        Settings(
+            src_dsn="postgresql://user:password@host:port/db_name?sslmode=require",
+            src_schema="dst_schema",
+            dst_dsn="postgresql://user:password@host:port/db_name?sslmode=require",
+            dst_schema="src_schema",
             # To stop any local .env files influencing the test
             _env_file=None,
         )
 
-        self.assertEqual(
-            "postgresql://suser:spassword@shost:1234/sdbname?sslmode=require",
-            str(settings.src_postgres_dsn),
-        )
+    def test_validation(self) -> None:
+        """Schema settings aren't compatible with MariaDB."""
+        with self.assertRaises(ValidationError):
+            Settings(
+                src_dsn="mariadb+pymysql://myuser@localhost:3306/testdb", src_schema=""
+            )
 
-        self.assertEqual(
-            "postgresql://duser:dpassword@dhost:4321/ddbname?sslmode=require",
-            str(settings.dst_postgres_dsn),
-        )
-
-    def test_typical_settings(self) -> None:
-        """Test that we can make src and dst Postgres DSNs."""
-        settings = Settings(
-            src_host_name="shost",
-            src_user_name="suser",
-            src_password="spassword",
-            src_db_name="sdbname",
-            dst_host_name="dhost",
-            dst_user_name="duser",
-            dst_password="dpassword",
-            dst_db_name="ddbname",
-            # To stop any local .env files influencing the test
-            _env_file=None,
-        )
-
-        self.assertEqual(
-            "postgresql://suser:spassword@shost:5432/sdbname",
-            str(settings.src_postgres_dsn),
-        )
-        self.assertIsNone(settings.src_schema)
-        self.assertIsNone(settings.dst_schema)
-
-        self.assertEqual(
-            "postgresql://duser:dpassword@dhost:5432/ddbname",
-            str(settings.dst_postgres_dsn),
-        )
+        with self.assertRaises(ValidationError):
+            Settings(
+                dst_dsn="mariadb+pymysql://myuser@localhost:3306/testdb", dst_schema=""
+            )

@@ -21,6 +21,8 @@ src-stats:
     epsilon: 0.1
     delta: 0.0001
 
+max-unique-constraint-tries: 50
+
 row_generators_module: row_generators
 tables:
   person:
@@ -51,6 +53,24 @@ tables:
           - visit_start
           - visit_end
           - visit_duration_seconds
+
+  unique_constraint_test:
+    num_rows_per_pass: 1
+    row_generators:
+      - name: row_generators.boolean_pair
+        args: [generic]
+        columns_assigned:
+          - a
+          - b
+
+  unique_constraint_test2:
+    num_rows_per_pass: 1
+    row_generators:
+      - name: row_generators.unique_constraint_test2
+        columns_assigned:
+          - a
+          - b
+          - c
 
   concept:
     vocabulary_table: true
