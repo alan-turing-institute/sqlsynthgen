@@ -178,6 +178,16 @@ CREATE TABLE public.unique_constraint_test2 (
 ALTER TABLE public.unique_constraint_test2 OWNER TO postgres;
 
 --
+-- Name: data_type_test; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.data_type_test (
+    myuuid UUID NOT NULL
+);
+
+ALTER TABLE public.data_type_test OWNER TO postgres;
+
+--
 -- Data for Name: concept; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 

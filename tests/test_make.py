@@ -11,6 +11,7 @@ from pydantic import PostgresDsn
 from pydantic.tools import parse_obj_as
 from sqlalchemy import BigInteger, Column, String
 from sqlalchemy.dialects.mysql.types import INTEGER
+from sqlalchemy.dialects.postgresql import UUID
 
 from sqlsynthgen.make import (
     _get_provider_for_column,
@@ -172,6 +173,17 @@ class TestMakeGenerators(SSGTestCase):
         self.assertEqual(
             generator_arguments,
             ["100"],
+        )
+
+        # UUID
+        (
+            _,
+            generator_function,
+            __,
+        ) = _get_provider_for_column(Column("myuuid", UUID))
+        self.assertEqual(
+            generator_function,
+            "generic.cryptographic.uuid",
         )
 
 
