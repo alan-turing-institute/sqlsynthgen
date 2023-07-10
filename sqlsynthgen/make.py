@@ -15,6 +15,7 @@ from jinja2 import Environment, FileSystemLoader, Template
 from mimesis.providers.base import BaseProvider
 from sqlacodegen.generators import DeclarativeGenerator
 from sqlalchemy import MetaData, UniqueConstraint, text
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.sql import sqltypes
 
 from sqlsynthgen import providers
@@ -220,6 +221,7 @@ def _get_provider_for_column(column: Any) -> Tuple[List[str], str, List[str]]:
         (sqltypes.DateTime, False): "generic.datetime.datetime",
         (sqltypes.Numeric, False): "generic.numeric.float_number",
         (sqltypes.LargeBinary, False): "generic.bytes_provider.bytes",
+        (postgresql.UUID, False): "generic.cryptographic.uuid",
         (sqltypes.String, False): "generic.text.color",
         (sqltypes.String, True): "generic.person.password",
     }
