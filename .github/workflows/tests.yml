@@ -57,7 +57,7 @@ jobs:
       - name: Create src database
         shell: bash
         run: |
-          PGPASSWORD=password psql --host=localhost --username=postgres --file=tests/examples/src.dump
+          PGPASSWORD=password psql --host=localhost --username=postgres --set="ON_ERROR_STOP=1" --file=tests/examples/src.dump
       - name: Run Unit Tests
         shell: bash
         run: |
