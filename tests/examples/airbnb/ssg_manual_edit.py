@@ -33,7 +33,7 @@ class countriesGenerator:
 
     def __call__(self, dst_db_conn):
         result = {}
-        result["country_destination"] = generic.person.password()
+        result["country_destination"] = generic.person.password() #manual edit
         result["lat_destination"] = generic.numeric.float_number()
         result["lng_destination"] = generic.numeric.float_number()
         result["distance_km"] = generic.numeric.float_number()
@@ -51,12 +51,12 @@ class age_gender_bktsGenerator:
 
     def __call__(self, dst_db_conn):
         result = {}
-        result["gender"] = generic.person.password()
-        result["age_bucket"] = generic.person.password()
+        result["gender"] = generic.person.password() #manual edit
+        result["age_bucket"] = generic.person.password() #manual edit
         result["population_in_thousands"] = generic.numeric.integer_number()
         result["year"] = generic.numeric.integer_number()
         result["country_destination"] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Countries, "country_destination")
+            dst_db_conn, orm.Countries, "country_destination")  #manual edit
         return result
 
 
@@ -68,7 +68,7 @@ class usersGenerator:
 
     def __call__(self, dst_db_conn):
         result = {}
-        result["id"] = generic.person.password()
+        result["id"] = generic.person.password() #manual edit
         result["date_account_created"] = generic.datetime.date()
         result["timestamp_first_active"] = generic.datetime.datetime()
         result["date_first_booking"] = generic.datetime.date()
