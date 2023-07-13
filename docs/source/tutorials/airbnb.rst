@@ -57,7 +57,7 @@ Running the next command, ``create-data``, will produce an error::
     ...
     psycopg2.errors.NotNullViolation:
 
-To work around this, we will manually specify how the primary keys should be generated for the ``COUNTRIES`` and ``USERS`` tables by editing the ``ssg.py`` file.
+To work around this, we will manually specify how the primary keys should be generated for the ``COUNTRIES``, ``USERS`` and ``AGE_GENDER_BKTS`` tables by editing the ``ssg.py`` file.
 For example, in line 6 we specify that the ``id`` column value should be created using a ``password`` `Mimesis provider <https://mimesis.name/en/master/api.html>`_, which will give us a random string of characters.
 The ``generic`` object in line 6 corresponds to a `generic provider instance <https://mimesis.name/en/master/providers.html#generic-provider>`_ , that SSG makes available within every `ssg.py` module.
 
@@ -174,14 +174,26 @@ To avoid having to manually edit ``ssg.py`` after each overwrite, we can map col
 **config.yaml**:
 
 .. code-block:: yaml
-   :linenos:
+  :linenos:
 
-   tables:
-     users:
-       row_generators:
-         - name: generic.person.password
-           args: null
-           columns_assigned: id
+  tables:
+    age_gender_bkts:
+      num_rows_per_pass: 1
+      row_generators:
+        - name: generic.person.password
+          columns_assigned: gender
+        - name: generic.person.password
+          columns_assigned: age_bucket
+        - name: generic.column_value_provider.column_value
+          args: [dst_db_conn, orm.Countries, '"country_destination"']
+          columns_assigned: country_destination
+
+    users:
+      num_rows_per_pass: 0
+      row_generators:
+        - name: generic.person.password
+          kwargs: null
+          columns_assigned: id
 
 The next time we run ``make-generators``, the config-specified row generator will override the default one and we will not need to edit the ``ssg.py`` directly any more.
 
@@ -198,12 +210,12 @@ We see below that we have used these techniques to populate the ``sessions.secs_
      sessions:
        row_generators:
          - name: generic.numeric.integer_number
-           args:
+           kwargs:
              start: 0
              end: 3600
            columns_assigned: secs_elapsed
          - name: generic.choice
-           args:
+           kwargs:
              items: ["show", "index", "personalize"]
            columns_assigned: action
 
@@ -337,7 +349,15 @@ The custom generator is the function ``airbnb_generators.user_age_provider``  (l
         sigma: float = query_results[0][1]
         return random.gauss(mu, sigma)
 
-Thus function returns a random age value based on the query results stored in the ``src-stats.yaml`` file. Using ``config.yaml`` over the AirBnb dataset, ``src-stats.yaml`` contains the following:
+After ``airbnb_generators.py`` has been edited, you need to generate an ``src-stats.yaml`` file by running:  ::
+
+    $ sqlsynthgen make-stats --config-file config.yaml --force
+
+This will generate a file with the results of your sql queries from config.yaml and these results will be stored in the variable ``SRC_STATS``.
+From there they can be passed to your generators as arguments.
+
+In this example ``user_age_provider``, the ``query_results`` argument represents the results of the ``age_stats`` query and returns a random age value.
+Using ``config.yaml`` over the AirBnb dataset, ``src-stats.yaml`` contains the following:
 
 **src-stats.yaml**:
 
@@ -386,8 +406,9 @@ For instance, it may first yield a row specifying a person in the `users` table,
 
 **airbnb_generators.py**:
 
-.. code-block:: python3
+.. code-block:: python
    :linenos:
+   import random
 
    def sessions_story():
        """Generate users and their sessions."""
@@ -420,7 +441,7 @@ For instance, it may first yield a row specifying a person in the `users` table,
                    "sessions",
                    {
                        "user_id": user["id"],
-                       "first_device_type": random.choice(device_types)},
+                       "device_type": random.choice(device_types)},
                )
 
 Three features make story generators more practical than simply manually writing code that creates the synthetic data bit-by-bit:
@@ -430,7 +451,7 @@ Three features make story generators more practical than simply manually writing
 
 To use and get the most from story generators, we will need to make some changes to our configuration:
 
-**config.py**:
+**config.yaml**:
 
 .. code-block:: yaml
    :linenos:
@@ -450,6 +471,12 @@ To use and get the most from story generators, we will need to make some changes
    story_generators:
      - name: airbnb_generators.sessions_story
        num_stories_per_pass: 30  # see 3 below
+
+After editing the ``config.yaml`` file, you can run: ::
+
+  $ sqlsynthgen make-generators --config-file=config.yaml --stats-file=src-stats.yaml --force
+
+This will regenerate the ``ssg.py`` file to incorporate your story generator.
 
 1. By default, story generators will run in addition to custom row generators so we will set the number of row-generated users and sessions to 0. We could keep these >0 for a mix of row- and story-generated users and sessions.
 2. We specify the module that contains our story generators. In this case, it is the same Python file as the row generators.

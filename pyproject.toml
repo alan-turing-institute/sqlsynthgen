@@ -25,6 +25,7 @@ sqlacodegen = "3.0.0rc1"
 asyncpg = "^0.27.0"
 greenlet = "^2.0.2"
 pymysql = "^1.1.0"
+pre-commit = {version = "^3.3.3", extras = ["dev"]}
 
 [tool.poetry.group.dev.dependencies]
 isort = "^5.10.1"
