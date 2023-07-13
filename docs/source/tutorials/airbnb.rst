@@ -406,8 +406,9 @@ For instance, it may first yield a row specifying a person in the `users` table,
 
 **airbnb_generators.py**:
 
-.. code-block:: python
+.. code-block:: python3
    :linenos:
+
    import random
 
    def sessions_story():
