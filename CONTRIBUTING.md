@@ -102,4 +102,4 @@ make html
 ```
 
 *WARNING: Some systems [won't be able to import the `sphinxcontrib.napoleon` extension](https://github.com/sphinx-doc/sphinx/issues/10378). In that case,
-please replace `sphinxcontrib.napoleon` with `sphinx.ext.napoleon"` in `docs/source/conf.py`.*
+please replace `sphinxcontrib.napoleon` with `sphinx.ext.napoleon` in `docs/source/conf.py`.*
