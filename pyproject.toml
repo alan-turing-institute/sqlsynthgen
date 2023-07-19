@@ -25,7 +25,6 @@ sqlacodegen = "3.0.0rc1"
 asyncpg = "^0.27.0"
 greenlet = "^2.0.2"
 pymysql = "^1.1.0"
-pre-commit = {version = "^3.3.3", extras = ["dev"]}
 
 [tool.poetry.group.dev.dependencies]
 isort = "^5.10.1"
@@ -37,7 +36,7 @@ restructuredtext-lint = "^1.4.0"
 pygments = "^2.14.0"
 rstcheck-core = {extras = ["sphinx"], version = "^1.0.3"}
 json-schema-for-humans = "^0.44.5"
-
+pre-commit = {version = "^3.3.3", extras = ["dev"]}
 
 [tool.poetry.group.extras.dependencies]
 tqdm = "^4.65.0"
