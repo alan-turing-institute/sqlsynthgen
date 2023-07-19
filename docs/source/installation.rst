@@ -17,9 +17,9 @@ If Pip errors when installing PyYaml, you will need to manually specify the Cyth
 
 .. code-block:: console
 
-    pip install cython<3
+    pip install "cython<3"
     pip install wheel
-    pip install --no-build-isolation pyyaml==5.4.1
+    pip install --no-build-isolation "pyyaml==5.4.1"
     pip install sqlsynthgen
 
 Check that you can view the help message with:
