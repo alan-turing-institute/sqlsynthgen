@@ -40,6 +40,13 @@ jobs:
         shell: bash
         if: steps.poetry-cache.outputs.cache-hit != 'true'
         run: |
+          # workaround start
+          # this is a pyyaml v5 vs cython v3 conflict workaround
+          # see https://github.com/alan-turing-institute/sqlsynthgen/issues/120
+          python -m poetry run pip install cython<3
+          python -m poetry run pip install wheel
+          python -m poetry run pip install --no-build-isolation pyyaml==5.4.1
+          # workaround end
           python -m poetry install --all-extras
       - name: Install Pre-Commit
         shell: bash
