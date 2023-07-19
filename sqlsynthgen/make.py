@@ -471,43 +471,47 @@ async def make_src_stats(
     Returns:
         The dictionary of src-stats.
     """
-    use_smartnoise_sql = config.get("use-smartnoise-sql", True)
-    # SmartNoiseSQL doesn't support asyncio
-    use_asyncio = not use_smartnoise_sql
+    use_asyncio = config.get("use-asyncio", False)
     engine = create_db_engine(dsn, schema_name=schema_name, use_asyncio=use_asyncio)
 
-    if use_smartnoise_sql:
-        logging.warning(
-            "SmartNoiseSQL does not support asyncio, so make-stats queries"
-            " will be run sequentially."
-        )
+    if use_asyncio:
+
+        async def execute_query(engine: Any, query_block: Dict[str, Any]) -> Any:
+            """Execute query using an asynchronous SQLAlchemy engine."""
+            use_smartnoise_sql = query_block.get("use-smartnoise-sql", False)
+            if use_smartnoise_sql:
+                raise ValueError("Can not use smartnoise-sql when use-asyncio is True.")
+            async with engine.connect() as conn:
+                raw_result = await conn.execute(text(query_block["query"]))
+                result = raw_result.fetchall()
+            return [list(r) for r in result]
+
+    else:
         dp_config = config.get("smartnoise-sql", {})
         snsql_metadata = {"": dp_config}
 
         async def execute_query(engine: Any, query_block: Dict[str, Any]) -> Any:
             """Execute query using a synchronous SQLAlchemy engine."""
-            privacy = snsql.Privacy(
-                epsilon=query_block["epsilon"], delta=query_block["delta"]
-            )
-            with engine.connect() as conn:
-                reader = snsql.from_connection(
-                    conn.connection,
-                    engine="postgres",
-                    privacy=privacy,
-                    metadata=snsql_metadata,
+            use_smartnoise_sql = query_block.get("use-smartnoise-sql", False)
+            if use_smartnoise_sql:
+                privacy = snsql.Privacy(
+                    epsilon=query_block["epsilon"], delta=query_block["delta"]
                 )
-                private_result = reader.execute(query_block["query"])
-            # The first entry in the list names the columns, skip that.
-            return private_result[1:]
-
-    else:
-
-        async def execute_query(engine: Any, query_block: Dict[str, Any]) -> Any:
-            """Execute query using an asynchronous SQLAlchemy engine."""
-            async with engine.connect() as conn:
-                raw_result = await conn.execute(text(query_block["query"]))
-                result = raw_result.fetchall()
-            return [list(r) for r in result]
+                with engine.connect() as conn:
+                    reader = snsql.from_connection(
+                        conn.connection,
+                        engine="postgres",
+                        privacy=privacy,
+                        metadata=snsql_metadata,
+                    )
+                    private_result = reader.execute(query_block["query"])
+                # The first entry in the list names the columns, skip that.
+                return private_result[1:]
+            else:
+                with engine.connect() as conn:
+                    raw_result = conn.execute(text(query_block["query"]))
+                    result = raw_result.fetchall()
+                return [list(r) for r in result]
 
     query_blocks = config.get("src-stats", [])
     results = await asyncio.gather(

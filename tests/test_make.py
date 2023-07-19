@@ -257,22 +257,58 @@ class TestMakeStats(RequiresDBTestCase):
         conf_path = Path("example_config.yaml")
         with open(conf_path, "r", encoding="utf8") as f:
             config = yaml.safe_load(f)
-        config_no_snsql = {**config, "use-smartnoise-sql": False}
 
         # Check that make_src_stats works with, or without, a schema
         for args in (
             (connection_string, config),
             (connection_string, config, "public"),
-            (connection_string, config_no_snsql),
         ):
             src_stats = asyncio.get_event_loop().run_until_complete(
                 make_src_stats(*args)
             )
 
-            self.assertSetEqual({"count_opt_outs"}, set(src_stats.keys()))
+            self.assertSetEqual(
+                {"count_opt_outs", "avg_person_id", "count_names"},
+                set(src_stats.keys()),
+            )
             count_opt_outs = src_stats["count_opt_outs"]
             self.assertEqual(len(count_opt_outs), 2)
             self.assertIsInstance(count_opt_outs[0][0], int)
             self.assertIs(count_opt_outs[0][1], False)
             self.assertIsInstance(count_opt_outs[1][0], int)
             self.assertIs(count_opt_outs[1][1], True)
+
+            count_names = src_stats["count_names"]
+            self.assertEqual(len(count_names), 1)
+            self.assertEqual(count_names[0][0], 1000)
+            self.assertEqual(count_names[0][1], "Randy Random")
+
+        # Check that using asyncio errors, due to a conflict with using snsql
+        config_asyncio = {**config, "use-asyncio": True}
+        with self.assertRaises(ValueError):
+            src_stats = asyncio.get_event_loop().run_until_complete(
+                make_src_stats(connection_string, config_asyncio)
+            )
+
+        # Check that using asyncio works after we drop the query that uses snsql
+        config_asyncio_no_snsql = {**config, "use-asyncio": True}
+        for query_block in config_asyncio_no_snsql["src-stats"]:
+            query_block["use-smartnoise-sql"] = False
+        src_stats = asyncio.get_event_loop().run_until_complete(
+            make_src_stats(connection_string, config_asyncio)
+        )
+        self.assertSetEqual(
+            {"count_opt_outs", "avg_person_id", "count_names"},
+            set(src_stats.keys()),
+        )
+        count_opt_outs = src_stats["count_opt_outs"]
+        self.assertEqual(len(count_opt_outs), 2)
+        self.assertIsInstance(count_opt_outs[0][0], int)
+        self.assertIs(count_opt_outs[0][1], False)
+        self.assertIsInstance(count_opt_outs[1][0], int)
+        self.assertIs(count_opt_outs[1][1], True)
+
+        count_names = src_stats["count_names"]
+        self.assertEqual(len(count_names), 1)
+        self.assertEqual(count_names[0][0], 1000)
+        self.assertEqual(count_names[0][1], "Randy Random")

@@ -1,5 +1,6 @@
 # yaml-language-server: $schema=../../sqlsynthgen/json_schemas/config_schema.json
 
+use-asyncio: false
 smartnoise-sql:
   public:
     person:
@@ -16,8 +17,14 @@ smartnoise-sql:
         private_id: False
 
 src-stats:
+  - name: count_names
+    query: SELECT count(*) AS num, name FROM person GROUP BY name
+  - name: avg_person_id
+    query: SELECT avg(person_id) AS avg_id FROM person
+    use-smartnoise-sql: false
   - name: count_opt_outs
     query: SELECT count(*) AS num, research_opt_out FROM person GROUP BY research_opt_out
+    use-smartnoise-sql: true
     epsilon: 0.1
     delta: 0.0001
 
