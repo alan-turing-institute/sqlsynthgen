@@ -15,7 +15,7 @@ classifiers = [
 
 [project.urls]
 homepage = "https://github.com/alan-turing-institute/sqlsynthgen"
-documentation = "https://sqlsynthgen.readthedocs.io/"
+documentation = "https://sqlsynthgen.readthedocs.io/en/stable/"
 
 [tool.poetry.dependencies]
 python = "^3.9,<3.11"
