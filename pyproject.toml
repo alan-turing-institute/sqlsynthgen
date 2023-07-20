@@ -47,6 +47,10 @@ restructuredtext-lint = "^1.4.0"
 pygments = "^2.14.0"
 rstcheck-core = {extras = ["sphinx"], version = "^1.0.3"}
 json-schema-for-humans = "^0.44.5"
+pre-commit = {version = "^3.3.3", extras = ["dev"]}
+
+[tool.poetry.group.extras.dependencies]
+tqdm = "^4.65.0"
 
 [tool.poetry.extras]
 docs = ["sphinx-rtd-theme", "sphinxcontrib-napoleon"]
