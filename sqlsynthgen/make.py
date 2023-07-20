@@ -507,11 +507,11 @@ async def make_src_stats(
                     private_result = reader.execute(query_block["query"])
                 # The first entry in the list names the columns, skip that.
                 return private_result[1:]
-            else:
-                with engine.connect() as conn:
-                    raw_result = conn.execute(text(query_block["query"]))
-                    result = raw_result.fetchall()
-                return [list(r) for r in result]
+
+            with engine.connect() as conn:
+                raw_result = conn.execute(text(query_block["query"]))
+                result = raw_result.fetchall()
+            return [list(r) for r in result]
 
     query_blocks = config.get("src-stats", [])
     results = await asyncio.gather(
