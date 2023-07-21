@@ -9,6 +9,7 @@ from sys import stderr
 from types import ModuleType
 from typing import Any, Dict, Final, List, Optional, Tuple
 
+import pandas as pd
 import snsql
 from black import FileMode, format_str
 from jinja2 import Environment, FileSystemLoader, Template
@@ -476,44 +477,30 @@ async def make_src_stats(
     use_asyncio = config.get("use-asyncio", False)
     engine = create_db_engine(dsn, schema_name=schema_name, use_asyncio=use_asyncio)
 
-    if use_asyncio:
-
-        async def execute_query(engine: Any, query_block: Dict[str, Any]) -> Any:
-            """Execute query using an asynchronous SQLAlchemy engine."""
-            use_smartnoise_sql = query_block.get("use-smartnoise-sql", False)
-            if use_smartnoise_sql:
-                raise ValueError("Can not use smartnoise-sql when use-asyncio is True.")
+    async def execute_query(engine: Any, query_block: Dict[str, Any]) -> Any:
+        """Execute query using an asynchronous SQLAlchemy engine."""
+        query = text(query_block["query"])
+        if use_asyncio:
             async with engine.connect() as conn:
-                raw_result = await conn.execute(text(query_block["query"]))
-                result = raw_result.fetchall()
-            return [list(r) for r in result]
-
-    else:
-        dp_config = config.get("smartnoise-sql", {})
-        snsql_metadata = {"": dp_config}
-
-        async def execute_query(engine: Any, query_block: Dict[str, Any]) -> Any:
-            """Execute query using a synchronous SQLAlchemy engine."""
-            use_smartnoise_sql = query_block.get("use-smartnoise-sql", False)
-            if use_smartnoise_sql:
-                privacy = snsql.Privacy(
-                    epsilon=query_block["epsilon"], delta=query_block["delta"]
-                )
-                with engine.connect() as conn:
-                    reader = snsql.from_connection(
-                        conn.connection,
-                        engine="postgres",
-                        privacy=privacy,
-                        metadata=snsql_metadata,
-                    )
-                    private_result = reader.execute(query_block["query"])
-                # The first entry in the list names the columns, skip that.
-                return private_result[1:]
-
+                raw_result = await conn.execute(query)
+        else:
             with engine.connect() as conn:
-                raw_result = conn.execute(text(query_block["query"]))
-                result = raw_result.fetchall()
-            return [list(r) for r in result]
+                raw_result = conn.execute(query)
+
+        if "dp-query" in query_block:
+            result_df = pd.DataFrame(raw_result.mappings())
+            dp_query = query_block["dp-query"]
+            snsql_metadata = {"": {"": {"query_result": query_block["snsql-metadata"]}}}
+            privacy = snsql.Privacy(
+                epsilon=query_block["epsilon"], delta=query_block["delta"]
+            )
+            reader = snsql.from_df(result_df, privacy=privacy, metadata=snsql_metadata)
+            private_result = reader.execute(dp_query)
+            # The first entry in the list names the columns, skip that.
+            final_result = private_result[1:]
+        else:
+            final_result = [list(r) for r in raw_result.fetchall()]
+        return final_result
 
     query_blocks = config.get("src-stats", [])
     results = await asyncio.gather(

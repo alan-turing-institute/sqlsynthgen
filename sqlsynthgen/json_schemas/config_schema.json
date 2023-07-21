@@ -14,32 +14,48 @@
     "story_generators_module": {
       "type": "string"
     },
-    "smartnoise-sql": {
-      "type": "object",
-      "patternProperties": {
-        ".*": {
-          "type": "object",
-          "patternProperties": {
-            ".*": {
-              "type": "object",
-              "properties": {
-                "censor_dims": {
-                  "type": "boolean"
-                }
-              },
-              "patternProperties": {
-                "^(?!censor_dims).*$": {
-                  "type": "object",
-                  "properties": {
-                    "name": {
-                      "type": "string"
-                    },
-                    "type": {
-                      "type": "string"
-                    },
-                    "private_id": {
-                      "type": "boolean"
-                    }
+
+    "src-stats": {
+      "type": "array",
+      "items": {
+        "additionalProperties": false,
+        "required": ["name", "query"],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "query": {
+            "type": "string"
+          },
+          "dp-query": {
+            "type": "string"
+          },
+          "epsilon": {
+            "type": "number"
+          },
+          "delta": {
+            "type": "number"
+          },
+
+          "snsql-metadata": {
+            "type": "object",
+            "properties": {
+              "censor_dims": {
+                "type": "boolean"
+              }
+            },
+            "patternProperties": {
+              "^(?!censor_dims).*$": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "private_id": {
+                    "type": "boolean"
                   }
                 }
               }
@@ -48,33 +64,13 @@
         }
       }
     },
-    "src-stats": {
-      "type": "array",
-      "items": {
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "query": {
-            "type": "string"
-          },
-          "use-smartnoise-sql": {
-            "type": "boolean"
-          },
-          "epsilon": {
-            "type": "number"
-          },
-          "delta": {
-            "type": "number"
-          }
-        }
-      }
-    },
+
     "story_generators": {
       "type": "array",
       "items": {
-        "additionalProperties": false,
         "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "num_stories_per_pass"],
         "properties": {
           "name": {
             "type": "string"
@@ -91,9 +87,11 @@
         }
       }
     },
+
     "max-unique-constraint-tries": {
       "type": "integer"
     },
+
     "tables": {
       "type": "object",
       "patternProperties": {

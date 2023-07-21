@@ -1,9 +1,18 @@
 # yaml-language-server: $schema=../../sqlsynthgen/json_schemas/config_schema.json
 
 use-asyncio: false
-smartnoise-sql:
-  public:
-    person:
+
+src-stats:
+  - name: count_names
+    query: SELECT count(*) AS num, name FROM person GROUP BY name
+  - name: avg_person_id
+    query: SELECT avg(person_id) AS avg_id FROM person
+  - name: count_opt_outs
+    query: SELECT person_id, research_opt_out FROM person
+    dp-query: SELECT count(person_id) AS num, research_opt_out FROM query_result GROUP BY research_opt_out
+    epsilon: 0.1
+    delta: 0.0001
+    snsql-metadata:
       # You may well want censor_dims to be on, but we turn it off for the
       # tests to silence a smartnoise-sql nag warning.
       censor_dims: False
@@ -15,18 +24,6 @@ smartnoise-sql:
         name: research_opt_out
         type: boolean
         private_id: False
-
-src-stats:
-  - name: count_names
-    query: SELECT count(*) AS num, name FROM person GROUP BY name
-  - name: avg_person_id
-    query: SELECT avg(person_id) AS avg_id FROM person
-    use-smartnoise-sql: false
-  - name: count_opt_outs
-    query: SELECT count(*) AS num, research_opt_out FROM person GROUP BY research_opt_out
-    use-smartnoise-sql: true
-    epsilon: 0.1
-    delta: 0.0001
 
 max-unique-constraint-tries: 50
 
