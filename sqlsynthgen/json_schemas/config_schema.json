@@ -5,6 +5,9 @@
   "type": ["object"],
   "additionalProperties": false,
   "properties": {
+    "use-asyncio": {
+      "type": "boolean"
+    },
     "row_generators_module": {
       "type": "string"
     },
@@ -54,6 +57,9 @@
           },
           "query": {
             "type": "string"
+          },
+          "use-smartnoise-sql": {
+            "type": "boolean"
           },
           "epsilon": {
             "type": "number"

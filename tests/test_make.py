@@ -3,7 +3,7 @@ import asyncio
 import os
 from io import StringIO
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict
 from unittest.mock import MagicMock, patch
 
 import yaml
@@ -244,7 +244,8 @@ class TestMakeTables(SSGTestCase):
         )
 
         self.assertEqual(
-            "WARNING: Table without PK detected. sqlsynthgen may not be able to continue.\n",
+            "WARNING: Table without PK detected. sqlsynthgen may not be able to "
+            "continue.\n",
             mock_stderr.getvalue(),
         )
 
@@ -258,33 +259,65 @@ class TestMakeStats(RequiresDBTestCase):
     def setUp(self) -> None:
         """Pre-test setup."""
         os.chdir(self.test_dir)
+        self.connection_string = "postgresql://postgres:password@localhost:5432/src"
+        conf_path = Path("example_config.yaml")
+        with open(conf_path, "r", encoding="utf8") as f:
+            self.config = yaml.safe_load(f)
 
     def tearDown(self) -> None:
         """Post-test cleanup."""
         os.chdir(self.start_dir)
 
-    def test_make_stats(self) -> None:
-        """Test the make_src_stats function."""
-        connection_string = "postgresql://postgres:password@localhost:5432/src"
-        conf_path = Path("example_config.yaml")
-        with open(conf_path, "r", encoding="utf8") as f:
-            config = yaml.safe_load(f)
-        config_no_snsql = {**config, "use-smartnoise-sql": False}
+    def check_make_stats_output(self, src_stats: dict) -> None:
+        """Check that the output of make_src_stats is as expected."""
+        self.assertSetEqual(
+            {"count_opt_outs", "avg_person_id", "count_names"},
+            set(src_stats.keys()),
+        )
+        count_opt_outs = src_stats["count_opt_outs"]
+        self.assertEqual(len(count_opt_outs), 2)
+        self.assertIsInstance(count_opt_outs[0][0], int)
+        self.assertIs(count_opt_outs[0][1], False)
+        self.assertIsInstance(count_opt_outs[1][0], int)
+        self.assertIs(count_opt_outs[1][1], True)
 
-        # Check that make_src_stats works with, or without, a schema
-        for args in (
-            (connection_string, config),
-            (connection_string, config, "public"),
-            (connection_string, config_no_snsql),
-        ):
-            src_stats = asyncio.get_event_loop().run_until_complete(
-                make_src_stats(*args)
+        count_names = src_stats["count_names"]
+        self.assertEqual(len(count_names), 1)
+        self.assertEqual(count_names[0][0], 1000)
+        self.assertEqual(count_names[0][1], "Randy Random")
+
+    def test_make_stats_no_asyncio_schema(self) -> None:
+        """Test that make_src_stats works when explicitly naming a schema."""
+        src_stats = asyncio.get_event_loop().run_until_complete(
+            make_src_stats(self.connection_string, self.config, "public")
+        )
+        self.check_make_stats_output(src_stats)
+
+    def test_make_stats_no_asyncio(self) -> None:
+        """Test that make_src_stats works using the example configuration."""
+        src_stats = asyncio.get_event_loop().run_until_complete(
+            make_src_stats(self.connection_string, self.config)
+        )
+        self.check_make_stats_output(src_stats)
+
+    def test_make_stats_asyncio(self) -> None:
+        """Test that make_src_stats errors if we use asyncio when some of the queries
+        also use snsql.
+        """
+        config_asyncio = {**self.config, "use-asyncio": True}
+        with self.assertRaises(ValueError):
+            _ = asyncio.get_event_loop().run_until_complete(
+                make_src_stats(self.connection_string, config_asyncio)
             )
 
-            self.assertSetEqual({"count_opt_outs"}, set(src_stats.keys()))
-            count_opt_outs = src_stats["count_opt_outs"]
-            self.assertEqual(len(count_opt_outs), 2)
-            self.assertIsInstance(count_opt_outs[0][0], int)
-            self.assertIs(count_opt_outs[0][1], False)
-            self.assertIsInstance(count_opt_outs[1][0], int)
-            self.assertIs(count_opt_outs[1][1], True)
+    def test_make_stats_asyncio_no_snsql(self) -> None:
+        """Test that make_src_stats works if we use asyncio as long as we disable snsql
+        on all queries.
+        """
+        config_asyncio_no_snsql: dict[str, Any] = {**self.config, "use-asyncio": True}
+        for query_block in config_asyncio_no_snsql["src-stats"]:
+            query_block["use-smartnoise-sql"] = False
+        src_stats = asyncio.get_event_loop().run_until_complete(
+            make_src_stats(self.connection_string, config_asyncio_no_snsql)
+        )
+        self.check_make_stats_output(src_stats)
