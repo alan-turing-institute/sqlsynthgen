@@ -16,9 +16,13 @@ def timespan_generator(
     return start, end, delta.total_seconds()
 
 
-def boolean_from_src_stats_generator(generic, src_stats):
-    num_false = int(next(x for x, y in src_stats if y is False))
-    num_true = int(next(x for x, y in src_stats if y is True))
+def opt_out(generic, count_opt_outs):
+    num_false = int(
+        next(row["num"] for row in count_opt_outs if row["research_opt_out"] is False)
+    )
+    num_true = int(
+        next(row["num"] for row in count_opt_outs if row["research_opt_out"] is True)
+    )
     return generic.weighted_boolean_provider.bool(num_true / num_false)
 
 

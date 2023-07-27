@@ -31,8 +31,12 @@ def long_story(
     dst_db_conn: Any, generic: Any, count_opt_outs: list
 ) -> Generator[Tuple[str, Dict[str, Any]], Dict[str, Any], None]:
     # Find out whether this person opts out
-    count_false = next(s[0] for s in count_opt_outs if s[1] is False)
-    count_true = next(s[0] for s in count_opt_outs if s[1] is True)
+    count_false = int(
+        next(row["num"] for row in count_opt_outs if row["research_opt_out"] is False)
+    )
+    count_true = int(
+        next(row["num"] for row in count_opt_outs if row["research_opt_out"] is True)
+    )
     opt_out_rate = count_true / (count_true + count_false)
     opt_out = generic.weighted_boolean_provider.bool(opt_out_rate)
 

@@ -49,10 +49,10 @@ tables:
           - 2022
           - 2022
         columns_assigned: stored_from
-      - name: row_generators.boolean_from_src_stats_generator
+      - name: row_generators.opt_out
         kwargs:
           generic: generic
-          src_stats: SRC_STATS["count_opt_outs"]
+          count_opt_outs: SRC_STATS["count_opt_outs"]
         columns_assigned: research_opt_out
 
   hospital_visit:
