@@ -451,7 +451,8 @@ def make_tables_file(db_dsn: str, schema_name: Optional[str]) -> str:
     # but we don't explicitly support Tables and behaviour is unpredictable.
     if " = Table(" in code:
         print(
-            "WARNING: Table without PK detected. sqlsynthgen may not be able to continue.",
+            "WARNING: Table without PK detected. "
+            "sqlsynthgen may not be able to continue.",
             file=stderr,
         )
 
@@ -460,7 +461,7 @@ def make_tables_file(db_dsn: str, schema_name: Optional[str]) -> str:
 
 async def make_src_stats(
     dsn: str, config: dict, schema_name: Optional[str] = None
-) -> dict:
+) -> Dict[str, List[dict]]:
     """Run the src-stats queries specified by the configuration.
 
     Query the src database with the queries in the src-stats block of the `config`
@@ -496,10 +497,15 @@ async def make_src_stats(
             )
             reader = snsql.from_df(result_df, privacy=privacy, metadata=snsql_metadata)
             private_result = reader.execute(dp_query)
-            # The first entry in the list names the columns, skip that.
-            final_result = private_result[1:]
+            header = private_result[0]
+            final_result = [
+                {header[i]: row[i] for i in range(len(row))}
+                for row in private_result[1:]
+            ]
         else:
-            final_result = [list(r) for r in raw_result.fetchall()]
+            final_result = [
+                dict(row.items()) for row in raw_result.mappings().fetchall()
+            ]
         return final_result
 
     query_blocks = config.get("src-stats", [])

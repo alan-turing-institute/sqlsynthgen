@@ -60,8 +60,8 @@ class personGenerator:
         result = {}
         result["name"] = generic.person.full_name()
         result["stored_from"] = generic.datetime.datetime(2022, 2022)
-        result["research_opt_out"] = row_generators.boolean_from_src_stats_generator(
-            generic=generic, src_stats=SRC_STATS["count_opt_outs"]
+        result["research_opt_out"] = row_generators.opt_out(
+            generic=generic, count_opt_outs=SRC_STATS["count_opt_outs"]
         )
         result["nhs_number"] = self.unique_nhs_number_uniq(
             dst_db_conn, ["nhs_number"], generic.text.color

@@ -276,15 +276,22 @@ class TestMakeStats(RequiresDBTestCase):
         )
         count_opt_outs = src_stats["count_opt_outs"]
         self.assertEqual(len(count_opt_outs), 2)
-        self.assertIsInstance(count_opt_outs[0][0], int)
-        self.assertIs(count_opt_outs[0][1], False)
-        self.assertIsInstance(count_opt_outs[1][0], int)
-        self.assertIs(count_opt_outs[1][1], True)
+        self.assertIsInstance(count_opt_outs[0]["num"], int)
+        self.assertIs(count_opt_outs[0]["research_opt_out"], False)
+        self.assertIsInstance(count_opt_outs[1]["num"], int)
+        self.assertIs(count_opt_outs[1]["research_opt_out"], True)
 
         count_names = src_stats["count_names"]
         self.assertEqual(len(count_names), 1)
-        self.assertEqual(count_names[0][0], 1000)
-        self.assertEqual(count_names[0][1], "Randy Random")
+        self.assertEqual(count_names[0]["num"], 1000)
+        self.assertEqual(count_names[0]["name"], "Randy Random")
+
+        avg_person_id = src_stats["avg_person_id"]
+        self.assertEqual(len(avg_person_id), 1)
+        self.assertEqual(avg_person_id[0]["avg_id"], 500.5)
+
+        # Check that dumping into YAML goes fine.
+        yaml.dump(src_stats)
 
     def test_make_stats_no_asyncio_schema(self) -> None:
         """Test that make_src_stats works when explicitly naming a schema."""
