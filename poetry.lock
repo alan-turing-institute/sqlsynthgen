@@ -2117,4 +2117,4 @@ docs = ["sphinx-rtd-theme", "sphinxcontrib-napoleon"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9,<3.11"
-content-hash = "4acecf6e072cd94c9e14fbca101bf79a8e0f3c109f8074f5d2f2feee022480a4"
+content-hash = "e6825622e452a36e6b5fa4d98f4ed0b822f3b0e4eabf0feb5f1d574a68fae3d9"
