@@ -4,12 +4,22 @@ use-asyncio: false
 
 src-stats:
   - name: count_names
-    query: SELECT count(*) AS num, name FROM person GROUP BY name
+    query: >
+      SELECT count(*) AS num, name
+      FROM person
+      GROUP BY name
   - name: avg_person_id
-    query: SELECT avg(person_id) AS avg_id FROM person
+    query: >
+      SELECT avg(person_id) AS avg_id
+      FROM person
   - name: count_opt_outs
-    query: SELECT person_id, research_opt_out FROM person
-    dp-query: SELECT count(person_id) AS num, research_opt_out FROM query_result GROUP BY research_opt_out
+    query: >
+      SELECT person_id, research_opt_out
+      FROM person
+    dp-query: >
+      SELECT count(person_id) AS num, research_opt_out
+      FROM query_result
+      GROUP BY research_opt_out
     epsilon: 0.1
     delta: 0.0001
     snsql-metadata:
