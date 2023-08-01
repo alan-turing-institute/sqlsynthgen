@@ -477,8 +477,8 @@ async def make_src_stats(
     use_asyncio = config.get("use-asyncio", False)
     engine = create_db_engine(dsn, schema_name=schema_name, use_asyncio=use_asyncio)
 
-    async def execute_query(engine: Any, query_block: Dict[str, Any]) -> Any:
-        """Execute query using an asynchronous SQLAlchemy engine."""
+    async def execute_query(query_block: Dict[str, Any]) -> Any:
+        """Execute query in query_block."""
         query = text(query_block["query"])
         if use_asyncio:
             async with engine.connect() as conn:
@@ -504,7 +504,7 @@ async def make_src_stats(
 
     query_blocks = config.get("src-stats", [])
     results = await asyncio.gather(
-        *[execute_query(engine, query_block) for query_block in query_blocks]
+        *[execute_query(query_block) for query_block in query_blocks]
     )
     src_stats = {
         query_block["name"]: result
