@@ -65,7 +65,7 @@ class TestCLI(SSGTestCase):
         self.assertSuccess(result)
 
     @patch("sqlsynthgen.main.Path")
-    @patch("typer.echo")
+    @patch("sqlsynthgen.main.echo")
     def test_make_generators_errors_if_file_exists(
         self, mock_echo: MagicMock, mock_path: MagicMock
     ) -> None:
@@ -86,7 +86,7 @@ class TestCLI(SSGTestCase):
         )
         self.assertEqual(1, result.exit_code)
 
-    @patch("typer.echo")
+    @patch("sqlsynthgen.main.echo")
     def test_make_generators_errors_if_src_dsn_missing(
         self, mock_echo: MagicMock
     ) -> None:
@@ -213,7 +213,7 @@ class TestCLI(SSGTestCase):
         self.assertSuccess(result)
 
     @patch("sqlsynthgen.main.Path")
-    @patch("typer.echo")
+    @patch("sqlsynthgen.main.echo")
     def test_make_tables_errors_if_file_exists(
         self, mock_echo: MagicMock, mock_path: MagicMock
     ) -> None:
@@ -234,7 +234,7 @@ class TestCLI(SSGTestCase):
         )
         self.assertEqual(1, result.exit_code)
 
-    @patch("typer.echo")
+    @patch("sqlsynthgen.main.echo")
     def test_make_tables_errors_if_src_dsn_missing(self, mock_echo: MagicMock) -> None:
         """Test the make-tables sub-command doesn't overwrite."""
 
@@ -314,7 +314,7 @@ class TestCLI(SSGTestCase):
         )
 
     @patch("sqlsynthgen.main.Path")
-    @patch("typer.echo")
+    @patch("sqlsynthgen.main.echo")
     def test_make_stats_errors_if_file_exists(
         self, mock_echo: MagicMock, mock_path: MagicMock
     ) -> None:
@@ -338,7 +338,7 @@ class TestCLI(SSGTestCase):
         )
         self.assertEqual(1, result.exit_code)
 
-    @patch("typer.echo")
+    @patch("sqlsynthgen.main.echo")
     def test_make_stats_errors_if_no_src_dsn(
         self,
         mock_echo: MagicMock,

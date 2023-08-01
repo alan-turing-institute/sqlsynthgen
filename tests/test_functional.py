@@ -151,6 +151,7 @@ class FunctionalTestCase(RequiresDBTestCase):
                 "make-tables",
                 f"--orm-file={self.alt_orm_file_path}",
                 "--force",
+                "--verbose",
             ],
             capture_output=True,
             env=self.env,
@@ -168,6 +169,7 @@ class FunctionalTestCase(RequiresDBTestCase):
                 f"--stats-file={self.stats_file_path}",
                 f"--config-file={self.config_file_path}",
                 "--force",
+                "--verbose",
             ],
             capture_output=True,
             env=self.env,
@@ -183,6 +185,7 @@ class FunctionalTestCase(RequiresDBTestCase):
                 f"--config-file={self.config_file_path}",
                 f"--stats-file={self.stats_file_path}",
                 "--force",
+                "--verbose",
             ],
             capture_output=True,
             env=self.env,
@@ -195,6 +198,7 @@ class FunctionalTestCase(RequiresDBTestCase):
                 "sqlsynthgen",
                 "create-tables",
                 f"--orm-file={self.alt_orm_file_path}",
+                "--verbose",
             ],
             capture_output=True,
             env=self.env,
@@ -207,6 +211,7 @@ class FunctionalTestCase(RequiresDBTestCase):
                 "sqlsynthgen",
                 "create-vocab",
                 f"--ssg-file={self.alt_ssg_file_path}",
+                "--verbose",
             ],
             capture_output=True,
             env=self.env,
@@ -224,6 +229,7 @@ class FunctionalTestCase(RequiresDBTestCase):
                 f"--orm-file={self.alt_orm_file_path}",
                 f"--ssg-file={self.alt_ssg_file_path}",
                 "--num-passes=2",
+                "--verbose",
             ],
             capture_output=True,
             env=self.env,
@@ -238,6 +244,7 @@ class FunctionalTestCase(RequiresDBTestCase):
                 "--yes",
                 f"--orm-file={self.alt_orm_file_path}",
                 f"--ssg-file={self.alt_ssg_file_path}",
+                "--verbose",
             ],
             capture_output=True,
             env=self.env,
@@ -252,6 +259,7 @@ class FunctionalTestCase(RequiresDBTestCase):
                 "--yes",
                 f"--orm-file={self.alt_orm_file_path}",
                 f"--ssg-file={self.alt_ssg_file_path}",
+                "--verbose",
             ],
             capture_output=True,
             env=self.env,
@@ -265,6 +273,7 @@ class FunctionalTestCase(RequiresDBTestCase):
                 "remove-tables",
                 "--yes",
                 f"--orm-file={self.alt_orm_file_path}",
+                "--verbose",
             ],
             capture_output=True,
             env=self.env,
@@ -287,7 +296,7 @@ class FunctionalTestCase(RequiresDBTestCase):
         """
 
         # This is all exactly the same stuff we run in test_workflow_maximal_args.
-        completed_process = run(
+        run(
             [
                 "sqlsynthgen",
                 "make-tables",
@@ -297,7 +306,7 @@ class FunctionalTestCase(RequiresDBTestCase):
             capture_output=True,
             env=self.env,
         )
-        completed_process = run(
+        run(
             [
                 "sqlsynthgen",
                 "make-stats",
@@ -308,7 +317,7 @@ class FunctionalTestCase(RequiresDBTestCase):
             capture_output=True,
             env=self.env,
         )
-        completed_process = run(
+        run(
             [
                 "sqlsynthgen",
                 "make-generators",
@@ -321,7 +330,7 @@ class FunctionalTestCase(RequiresDBTestCase):
             capture_output=True,
             env=self.env,
         )
-        completed_process = run(
+        run(
             [
                 "sqlsynthgen",
                 "create-tables",
@@ -330,7 +339,7 @@ class FunctionalTestCase(RequiresDBTestCase):
             capture_output=True,
             env=self.env,
         )
-        completed_process = run(
+        run(
             [
                 "sqlsynthgen",
                 "create-vocab",
