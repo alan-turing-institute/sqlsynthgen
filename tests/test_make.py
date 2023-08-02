@@ -3,7 +3,7 @@ import asyncio
 import os
 from io import StringIO
 from pathlib import Path
-from typing import Any, Dict
+from typing import Dict
 from unittest.mock import MagicMock, patch
 
 import yaml
@@ -305,19 +305,7 @@ class TestMakeStats(RequiresDBTestCase):
         also use snsql.
         """
         config_asyncio = {**self.config, "use-asyncio": True}
-        with self.assertRaises(ValueError):
-            _ = asyncio.get_event_loop().run_until_complete(
-                make_src_stats(self.connection_string, config_asyncio)
-            )
-
-    def test_make_stats_asyncio_no_snsql(self) -> None:
-        """Test that make_src_stats works if we use asyncio as long as we disable snsql
-        on all queries.
-        """
-        config_asyncio_no_snsql: dict[str, Any] = {**self.config, "use-asyncio": True}
-        for query_block in config_asyncio_no_snsql["src-stats"]:
-            query_block["use-smartnoise-sql"] = False
         src_stats = asyncio.get_event_loop().run_until_complete(
-            make_src_stats(self.connection_string, config_asyncio_no_snsql)
+            make_src_stats(self.connection_string, config_asyncio)
         )
         self.check_make_stats_output(src_stats)

@@ -5,7 +5,6 @@ tables:
   countries:
     vocabulary_table: true
 
-
   sessions:
     num_rows_per_pass: 0
     row_generators:
@@ -30,8 +29,6 @@ tables:
         args: [dst_db_conn, orm.Countries, '"country_destination"']
         columns_assigned: country_destination
 
-
-
   users:
     num_rows_per_pass: 0
     row_generators:
@@ -51,27 +48,26 @@ tables:
            query_results: SRC_STATS["age_stats"]
         columns_assigned: age
 
-
-smartnoise-sql:
-    public:
-        users:
-            age:
-                type: float
-                private_id: false
-                lower: 0
-                upper: 100
-            id:
-                type: string
-                private_id: true
-
 src-stats:
   - name: age_stats
     query: >
-        select avg(age), stddev(age)
-        from users
-        where age <= 100
+      SELECT age, id
+      FROM users
+      WHERE age <= 100
+    dp-query: >
+      SELECT AVG(age), STDDEV(age)
+      FROM query_result
     epsilon: 0.1
     delta: 0.000001
+    snsql-metadata:
+      max_ids: 1
+      id:
+        type: string
+        private_id: true
+      age:
+        type: float
+        lower: 0
+        upper: 100
 
 story_generators_module: airbnb_generators
 story_generators:
