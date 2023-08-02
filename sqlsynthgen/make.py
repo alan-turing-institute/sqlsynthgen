@@ -499,12 +499,13 @@ async def make_src_stats(
             private_result = reader.execute(dp_query)
             header = private_result[0]
             final_result = [
-                {header[i]: row[i] for i in range(len(row))}
+                {str(header[i]): row[i] for i in range(len(row))}
                 for row in private_result[1:]
             ]
         else:
             final_result = [
-                dict(row.items()) for row in raw_result.mappings().fetchall()
+                {str(k): v for k, v in row.items()}
+                for row in raw_result.mappings().fetchall()
             ]
         return final_result
 
@@ -516,4 +517,5 @@ async def make_src_stats(
         query_block["name"]: result
         for query_block, result in zip(query_blocks, results)
     }
+    # TODO Add a warning if the result of some query is empty.
     return src_stats
