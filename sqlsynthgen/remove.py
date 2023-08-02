@@ -19,6 +19,7 @@ def remove_db_data(orm_module: ModuleType, ssg_module: ModuleType) -> None:
             # We presume that all tables that aren't vocab should be truncated
             if table.name not in ssg_module.vocab_dict:
                 dst_conn.execute(delete(table))
+                dst_conn.commit()
 
 
 def remove_db_vocab(orm_module: ModuleType, ssg_module: ModuleType) -> None:
@@ -33,6 +34,7 @@ def remove_db_vocab(orm_module: ModuleType, ssg_module: ModuleType) -> None:
             # We presume that all tables that are vocab should be truncated
             if table.name in ssg_module.vocab_dict:
                 dst_conn.execute(delete(table))
+                dst_conn.commit()
 
 
 def remove_db_tables(orm_module: ModuleType) -> None:

@@ -4,7 +4,7 @@ import sys
 from importlib import import_module
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import yaml
 from sqlalchemy import create_engine, event, select
@@ -41,11 +41,11 @@ def import_file(file_path: str) -> ModuleType:
     return module
 
 
-def download_table(table: Any, engine: Any, yaml_file_name: str) -> None:
+def download_table(table: Any, engine: Any, yaml_file_name: Union[str, Path]) -> None:
     """Download a Table and store it as a .yaml file."""
-    stmt = select([table])
+    stmt = select(table)
     with engine.connect() as conn:
-        result = [dict(row) for row in conn.execute(stmt)]
+        result = [dict(row) for row in conn.execute(stmt).mappings()]
 
     with Path(yaml_file_name).open("w", newline="", encoding="utf-8") as yamlfile:
         yamlfile.write(yaml.dump(result))
@@ -60,7 +60,7 @@ def create_db_engine(
     """Create a SQLAlchemy Engine."""
     if use_asyncio:
         async_dsn = db_dsn.replace("postgresql://", "postgresql+asyncpg://")
-        engine = create_async_engine(async_dsn, **kwargs)
+        engine: Any = create_async_engine(async_dsn, **kwargs)
         event_engine = engine.sync_engine
     else:
         engine = create_engine(db_dsn, **kwargs)

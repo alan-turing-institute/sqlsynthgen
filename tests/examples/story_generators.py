@@ -44,7 +44,7 @@ def long_story(
     concept_query = sqla.text(
         "SELECT concept_id FROM concept WHERE concept_name = 'another concept'"
     )
-    concept_id = dst_db_conn.execute(concept_query).first()[0]
+    concept_id = dst_db_conn.execute(concept_query).mappings().first()["concept_id"]
 
     # Make a story where we first create a person, and then give that person two visits.
     person = yield ("person", {"research_opt_out": opt_out})

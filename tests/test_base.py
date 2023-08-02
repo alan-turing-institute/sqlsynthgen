@@ -50,6 +50,6 @@ class VocabTests(RequiresDBTestCase):
 
         with self.engine.connect() as conn:
             vocab_gen.load(conn)
-            statement = select([BaseTable])
+            statement = select(BaseTable)
             rows = list(conn.execute(statement))
         self.assertEqual(3, len(rows))

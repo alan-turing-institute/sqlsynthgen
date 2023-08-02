@@ -23,14 +23,14 @@ sqlalchemy-utils = "^0.38.3"
 mimesis = "^6.1.1"
 typer = "^0.7.0"
 pyyaml = "^5.0"
-sqlalchemy = {version = "^1.4", extras = ["asyncio"]}
+sqlalchemy = "^2"
 sphinx-rtd-theme = {version = "^1.2.0", optional = true}
 sphinxcontrib-napoleon = {version = "^0.7", optional = true}
-smartnoise-sql = "^0.2.11"
+smartnoise-sql = "^1"
 jinja2 = "^3.1.2"
 black = "^23.3.0"
 jsonschema = "^4.17.3"
-sqlacodegen = "3.0.0rc1"
+sqlacodegen = {path = "../sqlacodegen"}
 asyncpg = "^0.27.0"
 greenlet = "^2.0.2"
 pymysql = "^1.1.0"

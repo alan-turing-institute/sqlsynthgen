@@ -98,7 +98,12 @@ def _populate_story(
             cursor = dst_conn.execute(stmt)
             # We need to return all the default values etc. to the generator,
             # because other parts of the story may refer to them.
-            return_values = dict(cursor.returned_defaults or {})
+            if cursor.returned_defaults:
+                # pylint: disable=protected-access
+                return_values = dict(cursor.returned_defaults._mapping.items())
+                # pylint: enable=protected-access
+            else:
+                return_values = {}
             final_values = {**insert_values, **return_values}
             table_name, provided_values = story.send(final_values)
     except StopIteration:
