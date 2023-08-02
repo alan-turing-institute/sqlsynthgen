@@ -517,5 +517,8 @@ async def make_src_stats(
         query_block["name"]: result
         for query_block, result in zip(query_blocks, results)
     }
-    # TODO Add a warning if the result of some query is empty.
+
+    for name, result in src_stats.items():
+        if not result:
+            logging.warning("src-stats query %s returned no results", name)
     return src_stats

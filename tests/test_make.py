@@ -316,3 +316,39 @@ class TestMakeStats(RequiresDBTestCase):
             make_src_stats(self.connection_string, config_asyncio)
         )
         self.check_make_stats_output(src_stats)
+
+    @patch("sqlsynthgen.make.logging")
+    def test_make_stats_empty_result(self, mock_logging: MagicMock) -> None:
+        """Test that make_src_stats logs a warning if a query returns nothing."""
+        query_name1 = "non-existent-person"
+        query_name2 = "extreme-dp-parameters"
+        config = {
+            "src-stats": [
+                {
+                    "name": query_name1,
+                    "query": "SELECT * FROM person WHERE name='Nat Nonexistent'",
+                },
+                {
+                    "name": query_name2,
+                    "query": "SELECT * FROM person",
+                    "dp-query": (
+                        "SELECT COUNT(*) FROM query_result GROUP BY research_opt_out"
+                    ),
+                    "epsilon": 1e-4,  # This makes the query result be empty.
+                    "delta": 1e-15,
+                    "snsql-metadata": {
+                        "person_id": {"type": "int", "private_id": True},
+                        "research_opt_out": {"type": "boolean"},
+                    },
+                },
+            ]
+        }
+        src_stats = asyncio.get_event_loop().run_until_complete(
+            make_src_stats(self.connection_string, config, "public")
+        )
+        self.assertEqual(src_stats[query_name1], [])
+        self.assertEqual(src_stats[query_name2], [])
+        warning_template = "src-stats query %s returned no results"
+        mock_logging.warning.assert_any_call(warning_template, query_name1)
+        mock_logging.warning.assert_any_call(warning_template, query_name2)
+        self.assertEqual(len(mock_logging.warning.call_args_list), 2)
