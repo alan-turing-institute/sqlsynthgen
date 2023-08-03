@@ -11,7 +11,7 @@ Which DBMSs does SqlSynthGen support?
 *************************************
 
 * SqlSynthGen most fully supports **PostgresSQL**, which it uses for its end-to-end functional tests.
-* SqlSynthGen also supports **MariaDB** with one exception: you cannot use source statistics (i.e. the ``make-stats`` command).
+* SqlSynthGen also supports **MariaDB**, as long as you don't set ``use-asyncio: true`` in your config.
 * SqlSynthGen *might*, work with **SQLite** but this is largely untested.
 
 Please open a GitHub issue if you would like to see support for another DBMS.
