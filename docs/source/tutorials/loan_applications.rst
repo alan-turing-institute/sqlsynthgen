@@ -45,6 +45,8 @@ We run SqlSynthGen's ``make-tables`` command to create a file called ``orm.py`` 
 Inspecting the ``orm.py`` file, we see that the ``tkeys`` table has column called ``goodClient``, which is a ``TINYINT``.
 SqlSynthGen doesn't know what to do with ``TINYINT`` columns, so we need to create a config file to tell it how to handle them. This isn't necessary for normal ``Integer`` columns.
 
+Looking at the ``goodClient`` values:
+
 .. list-table:: tkeys
    :header-rows: 1
 
@@ -59,7 +61,7 @@ SqlSynthGen doesn't know what to do with ``TINYINT`` columns, so we need to crea
    * - 3
      - 0
 
-Looking at the ``goodClient`` values, we see that they are always 0 or 1 so we will pick randomly from 0 and 1 for our synthetic value:
+we see that they are always 0 or 1 so we will pick randomly from 0 and 1 for our synthetic value:
 
 **config.yaml**
 
@@ -70,7 +72,7 @@ We run SqlSynthGen's ``make-generators`` command to create ``ssg.py``, which con
 
 .. code-block:: console
 
-    $ sqlsynthgen make-generators --config config1.yaml
+    $ sqlsynthgen make-generators --config config.yaml
 
 We then run SqlSynthGen's ``create-tables`` command to create the tables in the destination database:
 
@@ -117,23 +119,23 @@ This will give us an exact copy of the ``districts`` table.
      - A3
      - A4
      - A5
-     - ...
    * - 1
      - Hl.m. Praha
      - Prague
      - 1204953
      - 0
    * - 2
-     - Benesov central
-     - Bohemia
+     - Benesov
+     - central Bohemia
      - 88884
      - 80
    * - 3
-     - Beroun central
+     - Beroun
+     - central Bohemia
      - 75232
      - 55
 
-Adding a Client -> Tkeys Foreign Key
+Adding a Foreign Key
 ++++++++++++++++++++++++++++++++++++
 
 We notice that the source database does not have a foreign key constraint between the ``clients.tkey_id`` column and the ``tkeys.id`` column, even though it looks like there ought to be one.
@@ -150,18 +152,15 @@ We add it manually to the orm.py file
        __table_args__ = (
            ForeignKeyConstraint(['district_id'], ['districts.id'], ondelete='CASCADE', onupdate='CASCADE', name='clients_ibfk_1'),
            # Added manually
-           ForeignKeyConstraint(['tkey_id'], ['tkeys.id'], ondelete='CASCADE', onupdate='CASCADE',
-                             name='clients_tkey_id'),
+           ForeignKeyConstraint(['tkey_id'], ['tkeys.id'], ondelete='CASCADE', onupdate='CASCADE', name='clients_tkey_id'),
        )
-
-       id = Column(INTEGER(11), primary_key=True)
        ...
 
 We'll need to recreate the ``ssg.py`` file, the destination database and the data
 
 .. code-block:: console
 
-    $ sqlsynthgen make-generators --config-file config2.yaml --force
+    $ sqlsynthgen make-generators --config-file config.yaml --force
     $ sqlsynthgen remove-tables --yes
     $ sqlsynthgen create-tables
     $ sqlsynthgen create-vocab
@@ -174,7 +173,7 @@ Marginal Distributions with Differential Privacy
 
 For many of the remaining categorical columns, such as ``cards.type``
 
-.. list-table:: districts
+.. list-table:: cards
    :header-rows: 1
 
    * - id
@@ -195,15 +194,29 @@ For many of the remaining categorical columns, such as ``cards.type``
      - 1995-09-03
 
 we may decide that we want to use the real values in the right proportions.
-We can take the real values in the right proportions, and even add noise to make them differentially private by using the source-statistics and smartnoise SQL features:
+We can take the real values in the right proportions, and even add noise to make them differentially private by using the source-statistics and SmartNoise SQL features:
+
+**config.yaml**
 
 .. literalinclude:: ../../../tests/examples/loans/config3.yaml
    :language: yaml
 
+We define a custom row-generator to use the source statistics and Python's ``random.choices()`` function to choose a value:
+
+**my_row_generators.py**
+
+.. literalinclude:: ../../../tests/examples/loans/my_row_generators.py
+   :language: python
+
 As before, we will need to re-create ``ssg.py`` and the data.
 
+.. code-block:: console
 
+    $ sqlsynthgen make-generators --config-file config.yaml --force
+    $ sqlsynthgen make-stats --config-file config.yaml --force
+    $ sqlsynthgen remove-data --yes
+    $ sqlsynthgen create-vocab
+    $ sqlsynthgen create-data --num-passes 100
 
-ToDo
-**
-The data will be entirely random so you may wish to fine tune it using the source-statistics, custom generators or "story generators" explained in the longer :ref:`introduction <introduction>`.
+For further refinement, you can use "story generators" to create inter-table correlations so that, for example, the number of loan applications depends on the number of cards they have or the average amount of a bank transfer depends on the home city of a client.
+See the :ref:`introduction <introduction>` for more.

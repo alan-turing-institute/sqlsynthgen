@@ -1,25 +1,16 @@
 ---
-tables:
-  tkeys:
-    row_generators:
-      - name: generic.random.choice
-        columns_assigned: goodClient
-        args:
-          - [0, 1]
-  districts:
-    vocabulary_table: true
 src-stats:
-  - name: count_cards_type
+  - name: count_card_types
     query: >
-       SELECT
-         c.type AS card_type,
-         d.client_id
-       FROM cards c
-       JOIN disps d
-         on c.disp_id = d.id
+      SELECT
+        c.type AS card_type,
+        d.client_id
+      FROM cards c
+      JOIN disps d
+        on c.disp_id = d.id
     dp-query: >
       SELECT
-        count(*),
+        count(*) AS the_count,
         card_type
       FROM query_result
       GROUP BY card_type
@@ -34,3 +25,19 @@ src-stats:
         name: card_type
         type: string
         private_id: False
+row_generators_module: my_row_generators
+tables:
+  cards:
+    row_generators:
+      - name: my_row_generators.my_card_func
+        kwargs:
+          stats: SRC_STATS["count_card_types"]
+        columns_assigned: type
+  tkeys:
+    row_generators:
+      - name: generic.random.choice
+        columns_assigned: goodClient
+        args:
+          - [0, 1]
+  districts:
+    vocabulary_table: true
