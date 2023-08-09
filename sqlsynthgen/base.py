@@ -23,7 +23,7 @@ class FileUploader:
             return
         try:
             with yaml_file.open("r", newline="", encoding="utf-8") as yamlfile:
-                rows = yaml.safe_load(yamlfile)
+                rows = yaml.load(yamlfile, Loader=yaml.Loader)
         except yaml.YAMLError as e:
             logging.warning("Error reading YAML file %s: %s", yaml_file, e)
             return
