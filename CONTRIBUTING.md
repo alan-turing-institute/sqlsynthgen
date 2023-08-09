@@ -8,7 +8,7 @@ Please install the following software on your workstation:
 
 1. [Poetry](https://python-poetry.org/docs/#installation).
 1. [Pre-commit](https://pre-commit.com/#install).
-1. [PosgreSQL](https://postgresapp.com).
+1. [PostgreSQL](https://postgresapp.com).
 
 ## Setting up your development environment
 
