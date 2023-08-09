@@ -497,11 +497,8 @@ async def make_src_stats(
             )
             reader = snsql.from_df(result_df, privacy=privacy, metadata=snsql_metadata)
             private_result = reader.execute(dp_query)
-            header = private_result[0]
-            final_result = [
-                {str(header[i]): row[i] for i in range(len(row))}
-                for row in private_result[1:]
-            ]
+            header = tuple(str(x) for x in private_result[0])
+            final_result = [dict(zip(header, row)) for row in private_result[1:]]
         else:
             final_result = [
                 {str(k): v for k, v in row.items()}
