@@ -1,10 +1,16 @@
 Tutorial: Loan Data
 ===================
 
+Intro
++++++
+
 There are many potential applications of synthetic data in banking and finance where the nature of the data, being both personally and commercially sensitive, may rule out sharing real, identifiable data.
 
 Here, we show how to use SqlSynthGen to generate a simple (uniformly random) synthetic version of the freely-available `PKDD'99 <https://relational.fit.cvut.cz/dataset/Financial>`_ dataset.
 This dataset contains 606 successful and 76 not successful loan applications.
+
+Setup
++++++
 
 The PKDD'99 dataset is stored on a MariaDB database, which means that we need a local MariaDB database to store the synthetic data.
 MariaDB installation instructions can be found `here <https://mariadb.org/download/?t=mariadb&p=mariadb&r=11.2.0#entry-header>`_.
@@ -27,6 +33,9 @@ After :ref:`installing SqlSynthGen <enduser>`, we create a `.env` file to set so
     SRC_DSN="mariadb+pymysql://guest:relational@relational.fit.cvut.cz:3306/Financial_ijs"
     DST_DSN="mariadb+pymysql://myuser:mypassword@localhost:3306/financial"
 
+Uniform Random Data
++++++++++++++++++++
+
 We run SqlSynthGen's ``make-tables`` command to create a file called ``orm.py`` that contains the schema of the source database.
 
 .. code-block:: console
@@ -36,16 +45,32 @@ We run SqlSynthGen's ``make-tables`` command to create a file called ``orm.py`` 
 Inspecting the ``orm.py`` file, we see that the ``tkeys`` table has column called ``goodClient``, which is a ``TINYINT``.
 SqlSynthGen doesn't know what to do with ``TINYINT`` columns, so we need to create a config file to tell it how to handle them. This isn't necessary for normal ``Integer`` columns.
 
+.. list-table:: tkeys
+   :header-rows: 1
+
+   * - id
+     - goodClient
+   * - 0
+     - 1
+   * - 1
+     - 0
+   * - 2
+     - 0
+   * - 3
+     - 0
+
+Looking at the ``goodClient`` values, we see that they are always 0 or 1 so we will pick randomly from 0 and 1 for our synthetic value:
+
 **config.yaml**
 
-.. literalinclude:: ../../../tests/examples/loans/config.yaml
+.. literalinclude:: ../../../tests/examples/loans/config1.yaml
    :language: yaml
 
 We run SqlSynthGen's ``make-generators`` command to create ``ssg.py``, which contains a generator class for each table in the source database:
 
 .. code-block:: console
 
-    $ sqlsynthgen make-generators --config config.yaml
+    $ sqlsynthgen make-generators --config config1.yaml
 
 We then run SqlSynthGen's ``create-tables`` command to create the tables in the destination database:
 
@@ -61,5 +86,124 @@ Finally, we run SqlSynthGen's ``create-data`` command to populate the tables wit
 
     $ sqlsynthgen create-data --num-passes 100
 
-This will make 100 rows in each of the nine tables.
+This will make 100 rows in each of the nine tables with entirely random data.
+
+Uniform Random Data with Vocabularies
++++++++++++++++++++++++++++++++++++++
+
+We can do better than uniform random data, however.
+We notice that the ``districts`` table doesn't contain any sensitive data so we choose to copy it whole to the destination database:
+
+**config.yaml**
+
+.. literalinclude:: ../../../tests/examples/loans/config2.yaml
+   :language: yaml
+
+We can delete and re-create the synthetic data with:
+
+.. code-block:: console
+
+    $ sqlsynthgen remove-data
+    $ sqlsynthgen create-vocab
+    $ sqlsynthgen create-data --num-passes 100
+
+This will give us an exact copy of the ``districts`` table.
+
+.. list-table:: districts
+   :header-rows: 1
+
+   * - id
+     - A2
+     - A3
+     - A4
+     - A5
+     - ...
+   * - 1
+     - Hl.m. Praha
+     - Prague
+     - 1204953
+     - 0
+   * - 2
+     - Benesov central
+     - Bohemia
+     - 88884
+     - 80
+   * - 3
+     - Beroun central
+     - 75232
+     - 55
+
+Adding a Client -> Tkeys Foreign Key
+++++++++++++++++++++++++++++++++++++
+
+We notice that the source database does not have a foreign key constraint between the ``clients.tkey_id`` column and the ``tkeys.id`` column, even though it looks like there ought to be one.
+
+We add it manually to the orm.py file
+
+**orm.py**:
+
+.. code-block:: python3
+   :linenos:
+
+   class Clients(Base):
+       __tablename__ = 'clients'
+       __table_args__ = (
+           ForeignKeyConstraint(['district_id'], ['districts.id'], ondelete='CASCADE', onupdate='CASCADE', name='clients_ibfk_1'),
+           # Added manually
+           ForeignKeyConstraint(['tkey_id'], ['tkeys.id'], ondelete='CASCADE', onupdate='CASCADE',
+                             name='clients_tkey_id'),
+       )
+
+       id = Column(INTEGER(11), primary_key=True)
+       ...
+
+We'll need to recreate the ``ssg.py`` file, the destination database and the data
+
+.. code-block:: console
+
+    $ sqlsynthgen make-generators --config-file config2.yaml --force
+    $ sqlsynthgen remove-tables --yes
+    $ sqlsynthgen create-tables
+    $ sqlsynthgen create-vocab
+    $ sqlsynthgen create-data --num-passes 100
+
+We now have a FK relationship and all synthetic values of ``clients.tkey_id`` exist in the synthetic ``tkeys.id`` column.
+
+Marginal Distributions with Differential Privacy
+++++++++++++++++++++++++++++++++++++++++++++++++
+
+For many of the remaining categorical columns, such as ``cards.type``
+
+.. list-table:: districts
+   :header-rows: 1
+
+   * - id
+     - disp_id
+     - type
+     - issued
+   * - 1
+     - 9
+     - gold
+     - 1998-10-16
+   * - 2
+     - 19
+     - classic
+     - 1998-03-13
+   * - 3
+     - 41
+     - gold
+     - 1995-09-03
+
+we may decide that we want to use the real values in the right proportions.
+We can take the real values in the right proportions, and even add noise to make them differentially private by using the source-statistics and smartnoise SQL features:
+
+.. literalinclude:: ../../../tests/examples/loans/config3.yaml
+   :language: yaml
+
+As before, we will need to re-create ``ssg.py`` and the data.
+
+
+
+ToDo
+**
 The data will be entirely random so you may wish to fine tune it using the source-statistics, custom generators or "story generators" explained in the longer :ref:`introduction <introduction>`.

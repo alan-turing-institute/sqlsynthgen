@@ -1,0 +1,36 @@
+---
+tables:
+  tkeys:
+    row_generators:
+      - name: generic.random.choice
+        columns_assigned: goodClient
+        args:
+          - [0, 1]
+  districts:
+    vocabulary_table: true
+src-stats:
+  - name: count_cards_type
+    query: >
+       SELECT
+         c.type AS card_type,
+         d.client_id
+       FROM cards c
+       JOIN disps d
+         on c.disp_id = d.id
+    dp-query: >
+      SELECT
+        count(*),
+        card_type
+      FROM query_result
+      GROUP BY card_type
+    epsilon: 0.1
+    delta: 0.0001
+    snsql-metadata:
+      client_id:
+        name: client_id
+        type: int
+        private_id: True
+      card_type:
+        name: card_type
+        type: string
+        private_id: False
