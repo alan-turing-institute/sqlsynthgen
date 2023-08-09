@@ -1,6 +1,6 @@
 # How to Develop for SQLSYNTHGEN
 
-The following instructions has been tested on MacOS Ventura, but they *should* work on other Unix-based OS.
+The following instructions have been tested on MacOS Ventura, but they *should* work on other Unix-based OS.
 
 ## Pre-requisites
 
@@ -34,7 +34,7 @@ Please install the following software on your workstation:
     poetry install --all-extras
     ```
 
-    *If you don't need to [build the project documentation](#building-documentation-locally), run instead just `poetry install`.*
+    *If you don't need to [build the project documentation](#building-documentation-locally), the `--all-extras` option can be omitted.*
 
 1. Install the git hook scripts. They will run whenever you perform a commit:
 
@@ -52,7 +52,7 @@ Please install the following software on your workstation:
 
 ## Running unit tests
 
-Executing unit tests is straightward:
+Executing unit tests is straightforward:
 
 ```bash
 cd sqlsynthgen
