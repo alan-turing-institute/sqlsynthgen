@@ -1,0 +1,10 @@
+---
+tables:
+  tkeys:
+    row_generators:
+      - name: generic.random.choice
+        columns_assigned: goodClient
+        args:
+          - [0, 1]
+  districts:
+    vocabulary_table: true
