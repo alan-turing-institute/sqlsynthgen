@@ -2,6 +2,7 @@
 import asyncio
 import json
 import sys
+from importlib import metadata
 from pathlib import Path
 from types import ModuleType
 from typing import Final, Optional
@@ -350,6 +351,14 @@ def remove_tables(
             echo("Tables dropped.")
     else:
         echo("Would remove tables if called with --yes.")
+
+
+@app.command()
+def version() -> None:
+    """Display version information."""
+    echo(
+        f"sqlsynthgen version {metadata.version(__package__)}",
+    )
 
 
 if __name__ == "__main__":
