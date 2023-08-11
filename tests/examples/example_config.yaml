@@ -25,13 +25,22 @@ src-stats:
     snsql-metadata:
       # You may well want censor_dims to be on, but we turn it off for the
       # tests to silence a smartnoise-sql nag warning.
+      max_ids: 10
+      row_privacy: True
+      sample_max_ids: True
       censor_dims: False
+      clamp_counts: True
+      clamp_columns: True
+      use_dpsu: True
       person_id:
-        name: person_id
         type: int
         private_id: True
+        lower: 10
+        upper: 100
+        nullable: True
+        missing_value: -1
+        sensitivity: 1
       research_opt_out:
-        name: research_opt_out
         type: boolean
         private_id: False
 

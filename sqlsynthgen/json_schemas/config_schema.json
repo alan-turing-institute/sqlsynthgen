@@ -14,7 +14,6 @@
     "story_generators_module": {
       "type": "string"
     },
-
     "src-stats": {
       "type": "array",
       "items": {
@@ -36,26 +35,55 @@
           "delta": {
             "type": "number"
           },
-
           "snsql-metadata": {
             "type": "object",
             "properties": {
+              "max_ids": {
+                "type": "integer"
+              },
+              "row_privacy": {
+                "type": "boolean"
+              },
+              "sample_max_ids": {
+                "type": "boolean"
+              },
               "censor_dims": {
+                "type": "boolean"
+              },
+              "clamp_counts": {
+                "type": "boolean"
+              },
+              "clamp_columns": {
+                "type": "boolean"
+              },
+              "use_dpsu": {
                 "type": "boolean"
               }
             },
             "patternProperties": {
-              "^(?!censor_dims).*$": {
+              "^(?!(max_ids|row_privacy|sample_max_ids|censor_dims|clamp_counts|clamp_columns|use_dpsu)).*$": {
                 "type": "object",
+                "additionalProperties": false,
+                "required": ["type"],
                 "properties": {
-                  "name": {
-                    "type": "string"
-                  },
                   "type": {
                     "type": "string"
                   },
                   "private_id": {
                     "type": "boolean"
+                  },
+                  "lower": {
+                    "type": "number"
+                  },
+                  "upper": {
+                    "type": "number"
+                  },
+                  "nullable": {
+                    "type": "boolean"
+                  },
+                  "missing_value": {},
+                  "sensitivity": {
+                    "type": "number"
                   }
                 }
               }
@@ -109,6 +137,7 @@
               "type": "array",
               "items": {
                 "type": "object",
+                "required": ["name", "columns_assigned"],
                 "properties": {
                   "name": {
                     "type": "string"
