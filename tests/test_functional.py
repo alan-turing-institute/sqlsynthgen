@@ -10,7 +10,24 @@ from tests.utils import RequiresDBTestCase, run_psql
 
 
 class FunctionalTestCase(RequiresDBTestCase):
-    """End-to-end tests."""
+    """End-to-end tests that don't require a database."""
+
+    def test_version_command(self) -> None:
+        """Check that the version command works."""
+
+        completed_process = run(
+            ["sqlsynthgen", "version"],
+            capture_output=True,
+        )
+        self.assertSuccess(completed_process)
+        self.assertRegex(
+            completed_process.stdout.decode("utf-8"),
+            r"sqlsynthgen version [0-9]+\.[0-9]+\.[0-9]+",
+        )
+
+
+class DBFunctionalTestCase(RequiresDBTestCase):
+    """End-to-end tests that require a database."""
 
     test_dir = Path("tests/workspace")
     examples_dir = Path("tests/examples")
