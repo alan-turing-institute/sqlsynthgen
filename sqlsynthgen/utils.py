@@ -1,20 +1,35 @@
 """Utility functions."""
+import json
+import logging
 import os
 import sys
 from importlib import import_module
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Optional
+from typing import Any, Final, Optional
 
 import yaml
+from jsonschema.exceptions import ValidationError
+from jsonschema.validators import validate
 from sqlalchemy import create_engine, event, select
 from sqlalchemy.ext.asyncio import create_async_engine
+
+CONFIG_SCHEMA_PATH: Final[Path] = (
+    Path(__file__).parent / "json_schemas/config_schema.json"
+)
 
 
 def read_yaml_file(path: str) -> Any:
     """Read a yaml file in to dictionary, given a path."""
     with open(path, "r", encoding="utf8") as f:
         config = yaml.safe_load(f)
+
+    schema_config = json.loads(CONFIG_SCHEMA_PATH.read_text(encoding="UTF-8"))
+    try:
+        validate(config, schema_config)
+    except ValidationError as e:
+        logging.warning("The config file is invalid:\n%s", e)
+
     return config
 
 

@@ -8,7 +8,12 @@ from pydantic.tools import parse_obj_as
 from sqlalchemy import Column, Integer, create_engine, insert
 from sqlalchemy.orm import declarative_base
 
-from sqlsynthgen.utils import create_db_engine, download_table, import_file
+from sqlsynthgen.utils import (
+    create_db_engine,
+    download_table,
+    import_file,
+    read_yaml_file,
+)
 from tests.utils import RequiresDBTestCase, SSGTestCase, run_psql
 
 # pylint: disable=invalid-name
@@ -115,3 +120,14 @@ class TestCreateDBEngine(RequiresDBTestCase):
 
         # With schema
         create_db_engine(self.dsn, schema_name="public", use_asyncio=True)
+
+
+class TestReadYaml(SSGTestCase):
+    """Tests for the read_yaml_file function."""
+
+    def test_warns_of_invalid_config(self) -> None:
+        """Test that we get a warning if the config is invalid."""
+        with self.assertLogs(level="WARNING") as log:
+            read_yaml_file("tests/examples/invalid_config.yaml")
+
+        self.assertIn("The config file is invalid:", log.output[0])
