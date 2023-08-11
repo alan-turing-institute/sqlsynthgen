@@ -15,16 +15,13 @@ from sqlsynthgen.create import create_db_data, create_db_tables, create_db_vocab
 from sqlsynthgen.make import make_src_stats, make_table_generators, make_tables_file
 from sqlsynthgen.remove import remove_db_data, remove_db_tables, remove_db_vocab
 from sqlsynthgen.settings import Settings, get_settings
-from sqlsynthgen.utils import import_file, read_yaml_file
+from sqlsynthgen.utils import CONFIG_SCHEMA_PATH, import_file, read_yaml_file
 
 # pylint: disable=too-many-arguments
 
 ORM_FILENAME: Final[str] = "orm.py"
 SSG_FILENAME: Final[str] = "ssg.py"
 STATS_FILENAME: Final[str] = "src-stats.yaml"
-CONFIG_SCHEMA_PATH: Final[Path] = (
-    Path(__file__).parent / "json_schemas/config_schema.json"
-)
 
 app = Typer(no_args_is_help=True)
 
