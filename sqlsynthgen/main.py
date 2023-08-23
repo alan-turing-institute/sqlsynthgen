@@ -99,7 +99,7 @@ def create_vocab(
     ssg_file: str = Option(SSG_FILENAME),
     verbose: bool = Option(False, "--verbose", "-v"),
 ) -> None:
-    """Create tables using the SQLAlchemy file.
+    """Import vocabulary data.
 
     Example:
         $ sqlsynthgen create-vocab
@@ -122,7 +122,7 @@ def create_tables(
     orm_file: str = Option(ORM_FILENAME),
     verbose: bool = Option(False, "--verbose", "-v"),
 ) -> None:
-    """Create schema from Python classes.
+    """Create schema from a SQLAlchemy ORM file.
 
     This CLI command creates the destination schema using object
     relational model declared as Python tables.
