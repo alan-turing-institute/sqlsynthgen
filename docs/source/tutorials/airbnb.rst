@@ -297,6 +297,8 @@ The ``sessions.action`` column can have plausible actions rather than random str
 
 Still there are no privacy implications, but data can be generated that e.g. passes various filters and ``WHERE`` clauses that one might realistically run on the data, opening new utility, especially in testing.
 
+.. _source_statistics:
+
 Using aggregate statistics from the source data
 -----------------------------------------------
 
