@@ -25,7 +25,7 @@
         "required": ["name", "query"],
         "properties": {
           "name": {
-            "description": "A name for the query.",
+            "description": "A name for the query, which will be used in the stats file.",
             "type": "string"
           },
           "query": {
@@ -112,16 +112,19 @@
         "required": ["name", "num_stories_per_pass"],
         "properties": {
           "name": {
-            "description": "todo.",
+            "description": "The full name of a story generator (e.g. my_story_generators.short_story).",
             "type": "string"
           },
           "args": {
+            "description": "Positional arguments to pass to the story generator.",
             "type": "array"
           },
           "kwargs": {
+            "description": "Keyword arguments to pass to the story generator.",
             "type": "object"
           },
           "num_stories_per_pass": {
+            "description": "todo",
             "type": "integer"
           }
         }
@@ -158,15 +161,15 @@
                 "required": ["name", "columns_assigned"],
                 "properties": {
                   "name": {
-                    "description": "The name of a (built-in or custom) function.",
+                    "description": "The name of a (built-in or custom) function (e.g. max or my_row_generators.my_gen).",
                     "type": "string"
                   },
                   "args": {
-                    "description": "The arguments to pass to the function.",
+                    "description": "Positional arguments to pass to the function.",
                     "type": "array"
                   },
                   "kwargs": {
-                    "description": "The keyword arguments to pass to the function.",
+                    "description": "Keyword arguments to pass to the function.",
                     "type": "object"
                   },
                   "columns_assigned": {
