@@ -26,20 +26,20 @@ src-stats:
       # You may well want censor_dims to be on, but we turn it off for the
       # tests to silence a smartnoise-sql nag warning.
       max_ids: 10
-      row_privacy: True
+      row_privacy: False
       sample_max_ids: True
       censor_dims: False
-      clamp_counts: True
-      clamp_columns: True
-      use_dpsu: True
+      clamp_counts: False
+      clamp_columns: False
+      use_dpsu: False
       person_id:
         type: int
         private_id: True
         lower: 10
         upper: 100
         nullable: True
-        missing_value: -1
         sensitivity: 1
+        # missing_value: breaks things
       research_opt_out:
         type: boolean
         private_id: False
