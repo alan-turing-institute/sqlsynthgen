@@ -33,8 +33,8 @@ After :ref:`installing SqlSynthGen <enduser>`, we create a `.env` file to set so
     SRC_DSN="mariadb+pymysql://guest:relational@relational.fit.cvut.cz:3306/Financial_ijs"
     DST_DSN="mariadb+pymysql://myuser:mypassword@localhost:3306/financial"
 
-Uniform Random Data
-+++++++++++++++++++
+Generating Data Uniformly at Random
++++++++++++++++++++++++++++++++++++
 
 We run SqlSynthGen's ``make-tables`` command to create a file called ``orm.py`` that contains the schema of the source database.
 
@@ -43,7 +43,8 @@ We run SqlSynthGen's ``make-tables`` command to create a file called ``orm.py`` 
     $ sqlsynthgen make-tables
 
 Inspecting the ``orm.py`` file, we see that the ``tkeys`` table has column called ``goodClient``, which is a ``TINYINT``.
-SqlSynthGen doesn't know what to do with ``TINYINT`` columns, so we need to create a config file to tell it how to handle them. This isn't necessary for normal ``Integer`` columns.
+SqlSynthGen doesn't know what to do with ``TINYINT`` columns, so we need to create a config file to tell it how to handle them.
+This isn't necessary for normal ``Integer`` columns.
 
 Looking at the ``goodClient`` values:
 
@@ -88,12 +89,12 @@ Finally, we run SqlSynthGen's ``create-data`` command to populate the tables wit
 
     $ sqlsynthgen create-data --num-passes 100
 
-This will make 100 rows in each of the nine tables with entirely random data.
+This will make 100 rows in each of the nine tables with uniformly random data.
 
-Uniform Random Data with Vocabularies
-+++++++++++++++++++++++++++++++++++++
+Improving Data Generation with Vocabularies
++++++++++++++++++++++++++++++++++++++++++++
 
-We can do better than uniform random data, however.
+We can do better than generating data randomly and uniformly, however.
 We notice that the ``districts`` table doesn't contain any sensitive data so we choose to copy it whole to the destination database:
 
 **config.yaml**
@@ -101,15 +102,16 @@ We notice that the ``districts`` table doesn't contain any sensitive data so we 
 .. literalinclude:: ../../../tests/examples/loans/config2.yaml
    :language: yaml
 
-We can delete and re-create the synthetic data with:
+We can export the vocabularies to `.yaml` files, delete the old synthetic data, import the vocabularies and create new synthetic data with:
 
 .. code-block:: console
 
+    $ sqlsynthgen make-generators
     $ sqlsynthgen remove-data
     $ sqlsynthgen create-vocab
     $ sqlsynthgen create-data --num-passes 100
 
-This will give us an exact copy of the ``districts`` table.
+This will give us an exact copy of the ``districts`` table:
 
 .. list-table:: districts
    :header-rows: 1
@@ -136,11 +138,11 @@ This will give us an exact copy of the ``districts`` table.
      - 55
 
 Adding a Foreign Key
-++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++
 
 We notice that the source database does not have a foreign key constraint between the ``clients.tkey_id`` column and the ``tkeys.id`` column, even though it looks like there ought to be one.
 
-We add it manually to the orm.py file
+We add it manually to the orm.py file:
 
 **orm.py**:
 
@@ -156,7 +158,7 @@ We add it manually to the orm.py file
        )
        ...
 
-We'll need to recreate the ``ssg.py`` file, the destination database and the data
+We'll need to recreate the ``ssg.py`` file, the destination database and the data:
 
 .. code-block:: console
 
@@ -171,7 +173,8 @@ We now have a FK relationship and all synthetic values of ``clients.tkey_id`` ex
 Marginal Distributions with Differential Privacy
 ++++++++++++++++++++++++++++++++++++++++++++++++
 
-For many of the remaining categorical columns, such as ``cards.type``
+For many of the remaining categorical columns, such as ``cards.type``, we may decide that we want to use the real values in the right proportions.
+Here is a sample of the ``cards`` table:
 
 .. list-table:: cards
    :header-rows: 1
@@ -193,8 +196,7 @@ For many of the remaining categorical columns, such as ``cards.type``
      - gold
      - 1995-09-03
 
-we may decide that we want to use the real values in the right proportions.
-We can take the real values in the right proportions, and even add noise to make them differentially private by using the source-statistics and SmartNoise SQL features:
+We can take the real values in the right proportions, and even add noise to make them differentially private by using the :ref:`source-statistics <source_statistics>` and SmartNoise SQL features:
 
 **config.yaml**
 
