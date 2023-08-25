@@ -16,7 +16,7 @@ from sqlsynthgen.create import create_db_data, create_db_tables, create_db_vocab
 from sqlsynthgen.make import make_src_stats, make_table_generators, make_tables_file
 from sqlsynthgen.remove import remove_db_data, remove_db_tables, remove_db_vocab
 from sqlsynthgen.settings import Settings, get_settings
-from sqlsynthgen.utils import CONFIG_SCHEMA_PATH, import_file, read_yaml_file
+from sqlsynthgen.utils import CONFIG_SCHEMA_PATH, import_file, read_config_file
 
 # pylint: disable=too-many-arguments
 
@@ -179,7 +179,7 @@ def make_generators(
     _require_src_db_dsn(settings)
 
     orm_module: ModuleType = import_file(orm_file)
-    generator_config = read_yaml_file(config_file) if config_file is not None else {}
+    generator_config = read_config_file(config_file) if config_file is not None else {}
     result: str = make_table_generators(
         orm_module, generator_config, stats_file, overwrite_files=force
     )
@@ -211,7 +211,7 @@ def make_stats(
     if not force:
         _check_file_non_existence(stats_file_path)
 
-    config = read_yaml_file(config_file) if config_file is not None else {}
+    config = read_config_file(config_file) if config_file is not None else {}
 
     settings = get_settings()
     src_dsn: str = _require_src_db_dsn(settings)
