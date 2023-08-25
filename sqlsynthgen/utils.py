@@ -19,10 +19,19 @@ CONFIG_SCHEMA_PATH: Final[Path] = (
 )
 
 
-def read_yaml_file(path: str) -> Any:
-    """Read a yaml file in to dictionary, given a path."""
+def read_config_file(path: str) -> dict:
+    """Read a config file, warning if it is invalid.
+
+    Args:
+        path: The path to a YAML-format config file.
+
+    Returns:
+        The config file as a dictionary.
+    """
     with open(path, "r", encoding="utf8") as f:
         config = yaml.safe_load(f)
+
+    assert isinstance(config, dict)
 
     schema_config = json.loads(CONFIG_SCHEMA_PATH.read_text(encoding="UTF-8"))
     try:

@@ -12,7 +12,7 @@ from sqlsynthgen.utils import (
     create_db_engine,
     download_table,
     import_file,
-    read_yaml_file,
+    read_config_file,
 )
 from tests.utils import RequiresDBTestCase, SSGTestCase, run_psql
 
@@ -122,12 +122,12 @@ class TestCreateDBEngine(RequiresDBTestCase):
         create_db_engine(self.dsn, schema_name="public", use_asyncio=True)
 
 
-class TestReadYaml(SSGTestCase):
-    """Tests for the read_yaml_file function."""
+class TestReadConfig(SSGTestCase):
+    """Tests for the read_config_file function."""
 
     def test_warns_of_invalid_config(self) -> None:
         """Test that we get a warning if the config is invalid."""
         with self.assertLogs(level="WARNING") as log:
-            read_yaml_file("tests/examples/invalid_config.yaml")
+            read_config_file("tests/examples/invalid_config.yaml")
 
         self.assertIn("The config file is invalid:", log.output[0])
