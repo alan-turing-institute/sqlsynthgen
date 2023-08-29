@@ -39,7 +39,7 @@ pandas = "^2"
 [tool.poetry.group.dev.dependencies]
 isort = "^5.10.1"
 pylint = "^2.15.8"
-mypy = "^0.991"
+mypy = "^1.5"
 types-pyyaml = "^6.0.12.4"
 pydocstyle = "^6.3.0"
 restructuredtext-lint = "^1.4.0"
