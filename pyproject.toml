@@ -30,7 +30,7 @@ smartnoise-sql = "^1"
 jinja2 = "^3.1.2"
 black = "^23.3.0"
 jsonschema = "^4.17.3"
-sqlacodegen = {path = "../sqlacodegen"}
+sqlacodegen = "^3.0.0rc3"
 asyncpg = "^0.27.0"
 greenlet = "^2.0.2"
 pymysql = "^1.1.0"

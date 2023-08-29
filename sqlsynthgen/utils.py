@@ -82,7 +82,8 @@ def set_search_path(connection: Any, schema: str) -> None:
     connection.autocommit = True
 
     cursor = connection.cursor()
-    cursor.execute("SET search_path to %s;", (schema,))
+    # Parametrised queries don't work with asyncpg, hence the f-string.
+    cursor.execute(f"SET search_path TO {schema};")
     cursor.close()
 
     connection.autocommit = existing_autocommit
