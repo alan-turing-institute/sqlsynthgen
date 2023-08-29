@@ -70,7 +70,7 @@ def create_db_engine(
 
         @event.listens_for(event_engine, "connect", insert=True)
         def connect(dbapi_connection: Any, _: Any) -> None:
-            set_search_path(dbapi_connection, schema_name)  # type: ignore
+            set_search_path(dbapi_connection, schema_name)
 
     return engine
 

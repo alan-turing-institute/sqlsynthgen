@@ -12,7 +12,8 @@ class TestSettings(SSGTestCase):
         """Test the minimal settings."""
         settings = Settings(
             # To stop any local .env files influencing the test
-            _env_file=None,
+            # The mypy ignore can be removed once we upgrade to pydantic 2.
+            _env_file=None,  # type: ignore[call-arg]
         )
         self.assertIsNone(settings.src_dsn)
         self.assertIsNone(settings.src_schema)
@@ -28,7 +29,8 @@ class TestSettings(SSGTestCase):
             dst_dsn="postgresql://user:password@host:port/db_name?sslmode=require",
             dst_schema="src_schema",
             # To stop any local .env files influencing the test
-            _env_file=None,
+            # The mypy ignore can be removed once we upgrade to pydantic 2.
+            _env_file=None,  # type: ignore[call-arg]
         )
 
     def test_validation(self) -> None:
