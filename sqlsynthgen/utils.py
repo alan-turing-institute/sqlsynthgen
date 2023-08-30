@@ -1,6 +1,5 @@
 """Utility functions."""
 import json
-import logging
 import os
 import sys
 from importlib import import_module
@@ -19,12 +18,11 @@ CONFIG_SCHEMA_PATH: Final[Path] = (
 )
 
 
-def read_config_file(path: str, verbose: bool = False) -> dict:
+def read_config_file(path: str) -> dict:
     """Read a config file, warning if it is invalid.
 
     Args:
         path: The path to a YAML-format config file.
-        verbose: Whether to print detailed or short warnings.
 
     Returns:
         The config file as a dictionary.
@@ -38,10 +36,7 @@ def read_config_file(path: str, verbose: bool = False) -> dict:
     try:
         validate(config, schema_config)
     except ValidationError as e:
-        if verbose:
-            logging.warning(
-                "The config file is invalid:\n%s", e.message if verbose else e
-            )
+        print("The config file is invalid:", e.message)
 
     return config
 

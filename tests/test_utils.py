@@ -1,7 +1,9 @@
 """Tests for the utils module."""
 import os
 import sys
+from io import StringIO
 from pathlib import Path
+from unittest.mock import patch
 
 from pydantic import PostgresDsn
 from pydantic.tools import parse_obj_as
@@ -127,7 +129,7 @@ class TestReadConfig(SSGTestCase):
 
     def test_warns_of_invalid_config(self) -> None:
         """Test that we get a warning if the config is invalid."""
-        with self.assertLogs(level="WARNING") as log:
+        with patch("sys.stdout", new=StringIO()) as mock_stdout:
             read_config_file("tests/examples/invalid_config.yaml")
 
-        self.assertIn("The config file is invalid:", log.output[0])
+        self.assertIn("The config file is invalid:", mock_stdout.getvalue())
