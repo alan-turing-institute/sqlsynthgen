@@ -124,7 +124,7 @@
             "type": "object"
           },
           "num_stories_per_pass": {
-            "description": "todo",
+            "description": "The number of times to call the story generator per pass.",
             "type": "integer"
           }
         }
@@ -132,7 +132,7 @@
     },
 
     "max-unique-constraint-tries": {
-      "description": "todo.",
+      "description": "The maximum number of tries to respect a uniqueness constraint.",
       "type": "integer"
     },
 
