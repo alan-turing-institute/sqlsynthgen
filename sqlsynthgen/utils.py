@@ -19,11 +19,12 @@ CONFIG_SCHEMA_PATH: Final[Path] = (
 )
 
 
-def read_config_file(path: str) -> dict:
+def read_config_file(path: str, verbose: bool = False) -> dict:
     """Read a config file, warning if it is invalid.
 
     Args:
         path: The path to a YAML-format config file.
+        verbose: Whether to print detailed or short warnings.
 
     Returns:
         The config file as a dictionary.
@@ -37,7 +38,10 @@ def read_config_file(path: str) -> dict:
     try:
         validate(config, schema_config)
     except ValidationError as e:
-        logging.warning("The config file is invalid:\n%s", e)
+        if verbose:
+            logging.warning(
+                "The config file is invalid:\n%s", e.message if verbose else e
+            )
 
     return config
 
