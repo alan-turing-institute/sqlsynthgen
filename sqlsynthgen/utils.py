@@ -7,8 +7,13 @@ from types import ModuleType
 from typing import Any, Optional, Union
 
 import yaml
-from sqlalchemy import create_engine, event, select
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy import Engine, create_engine, event, select
+from sqlalchemy.engine.interfaces import DBAPIConnection
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from sqlalchemy.schema import Table
+
+# Define some types used in many places in the code base
+MaybeAsyncEngine = Union[Engine, AsyncEngine]
 
 
 def read_yaml_file(path: str) -> Any:
@@ -41,7 +46,9 @@ def import_file(file_path: str) -> ModuleType:
     return module
 
 
-def download_table(table: Any, engine: Any, yaml_file_name: Union[str, Path]) -> None:
+def download_table(
+    table: Table, engine: Engine, yaml_file_name: Union[str, Path]
+) -> None:
     """Download a Table and store it as a .yaml file."""
     stmt = select(table)
     with engine.connect() as conn:
@@ -51,31 +58,37 @@ def download_table(table: Any, engine: Any, yaml_file_name: Union[str, Path]) ->
         yamlfile.write(yaml.dump(result))
 
 
+def get_sync_engine(engine: MaybeAsyncEngine) -> Engine:
+    """Given an SQLAlchemy engine that may or may not be async return one that isn't."""
+    if isinstance(engine, AsyncEngine):
+        return engine.sync_engine
+    return engine
+
+
 def create_db_engine(
     db_dsn: str,
     schema_name: Optional[str] = None,
     use_asyncio: bool = False,
     **kwargs: dict,
-) -> Any:
+) -> MaybeAsyncEngine:
     """Create a SQLAlchemy Engine."""
     if use_asyncio:
         async_dsn = db_dsn.replace("postgresql://", "postgresql+asyncpg://")
-        engine: Any = create_async_engine(async_dsn, **kwargs)
-        event_engine = engine.sync_engine
+        engine: MaybeAsyncEngine = create_async_engine(async_dsn, **kwargs)
     else:
         engine = create_engine(db_dsn, **kwargs)
-        event_engine = engine
 
     if schema_name is not None:
+        event_engine = get_sync_engine(engine)
 
         @event.listens_for(event_engine, "connect", insert=True)
-        def connect(dbapi_connection: Any, _: Any) -> None:
+        def connect(dbapi_connection: DBAPIConnection, _: Any) -> None:
             set_search_path(dbapi_connection, schema_name)
 
     return engine
 
 
-def set_search_path(connection: Any, schema: str) -> None:
+def set_search_path(connection: DBAPIConnection, schema: str) -> None:
     """Set the SEARCH_PATH for a PostgreSQL connection."""
     # https://docs.sqlalchemy.org/en/20/dialects/postgresql.html#remote-schema-table-introspection-and-postgresql-search-path
     existing_autocommit = connection.autocommit

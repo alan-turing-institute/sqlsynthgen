@@ -34,7 +34,7 @@ class UniqueGenerator:
         self.table_name = table_name
         self.max_tries = max_tries
 
-    def get_existing_keys(self, dst_db_conn: Any) -> set:
+    def get_existing_keys(self, dst_db_conn: sqla.Connection) -> set:
         """
         Retrieve existing keys from the database.
 
@@ -51,7 +51,7 @@ class UniqueGenerator:
 
     def __call__(
         self,
-        dst_db_conn: Any,
+        dst_db_conn: sqla.Connection,
         columns_assigned: List[str],
         inner_generator: Callable[..., Any],
         *args: Any,
