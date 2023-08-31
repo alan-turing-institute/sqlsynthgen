@@ -6,56 +6,94 @@
   "additionalProperties": false,
   "properties": {
     "use-asyncio": {
+      "description": "Run source-statistics queries using asyncpg.",
       "type": "boolean"
     },
     "row_generators_module": {
+      "description": "The name of a local Python module of row generators (excluding .py).",
       "type": "string"
     },
     "story_generators_module": {
+      "description": "The name of a local Python module of story generators (excluding .py).",
       "type": "string"
     },
-
     "src-stats": {
+      "description": "An array of source statistics queries.",
       "type": "array",
       "items": {
         "additionalProperties": false,
         "required": ["name", "query"],
         "properties": {
           "name": {
+            "description": "A name for the query, which will be used in the stats file.",
             "type": "string"
           },
           "query": {
+            "description": "A SQL query.",
             "type": "string"
           },
           "dp-query": {
+            "description": "A SmartNoise SQL query.",
             "type": "string"
           },
           "epsilon": {
+            "description": "The differential privacy epsilon value for the DP query.",
             "type": "number"
           },
           "delta": {
+            "description": "The differential privacy delta value for the DP query.",
             "type": "number"
           },
-
           "snsql-metadata": {
+            "description": "See https://docs.smartnoise.org/sql/metadata.html#yaml-format.",
             "type": "object",
             "properties": {
+              "max_ids": {
+                "type": "integer"
+              },
+              "row_privacy": {
+                "type": "boolean"
+              },
+              "sample_max_ids": {
+                "type": "boolean"
+              },
               "censor_dims": {
+                "type": "boolean"
+              },
+              "clamp_counts": {
+                "type": "boolean"
+              },
+              "clamp_columns": {
+                "type": "boolean"
+              },
+              "use_dpsu": {
                 "type": "boolean"
               }
             },
             "patternProperties": {
-              "^(?!censor_dims).*$": {
+              "^(?!(max_ids|row_privacy|sample_max_ids|censor_dims|clamp_counts|clamp_columns|use_dpsu)).*$": {
                 "type": "object",
+                "additionalProperties": false,
+                "required": ["type"],
                 "properties": {
-                  "name": {
-                    "type": "string"
-                  },
                   "type": {
                     "type": "string"
                   },
                   "private_id": {
                     "type": "boolean"
+                  },
+                  "lower": {
+                    "type": "number"
+                  },
+                  "upper": {
+                    "type": "number"
+                  },
+                  "nullable": {
+                    "type": "boolean"
+                  },
+                  "missing_value": {},
+                  "sensitivity": {
+                    "type": "number"
                   }
                 }
               }
@@ -66,6 +104,7 @@
     },
 
     "story_generators": {
+      "description": "An array of story generators.",
       "type": "array",
       "items": {
         "type": "object",
@@ -73,15 +112,19 @@
         "required": ["name", "num_stories_per_pass"],
         "properties": {
           "name": {
+            "description": "The full name of a story generator (e.g. my_story_generators.short_story).",
             "type": "string"
           },
           "args": {
+            "description": "Positional arguments to pass to the story generator.",
             "type": "array"
           },
           "kwargs": {
+            "description": "Keyword arguments to pass to the story generator.",
             "type": "object"
           },
           "num_stories_per_pass": {
+            "description": "The number of times to call the story generator per pass.",
             "type": "integer"
           }
         }
@@ -89,37 +132,48 @@
     },
 
     "max-unique-constraint-tries": {
+      "description": "The maximum number of tries to respect a uniqueness constraint.",
       "type": "integer"
     },
 
     "tables": {
+      "description": "Table configurations.",
       "type": "object",
       "patternProperties": {
         ".*": {
+          "description": "A table configuration.",
           "additionalProperties": false,
           "type": "object",
           "properties": {
             "vocabulary_table": {
+              "description": "Whether to export the table data.",
               "type": "boolean"
             },
             "num_rows_per_pass": {
+              "description": "The number of rows to generate per pass.",
               "type": "integer"
             },
             "row_generators": {
+              "description": "An array of row generators to create column values.",
               "type": "array",
               "items": {
                 "type": "object",
+                "required": ["name", "columns_assigned"],
                 "properties": {
                   "name": {
+                    "description": "The name of a (built-in or custom) function (e.g. max or my_row_generators.my_gen).",
                     "type": "string"
                   },
                   "args": {
+                    "description": "Positional arguments to pass to the function.",
                     "type": "array"
                   },
                   "kwargs": {
+                    "description": "Keyword arguments to pass to the function.",
                     "type": "object"
                   },
                   "columns_assigned": {
+                    "description": "One or more columns to assign the return value to.",
                     "type": ["array", "string"],
                     "items": {
                       "type": "string"
