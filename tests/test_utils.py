@@ -1,14 +1,21 @@
 """Tests for the utils module."""
 import os
 import sys
+from io import StringIO
 from pathlib import Path
+from unittest.mock import patch
 
 from pydantic import PostgresDsn
 from pydantic.tools import parse_obj_as
 from sqlalchemy import Column, Integer, create_engine, insert
 from sqlalchemy.orm import declarative_base
 
-from sqlsynthgen.utils import create_db_engine, download_table, import_file
+from sqlsynthgen.utils import (
+    create_db_engine,
+    download_table,
+    import_file,
+    read_config_file,
+)
 from tests.utils import RequiresDBTestCase, SSGTestCase, run_psql
 
 # pylint: disable=invalid-name
@@ -116,3 +123,14 @@ class TestCreateDBEngine(RequiresDBTestCase):
 
         # With schema
         create_db_engine(self.dsn, schema_name="public", use_asyncio=True)
+
+
+class TestReadConfig(SSGTestCase):
+    """Tests for the read_config_file function."""
+
+    def test_warns_of_invalid_config(self) -> None:
+        """Test that we get a warning if the config is invalid."""
+        with patch("sys.stdout", new=StringIO()) as mock_stdout:
+            read_config_file("tests/examples/invalid_config.yaml")
+
+        self.assertIn("The config file is invalid:", mock_stdout.getvalue())
