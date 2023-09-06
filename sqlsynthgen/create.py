@@ -100,7 +100,7 @@ def _populate_story(
             else:
                 default_values = {}
             insert_values = {**default_values, **provided_values}
-            stmt = insert(table).values(insert_values)
+            stmt = insert(table).values(insert_values).return_defaults()
             cursor = dst_conn.execute(stmt)
             # We need to return all the default values etc. to the generator,
             # because other parts of the story may refer to them.

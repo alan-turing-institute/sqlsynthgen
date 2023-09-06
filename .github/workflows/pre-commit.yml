@@ -57,7 +57,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ env.PRE_COMMIT_HOME }}
-          key: hooks-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          key: hooks-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
       - name: Install Pre-Commit Hooks
         shell: bash
         if: steps.pre-commit-cache.outputs.cache-hit != 'true'

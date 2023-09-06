@@ -1,15 +1,21 @@
 """Tests for the create module."""
 import itertools as itt
+from pathlib import Path
 from typing import Any, Generator, Tuple
 from unittest.mock import MagicMock, call, patch
 
+from sqlalchemy import Column, Integer, create_engine
+from sqlalchemy.orm import declarative_base
+
 from sqlsynthgen.create import (
+    Story,
+    _populate_story,
     create_db_data,
     create_db_tables,
     create_db_vocab,
     populate,
 )
-from tests.utils import SSGTestCase, get_test_settings
+from tests.utils import RequiresDBTestCase, SSGTestCase, get_test_settings, run_psql
 
 
 class MyTestCase(SSGTestCase):
@@ -48,8 +54,7 @@ class MyTestCase(SSGTestCase):
         )
         mock_meta.create_all.assert_called_once_with(mock_create_engine.return_value)
 
-    @patch("sqlsynthgen.create.insert")
-    def test_populate(self, mock_insert: MagicMock) -> None:
+    def test_populate(self) -> None:
         """Test the populate function."""
         table_name = "table_name"
 
@@ -62,39 +67,52 @@ class MyTestCase(SSGTestCase):
             return story()
 
         for num_stories_per_pass, num_rows_per_pass in itt.product([0, 2], [0, 3]):
-            mock_dst_conn = MagicMock()
-            mock_dst_conn.execute.return_value.returned_defaults = {}
-            mock_table = MagicMock()
-            mock_table.name = table_name
-            mock_gen = MagicMock()
-            mock_gen.num_rows_per_pass = num_rows_per_pass
-            mock_gen.return_value = {}
+            with patch("sqlsynthgen.create.insert") as mock_insert:
+                mock_values = mock_insert.return_value.values
+                mock_dst_conn = MagicMock()
+                mock_dst_conn.execute.return_value.returned_defaults = {}
+                mock_table = MagicMock()
+                mock_table.name = table_name
+                mock_gen = MagicMock()
+                mock_gen.num_rows_per_pass = num_rows_per_pass
+                mock_gen.return_value = {}
 
-            tables = [mock_table]
-            row_generators = {table_name: mock_gen}
-            story_generators = (
-                [{"name": mock_story_gen, "num_stories_per_pass": num_stories_per_pass}]
-                if num_stories_per_pass > 0
-                else []
-            )
-            populate(
-                mock_dst_conn,
-                tables,  # type: ignore
-                row_generators,  # type: ignore
-                story_generators,
-            )
+                tables = [mock_table]
+                row_generators = {table_name: mock_gen}
+                story_generators = (
+                    [
+                        {
+                            "name": mock_story_gen,
+                            "num_stories_per_pass": num_stories_per_pass,
+                        }
+                    ]
+                    if num_stories_per_pass > 0
+                    else []
+                )
+                populate(
+                    mock_dst_conn,
+                    tables,  # type: ignore
+                    row_generators,  # type: ignore
+                    story_generators,
+                )
 
-            mock_gen.assert_has_calls(
-                [call(mock_dst_conn)] * (num_stories_per_pass + num_rows_per_pass)
-            )
-            mock_insert.return_value.values.assert_has_calls(
-                [call(mock_gen.return_value)]
-                * (num_stories_per_pass + num_rows_per_pass)
-            )
-            mock_dst_conn.execute.assert_has_calls(
-                [call(mock_insert.return_value.values.return_value)]
-                * (num_stories_per_pass + num_rows_per_pass)
-            )
+                self.assertListEqual(
+                    [call(mock_dst_conn)] * (num_stories_per_pass + num_rows_per_pass),
+                    mock_gen.call_args_list,
+                )
+                self.assertListEqual(
+                    [call(mock_gen.return_value)]
+                    * (num_stories_per_pass + num_rows_per_pass),
+                    mock_values.call_args_list,
+                )
+                self.assertListEqual(
+                    (
+                        [call(mock_values.return_value.return_defaults.return_value)]
+                        * num_stories_per_pass
+                    )
+                    + ([call(mock_values.return_value)] * num_rows_per_pass),
+                    mock_dst_conn.execute.call_args_list,
+                )
 
     @patch("sqlsynthgen.create.insert")
     def test_populate_diff_length(self, mock_insert: MagicMock) -> None:
@@ -136,3 +154,42 @@ class MyTestCase(SSGTestCase):
         )
         # Running the same insert twice should be fine.
         create_db_vocab(vocab_list)  # type: ignore
+
+
+class TestStoryDefaults(RequiresDBTestCase):
+    """Test that we can handle column defaults in stories."""
+
+    # pylint: disable=invalid-name
+    Base = declarative_base()
+    # pylint: enable=invalid-name
+    metadata = Base.metadata
+
+    class ColumnDefaultsTable(Base):  # type: ignore
+        """A SQLAlchemy model."""
+
+        __tablename__ = "column_defaults"
+        someval = Column(Integer, primary_key=True)
+        otherval = Column(Integer, server_default="8")
+
+    def setUp(self) -> None:
+        """Ensure we have an empty DB to work with."""
+        dump_file_path = Path("dst.dump")
+        examples_dir = Path("tests/examples")
+        run_psql(examples_dir / dump_file_path)
+
+    def test_populate(self) -> None:
+        """Check that we can populate a table that has column defaults."""
+        engine = create_engine(
+            "postgresql://postgres:password@localhost:5432/dst",
+        )
+        self.metadata.create_all(engine)
+
+        def my_story() -> Story:
+            """A story generator."""
+            first_row = yield "column_defaults", {}
+            self.assertEqual(1, first_row["someval"])
+            self.assertEqual(8, first_row["otherval"])
+
+        with engine.connect() as conn:
+            with conn.begin():
+                _populate_story(my_story(), dict(self.metadata.tables), {}, conn)
