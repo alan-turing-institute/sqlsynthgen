@@ -54,8 +54,7 @@ class MyTestCase(SSGTestCase):
         )
         mock_meta.create_all.assert_called_once_with(mock_create_engine.return_value)
 
-    @patch("sqlsynthgen.create.insert")
-    def test_populate(self, mock_insert: MagicMock) -> None:
+    def test_populate(self) -> None:
         """Test the populate function."""
         table_name = "table_name"
 
@@ -68,34 +67,47 @@ class MyTestCase(SSGTestCase):
             return story()
 
         for num_stories_per_pass, num_rows_per_pass in itt.product([0, 2], [0, 3]):
-            mock_dst_conn = MagicMock()
-            mock_dst_conn.execute.return_value.returned_defaults = {}
-            mock_table = MagicMock()
-            mock_table.name = table_name
-            mock_gen = MagicMock()
-            mock_gen.num_rows_per_pass = num_rows_per_pass
-            mock_gen.return_value = {}
+            with patch("sqlsynthgen.create.insert") as mock_insert:
+                mock_values = mock_insert.return_value.values
+                mock_dst_conn = MagicMock()
+                mock_dst_conn.execute.return_value.returned_defaults = {}
+                mock_table = MagicMock()
+                mock_table.name = table_name
+                mock_gen = MagicMock()
+                mock_gen.num_rows_per_pass = num_rows_per_pass
+                mock_gen.return_value = {}
 
-            tables = [mock_table]
-            row_generators = {table_name: mock_gen}
-            story_generators = (
-                [{"name": mock_story_gen, "num_stories_per_pass": num_stories_per_pass}]
-                if num_stories_per_pass > 0
-                else []
-            )
-            populate(mock_dst_conn, tables, row_generators, story_generators)
+                tables = [mock_table]
+                row_generators = {table_name: mock_gen}
+                story_generators = (
+                    [
+                        {
+                            "name": mock_story_gen,
+                            "num_stories_per_pass": num_stories_per_pass,
+                        }
+                    ]
+                    if num_stories_per_pass > 0
+                    else []
+                )
+                populate(mock_dst_conn, tables, row_generators, story_generators)
 
-            mock_gen.assert_has_calls(
-                [call(mock_dst_conn)] * (num_stories_per_pass + num_rows_per_pass)
-            )
-            mock_insert.return_value.values.assert_has_calls(
-                [call(mock_gen.return_value)]
-                * (num_stories_per_pass + num_rows_per_pass)
-            )
-            mock_dst_conn.execute.assert_has_calls(
-                [call(mock_insert.return_value.values.return_value)]
-                * (num_stories_per_pass + num_rows_per_pass)
-            )
+                self.assertListEqual(
+                    [call(mock_dst_conn)] * (num_stories_per_pass + num_rows_per_pass),
+                    mock_gen.call_args_list,
+                )
+                self.assertListEqual(
+                    [call(mock_gen.return_value)]
+                    * (num_stories_per_pass + num_rows_per_pass),
+                    mock_values.call_args_list,
+                )
+                self.assertListEqual(
+                    (
+                        [call(mock_values.return_value.return_defaults.return_value)]
+                        * num_stories_per_pass
+                    )
+                    + ([call(mock_values.return_value)] * num_rows_per_pass),
+                    mock_dst_conn.execute.call_args_list,
+                )
 
     @patch("sqlsynthgen.create.insert")
     def test_populate_diff_length(self, mock_insert: MagicMock) -> None:
