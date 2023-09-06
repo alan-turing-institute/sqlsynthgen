@@ -70,6 +70,9 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             dst.unlink(missing_ok=True)
             shutil.copy(src, dst)
 
+        with (self.examples_dir / "example_orm.py").open() as f:
+            self.expected_orm = f.readlines()
+
         os.chdir(self.test_dir)
 
     def tearDown(self) -> None:
@@ -166,6 +169,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             [
                 "sqlsynthgen",
                 "make-tables",
+                f"--config-file={self.config_file_path}",
                 f"--orm-file={self.alt_orm_file_path}",
                 "--force",
                 "--verbose",
@@ -174,10 +178,15 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             env=self.env,
         )
         self.assertEqual(
-            "WARNING: Table without PK detected. sqlsynthgen may not be able to continue.\n",
+            "WARNING: Table without PK detected. "
+            "sqlsynthgen may not be able to continue.\n",
             completed_process.stderr.decode("utf-8"),
         )
         self.assertSuccess(completed_process)
+
+        with self.alt_orm_file_path.open("r", encoding="UTF-8") as f:
+            written_orm = f.readlines()
+        self.assertEqual(written_orm, self.expected_orm)
 
         completed_process = run(
             [
@@ -191,6 +200,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             capture_output=True,
             env=self.env,
         )
+        self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
 
         completed_process = run(

@@ -38,7 +38,7 @@ src-stats:
         lower: 10
         upper: 100
         nullable: True
-        sensitivity: 1
+        # sensitivity: this is derived from the bounds
         # missing_value: breaks things
       research_opt_out:
         type: boolean
@@ -87,6 +87,7 @@ tables:
           - b
 
   unique_constraint_test2:
+    ignore: false
     num_rows_per_pass: 1
     row_generators:
       - name: row_generators.unique_constraint_test2
@@ -94,6 +95,9 @@ tables:
           - a
           - b
           - c
+
+  table_to_be_ignored:
+    ignore: true
 
   concept:
     vocabulary_table: true

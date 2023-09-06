@@ -184,28 +184,33 @@ class TestCLI(SSGTestCase):
     @patch("sqlsynthgen.main.Path")
     @patch("sqlsynthgen.main.make_tables_file")
     @patch("sqlsynthgen.main.get_settings")
+    @patch("sqlsynthgen.main.read_yaml_file")
     def test_make_tables(
         self,
+        mock_read_yaml_file: MagicMock,
         mock_get_settings: MagicMock,
         mock_make_tables_file: MagicMock,
         mock_path: MagicMock,
     ) -> None:
         """Test the make-tables sub-command."""
 
+        mock_config = MagicMock()
         mock_path.return_value.exists.return_value = False
         mock_get_settings.return_value = get_test_settings()
         mock_make_tables_file.return_value = "some text"
+        mock_read_yaml_file.return_value = mock_config
 
         result = runner.invoke(
             app,
             [
                 "make-tables",
+                "--config-file=config.yaml",
             ],
             catch_exceptions=False,
         )
 
         mock_make_tables_file.assert_called_once_with(
-            "postgresql://suser:spassword@shost:5432/sdbname", None
+            "postgresql://suser:spassword@shost:5432/sdbname", None, mock_config
         )
         mock_path.return_value.write_text.assert_called_once_with(
             "some text", encoding="utf-8"
@@ -274,7 +279,7 @@ class TestCLI(SSGTestCase):
                 result: Result = runner.invoke(app, ["make-tables", force_option])
 
                 mock_make_tables.assert_called_once_with(
-                    test_settings.src_dsn, test_settings.src_schema
+                    test_settings.src_dsn, test_settings.src_schema, {}
                 )
                 mock_path.return_value.write_text.assert_called_once_with(
                     mock_tables_output, encoding="utf-8"

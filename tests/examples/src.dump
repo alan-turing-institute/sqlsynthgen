@@ -188,6 +188,16 @@ CREATE TABLE public.data_type_test (
 ALTER TABLE public.data_type_test OWNER TO postgres;
 
 --
+-- Name: table_to_be_ignored; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.table_to_be_ignored (
+    id integer NOT NULL
+);
+
+ALTER TABLE public.table_to_be_ignored OWNER TO postgres;
+
+--
 -- Data for Name: concept; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 

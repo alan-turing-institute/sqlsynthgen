@@ -434,15 +434,25 @@ def _get_generator_for_vocabulary_table(
     )
 
 
-def make_tables_file(db_dsn: str, schema_name: Optional[str]) -> str:
+def make_tables_file(db_dsn: str, schema_name: Optional[str], config: dict) -> str:
     """Write a file with the SQLAlchemy ORM classes.
 
     Exists with an error if sqlacodegen is unsuccessful.
     """
-    engine = create_db_engine(db_dsn, schema_name=schema_name)
+    tables_config = config.get("tables", {})
 
+    def reflect_if(table_name, _):
+        table_config = tables_config.get(table_name, {})
+        ignore = table_config.get("ignore", False)
+        return not ignore
+
+    engine = create_db_engine(db_dsn, schema_name=schema_name)
     metadata = MetaData()
-    metadata.reflect(engine)
+    metadata.reflect(
+        engine,
+        # The type-ignore is due to an erroneous type annotation in SQLAlchemy.
+        only=reflect_if,  # type: ignore
+    )
 
     generator = DeclarativeGenerator(metadata, engine, options=())
     code = str(generator.generate())
@@ -456,7 +466,7 @@ def make_tables_file(db_dsn: str, schema_name: Optional[str]) -> str:
             file=stderr,
         )
 
-    return code
+    return format_str(code, mode=FileMode())
 
 
 async def make_src_stats(

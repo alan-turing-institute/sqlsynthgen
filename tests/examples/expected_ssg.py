@@ -31,10 +31,15 @@ import yaml
 with open("example_stats.yaml", "r", encoding="utf-8") as f:
     SRC_STATS = yaml.unsafe_load(f)
 
+emptyvocabulary_vocab = FileUploader(
+    tests.examples.example_orm.EmptyVocabulary.__table__
+)
+mitigationtype_vocab = FileUploader(tests.examples.example_orm.MitigationType.__table__)
+concepttype_vocab = FileUploader(tests.examples.example_orm.ConceptType.__table__)
 concept_vocab = FileUploader(tests.examples.example_orm.Concept.__table__)
 
 
-class entityGenerator:
+class data_type_testGenerator:
     num_rows_per_pass = 1
 
     def __init__(self):
@@ -42,6 +47,19 @@ class entityGenerator:
 
     def __call__(self, dst_db_conn):
         result = {}
+        result["myuuid"] = generic.cryptographic.uuid()
+        return result
+
+
+class no_pk_testGenerator:
+    num_rows_per_pass = 1
+
+    def __init__(self):
+        pass
+
+    def __call__(self, dst_db_conn):
+        result = {}
+        result["not_an_id"] = generic.numeric.integer_number()
         return result
 
 
@@ -50,11 +68,6 @@ class personGenerator:
 
     def __init__(self):
         pass
-        self.unique_nhs_number_uniq = UniqueGenerator(
-            ["nhs_number"],
-            "person",
-            max_tries=50,
-        )
 
     def __call__(self, dst_db_conn):
         result = {}
@@ -63,10 +76,60 @@ class personGenerator:
         result["research_opt_out"] = row_generators.opt_out(
             generic=generic, count_opt_outs=SRC_STATS["count_opt_outs"]
         )
-        result["nhs_number"] = self.unique_nhs_number_uniq(
-            dst_db_conn, ["nhs_number"], generic.text.color
+        return result
+
+
+class unique_constraint_testGenerator:
+    num_rows_per_pass = 1
+
+    def __init__(self):
+        pass
+        self.unique_ab_uniq = UniqueGenerator(
+            ["a", "b"],
+            "unique_constraint_test",
+            max_tries=50,
         )
-        result["source_system"] = generic.text.color()
+        self.unique_c_uniq = UniqueGenerator(
+            ["c"],
+            "unique_constraint_test",
+            max_tries=50,
+        )
+
+    def __call__(self, dst_db_conn):
+        result = {}
+        result["a"], result["b"] = self.unique_ab_uniq(
+            dst_db_conn, ["a", "b"], row_generators.boolean_pair, generic
+        )
+        result["c"] = self.unique_c_uniq(dst_db_conn, ["c"], generic.text.color)
+        return result
+
+
+class unique_constraint_test2Generator:
+    num_rows_per_pass = 1
+
+    def __init__(self):
+        pass
+        self.unique_a_uniq2 = UniqueGenerator(
+            ["a"],
+            "unique_constraint_test2",
+            max_tries=50,
+        )
+        self.unique_abc_uniq2 = UniqueGenerator(
+            ["a", "b", "c"],
+            "unique_constraint_test2",
+            max_tries=50,
+        )
+
+    def __call__(self, dst_db_conn):
+        result = {}
+        result["a"], result["b"], result["c"] = self.unique_abc_uniq2(
+            dst_db_conn,
+            ["a", "b", "c"],
+            self.unique_a_uniq2,
+            dst_db_conn,
+            ["a", "b", "c"],
+            row_generators.unique_constraint_test2,
+        )
         return result
 
 
@@ -79,6 +142,9 @@ class test_entityGenerator:
     def __call__(self, dst_db_conn):
         result = {}
         result["single_letter_column"] = generic.person.password(1)
+        result["vocabulary_entry_id"] = generic.column_value_provider.column_value(
+            dst_db_conn, tests.examples.example_orm.EmptyVocabulary, "entry_id"
+        )
         return result
 
 
@@ -101,18 +167,27 @@ class hospital_visitGenerator:
             dst_db_conn, tests.examples.example_orm.Person, "person_id"
         )
         result["visit_image"] = generic.bytes_provider.bytes()
+        result["visit_type_concept_id"] = generic.column_value_provider.column_value(
+            dst_db_conn, tests.examples.example_orm.Concept, "concept_id"
+        )
         return result
 
 
 table_generator_dict = {
-    "entity": entityGenerator(),
+    "data_type_test": data_type_testGenerator(),
+    "no_pk_test": no_pk_testGenerator(),
     "person": personGenerator(),
+    "unique_constraint_test": unique_constraint_testGenerator(),
+    "unique_constraint_test2": unique_constraint_test2Generator(),
     "test_entity": test_entityGenerator(),
     "hospital_visit": hospital_visitGenerator(),
 }
 
 
 vocab_dict = {
+    "empty_vocabulary": emptyvocabulary_vocab,
+    "mitigation_type": mitigationtype_vocab,
+    "concept_type": concepttype_vocab,
     "concept": concept_vocab,
 }
 

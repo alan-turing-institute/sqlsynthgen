@@ -230,6 +230,7 @@ def make_stats(
 
 @app.command()
 def make_tables(
+    config_file: Optional[str] = Option(None),
     orm_file: str = Option(ORM_FILENAME),
     force: bool = Option(False, "--force", "-f"),
     verbose: bool = Option(False, "--verbose", "-v"),
@@ -244,6 +245,7 @@ def make_tables(
         $ sqlsynthgen make_tables
 
     Args:
+        config_file (str): Path to configuration file.
         orm_file (str): Path to write the Python ORM file.
         force (bool): Overwrite ORM file, if exists. Default to False.
         verbose (bool): Be verbose. Default to False.
@@ -255,10 +257,11 @@ def make_tables(
     if not force:
         _check_file_non_existence(orm_file_path)
 
+    config = read_yaml_file(config_file) if config_file is not None else {}
     settings = get_settings()
     src_dsn: str = _require_src_db_dsn(settings)
 
-    content = make_tables_file(src_dsn, settings.src_schema)
+    content = make_tables_file(src_dsn, settings.src_schema, config)
     orm_file_path.write_text(content, encoding="utf-8")
 
     if verbose:
