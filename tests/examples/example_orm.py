@@ -1,3 +1,5 @@
+from typing import List, Optional
+
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -14,16 +16,18 @@ from sqlalchemy import (
     Table,
     Text,
     UniqueConstraint,
+    Uuid,
 )
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+import datetime
 
-Base = declarative_base()
-metadata = Base.metadata
+
+class Base(DeclarativeBase):
+    pass
 
 
 t_data_type_test = Table(
-    "data_type_test", metadata, Column("myuuid", UUID, nullable=False)
+    "data_type_test", Base.metadata, Column("myuuid", Uuid, nullable=False)
 )
 
 
@@ -31,23 +35,25 @@ class EmptyVocabulary(Base):
     __tablename__ = "empty_vocabulary"
     __table_args__ = (PrimaryKeyConstraint("entry_id", name="empty_vocabulary_pkey"),)
 
-    entry_id = Column(Integer)
-    entry_name = Column(Text, nullable=False)
+    entry_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    entry_name: Mapped[str] = mapped_column(Text)
 
 
 class MitigationType(Base):
     __tablename__ = "mitigation_type"
     __table_args__ = (PrimaryKeyConstraint("id", name="mitigation_type_pkey"),)
 
-    id = Column(Integer)
-    name = Column(Text)
-    description = Column(Text)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[Optional[str]] = mapped_column(Text)
+    description: Mapped[Optional[str]] = mapped_column(Text)
 
-    concept_type = relationship("ConceptType", back_populates="mitigation_type")
+    concept_type: Mapped[List["ConceptType"]] = relationship(
+        "ConceptType", back_populates="mitigation_type"
+    )
 
 
 t_no_pk_test = Table(
-    "no_pk_test", metadata, Column("not_an_id", Integer, nullable=False)
+    "no_pk_test", Base.metadata, Column("not_an_id", Integer, nullable=False)
 )
 
 
@@ -55,12 +61,14 @@ class Person(Base):
     __tablename__ = "person"
     __table_args__ = (PrimaryKeyConstraint("person_id", name="person_pkey"),)
 
-    person_id = Column(Integer)
-    name = Column(Text, nullable=False)
-    research_opt_out = Column(Boolean, nullable=False)
-    stored_from = Column(DateTime(True), nullable=False)
+    person_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(Text)
+    research_opt_out: Mapped[bool] = mapped_column(Boolean)
+    stored_from: Mapped[datetime.datetime] = mapped_column(DateTime(True))
 
-    hospital_visit = relationship("HospitalVisit", back_populates="person")
+    hospital_visit: Mapped[List["HospitalVisit"]] = relationship(
+        "HospitalVisit", back_populates="person"
+    )
 
 
 class UniqueConstraintTest(Base):
@@ -71,10 +79,10 @@ class UniqueConstraintTest(Base):
         UniqueConstraint("c", name="c_uniq"),
     )
 
-    id = Column(Integer)
-    a = Column(Boolean, nullable=False)
-    b = Column(Boolean, nullable=False)
-    c = Column(Text, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    a: Mapped[bool] = mapped_column(Boolean)
+    b: Mapped[bool] = mapped_column(Boolean)
+    c: Mapped[str] = mapped_column(Text)
 
 
 class UniqueConstraintTest2(Base):
@@ -85,10 +93,10 @@ class UniqueConstraintTest2(Base):
         UniqueConstraint("a", name="a_uniq2"),
     )
 
-    id = Column(Integer)
-    a = Column(Text, nullable=False)
-    b = Column(Text, nullable=False)
-    c = Column(Text, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    a: Mapped[str] = mapped_column(Text)
+    b: Mapped[str] = mapped_column(Text)
+    c: Mapped[str] = mapped_column(Text)
 
 
 class ConceptType(Base):
@@ -102,18 +110,22 @@ class ConceptType(Base):
         PrimaryKeyConstraint("id", name="concept_type_pkey"),
     )
 
-    id = Column(Integer)
-    name = Column(Text, nullable=False)
-    mitigation_type_id = Column(Integer)
-    lucky_number = Column(Integer)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(Text)
+    mitigation_type_id: Mapped[Optional[int]] = mapped_column(Integer)
+    lucky_number: Mapped[Optional[int]] = mapped_column(Integer)
 
-    mitigation_type = relationship("MitigationType", back_populates="concept_type")
-    concept = relationship("Concept", back_populates="concept_type")
+    mitigation_type: Mapped["MitigationType"] = relationship(
+        "MitigationType", back_populates="concept_type"
+    )
+    concept: Mapped[List["Concept"]] = relationship(
+        "Concept", back_populates="concept_type"
+    )
 
 
 t_test_entity = Table(
     "test_entity",
-    metadata,
+    Base.metadata,
     Column("single_letter_column", String(1)),
     Column("vocabulary_entry_id", Integer),
     ForeignKeyConstraint(
@@ -134,15 +146,20 @@ class Concept(Base):
         ),
         PrimaryKeyConstraint("concept_id", name="concept_pkey"),
         UniqueConstraint("concept_name", name="concept_name_uniq"),
+        Index("fki_concept_concept_type_id_fkey", "concept_type_id"),
     )
 
-    concept_id = Column(Integer)
-    concept_name = Column(Text, nullable=False)
-    concept_valid_from = Column(DateTime(True), nullable=False)
-    concept_type_id = Column(Integer, index=True)
+    concept_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    concept_name: Mapped[str] = mapped_column(Text)
+    concept_valid_from: Mapped[datetime.datetime] = mapped_column(DateTime(True))
+    concept_type_id: Mapped[Optional[int]] = mapped_column(Integer)
 
-    concept_type = relationship("ConceptType", back_populates="concept")
-    hospital_visit = relationship("HospitalVisit", back_populates="visit_type_concept")
+    concept_type: Mapped["ConceptType"] = relationship(
+        "ConceptType", back_populates="concept"
+    )
+    hospital_visit: Mapped[List["HospitalVisit"]] = relationship(
+        "HospitalVisit", back_populates="visit_type_concept"
+    )
 
 
 class HospitalVisit(Base):
@@ -159,13 +176,15 @@ class HospitalVisit(Base):
         PrimaryKeyConstraint("hospital_visit_id", name="hospital_visit_pkey"),
     )
 
-    hospital_visit_id = Column(BigInteger)
-    person_id = Column(Integer, nullable=False)
-    visit_start = Column(Date, nullable=False)
-    visit_end = Column(Date, nullable=False)
-    visit_duration_seconds = Column(Float, nullable=False)
-    visit_image = Column(LargeBinary, nullable=False)
-    visit_type_concept_id = Column(Integer, nullable=False)
+    hospital_visit_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    person_id: Mapped[int] = mapped_column(Integer)
+    visit_start: Mapped[datetime.date] = mapped_column(Date)
+    visit_end: Mapped[datetime.date] = mapped_column(Date)
+    visit_duration_seconds: Mapped[float] = mapped_column(Float)
+    visit_image: Mapped[bytes] = mapped_column(LargeBinary)
+    visit_type_concept_id: Mapped[int] = mapped_column(Integer)
 
-    person = relationship("Person", back_populates="hospital_visit")
-    visit_type_concept = relationship("Concept", back_populates="hospital_visit")
+    person: Mapped["Person"] = relationship("Person", back_populates="hospital_visit")
+    visit_type_concept: Mapped["Concept"] = relationship(
+        "Concept", back_populates="hospital_visit"
+    )

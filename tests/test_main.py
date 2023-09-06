@@ -184,10 +184,10 @@ class TestCLI(SSGTestCase):
     @patch("sqlsynthgen.main.Path")
     @patch("sqlsynthgen.main.make_tables_file")
     @patch("sqlsynthgen.main.get_settings")
-    @patch("sqlsynthgen.main.read_yaml_file")
+    @patch("sqlsynthgen.main.read_config_file")
     def test_make_tables(
         self,
-        mock_read_yaml_file: MagicMock,
+        mock_config_yaml_file: MagicMock,
         mock_get_settings: MagicMock,
         mock_make_tables_file: MagicMock,
         mock_path: MagicMock,
@@ -198,7 +198,7 @@ class TestCLI(SSGTestCase):
         mock_path.return_value.exists.return_value = False
         mock_get_settings.return_value = get_test_settings()
         mock_make_tables_file.return_value = "some text"
-        mock_read_yaml_file.return_value = mock_config
+        mock_config_yaml_file.return_value = mock_config
 
         result = runner.invoke(
             app,

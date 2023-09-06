@@ -254,7 +254,7 @@ def make_tables(
     if not force:
         _check_file_non_existence(orm_file_path)
 
-    config = read_yaml_file(config_file) if config_file is not None else {}
+    config = read_config_file(config_file) if config_file is not None else {}
     settings = get_settings()
     src_dsn: str = _require_src_db_dsn(settings)
 

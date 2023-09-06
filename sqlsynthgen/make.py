@@ -286,15 +286,31 @@ def _enforce_unique_constraints(table_data: TableGenerator) -> None:
             row_gen.function_call = new_function_call
 
 
+def _constraint_sort_key(constraint: UniqueConstraint) -> str:
+    """Extract a string out of a UniqueConstraint that is unique to that constraint.
+
+    We sort the constraints so that the output of make_tables is deterministic, this is
+    the sort key.
+    """
+    return (
+        constraint.name
+        if isinstance(constraint.name, str)
+        else "_".join(map(str, constraint.columns))
+    )
+
+
 def _get_generator_for_table(
     tables_module: ModuleType, table_config: dict, table: Any
 ) -> TableGenerator:
     """Get generator information for the given table."""
-    unique_constraints = [
-        constraint
-        for constraint in table.constraints
-        if isinstance(constraint, UniqueConstraint)
-    ]
+    unique_constraints = sorted(
+        (
+            constraint
+            for constraint in table.constraints
+            if isinstance(constraint, UniqueConstraint)
+        ),
+        key=_constraint_sort_key,
+    )
     table_data: TableGenerator = TableGenerator(
         table_name=table.name,
         class_name=table.name + "Generator",
@@ -442,7 +458,7 @@ def make_tables_file(db_dsn: str, schema_name: Optional[str], config: dict) -> s
     """
     tables_config = config.get("tables", {})
 
-    def reflect_if(table_name, _):
+    def reflect_if(table_name: str, _: Any) -> bool:
         table_config = tables_config.get(table_name, {})
         ignore = table_config.get("ignore", False)
         return not ignore
