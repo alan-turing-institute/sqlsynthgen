@@ -89,8 +89,9 @@ class TestDownload(RequiresDBTestCase):
 
         with self.engine.connect() as conn:
             conn.execute(insert(MyTable).values({"id": 1}))
+            conn.commit()
 
-        download_table(MyTable.__table__, self.engine, "mytable.yaml")
+        download_table(MyTable.__table__, self.engine, self.mytable_file_path)
 
         # The .strip() gets rid of any possible empty lines at the end of the file.
         with Path("../examples/expected.yaml").open(encoding="utf-8") as yamlfile:

@@ -35,6 +35,7 @@ class FileUploader:
         try:
             stmt = insert(self.table).values(list(rows))
             connection.execute(stmt)
+            connection.commit()
         except SQLAlchemyError as e:
             logging.warning(
                 "Error inserting rows into table %s: %s", self.table.fullname, e
