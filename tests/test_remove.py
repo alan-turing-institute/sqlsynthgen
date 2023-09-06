@@ -39,7 +39,11 @@ class RemoveTestCase(SSGTestCase):
     @patch("sqlsynthgen.remove.get_settings")
     def test_remove_db_data_raises(self, mock_get: MagicMock) -> None:
         """Check that remove_db_data raises if dst DSN is missing."""
-        mock_get.return_value = Settings(dst_dsn=None, _env_file=None)
+        mock_get.return_value = Settings(
+            dst_dsn=None,
+            # The mypy ignore can be removed once we upgrade to pydantic 2.
+            _env_file=None,  # type: ignore[call-arg]
+        )
         with self.assertRaises(AssertionError) as context_manager:
             remove_db_data(example_orm, remove_ssg)
         self.assertEqual(
@@ -72,7 +76,11 @@ class RemoveTestCase(SSGTestCase):
     @patch("sqlsynthgen.remove.get_settings")
     def test_remove_db_vocab_raises(self, mock_get: MagicMock) -> None:
         """Check that remove_db_vocab raises if dst DSN is missing."""
-        mock_get.return_value = Settings(dst_dsn=None, _env_file=None)
+        mock_get.return_value = Settings(
+            dst_dsn=None,
+            # The mypy ignore can be removed once we upgrade to pydantic 2.
+            _env_file=None,  # type: ignore[call-arg]
+        )
         with self.assertRaises(AssertionError) as context_manager:
             remove_db_vocab(example_orm, remove_ssg)
         self.assertEqual(
@@ -91,7 +99,11 @@ class RemoveTestCase(SSGTestCase):
     @patch("sqlsynthgen.remove.get_settings")
     def test_remove_db_tables_raises(self, mock_get: MagicMock) -> None:
         """Check that remove_db_tables raises if dst DSN is missing."""
-        mock_get.return_value = Settings(dst_dsn=None, _env_file=None)
+        mock_get.return_value = Settings(
+            dst_dsn=None,
+            # The mypy ignore can be removed once we upgrade to pydantic 2.
+            _env_file=None,  # type: ignore[call-arg]
+        )
         with self.assertRaises(AssertionError) as context_manager:
             remove_db_tables(example_orm)
         self.assertEqual(

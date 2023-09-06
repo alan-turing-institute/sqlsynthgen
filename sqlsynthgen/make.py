@@ -222,6 +222,7 @@ def _get_provider_for_column(column: Any) -> Tuple[List[str], str, List[str]]:
         (sqltypes.DateTime, False): "generic.datetime.datetime",
         (sqltypes.Numeric, False): "generic.numeric.float_number",
         (sqltypes.LargeBinary, False): "generic.bytes_provider.bytes",
+        (sqltypes.Uuid, False): "generic.cryptographic.uuid",
         (postgresql.UUID, False): "generic.cryptographic.uuid",
         (sqltypes.String, False): "generic.text.color",
         (sqltypes.String, True): "generic.person.password",

@@ -21,7 +21,8 @@ def get_test_settings() -> settings.Settings:
         src_dsn="postgresql://suser:spassword@shost:5432/sdbname",
         dst_dsn="postgresql://duser:dpassword@dhost:5432/ddbname",
         # To stop any local .env files influencing the test
-        _env_file=None,
+        # The mypy ignore can be removed once we upgrade to pydantic 2.
+        _env_file=None,  # type: ignore[call-arg]
     )
 
 
