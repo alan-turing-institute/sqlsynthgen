@@ -1,15 +1,21 @@
 """Tests for the create module."""
 import itertools as itt
+from pathlib import Path
 from typing import Any, Generator, Tuple
 from unittest.mock import MagicMock, call, patch
 
+from sqlalchemy import Column, Integer, create_engine
+from sqlalchemy.orm import declarative_base
+
 from sqlsynthgen.create import (
+    Story,
+    _populate_story,
     create_db_data,
     create_db_tables,
     create_db_vocab,
     populate,
 )
-from tests.utils import SSGTestCase, get_test_settings
+from tests.utils import RequiresDBTestCase, SSGTestCase, get_test_settings, run_psql
 
 
 class MyTestCase(SSGTestCase):
@@ -131,3 +137,42 @@ class MyTestCase(SSGTestCase):
         )
         # Running the same insert twice should be fine.
         create_db_vocab(vocab_list)
+
+
+class TestStoryDefaults(RequiresDBTestCase):
+    """Test that we can handle column defaults in stories."""
+
+    # pylint: disable=invalid-name
+    Base = declarative_base()
+    # pylint: enable=invalid-name
+    metadata = Base.metadata
+
+    class ColumnDefaultsTable(Base):  # type: ignore
+        """A SQLAlchemy model."""
+
+        __tablename__ = "column_defaults"
+        someval = Column(Integer, primary_key=True)
+        otherval = Column(Integer, server_default="8")
+
+    def setUp(self) -> None:
+        """Ensure we have an empty DB to work with."""
+        dump_file_path = Path("dst.dump")
+        examples_dir = Path("tests/examples")
+        run_psql(examples_dir / dump_file_path)
+
+    def test_populate(self) -> None:
+        """Check that we can populate a table that has column defaults."""
+        engine = create_engine(
+            "postgresql://postgres:password@localhost:5432/dst",
+        )
+        self.metadata.create_all(engine)
+
+        def my_story() -> Story:
+            """A story generator."""
+            first_row = yield "column_defaults", {}
+            self.assertEqual(1, first_row["someval"])
+            self.assertEqual(8, first_row["otherval"])
+
+        with engine.connect() as conn:
+            with conn.begin():
+                _populate_story(my_story(), dict(self.metadata.tables), {}, conn)
