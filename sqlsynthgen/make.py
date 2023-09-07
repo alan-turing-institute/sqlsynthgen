@@ -359,11 +359,10 @@ def make_table_generators(
     story_generator_module_name = config.get("story_generators_module", None)
 
     settings = get_settings()
-    engine = get_sync_engine(
-        create_db_engine(
-            settings.src_dsn, schema_name=settings.src_schema  # type: ignore
-        )
-    )
+    src_dsn: str = settings.src_dsn or ""
+    assert src_dsn != "", "Missing SRC_DSN setting."
+
+    engine = get_sync_engine(create_db_engine(src_dsn, schema_name=settings.src_schema))
 
     tables: List[TableGeneratorInfo] = []
     vocabulary_tables: List[VocabularyTableGeneratorInfo] = []
