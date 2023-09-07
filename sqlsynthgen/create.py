@@ -1,6 +1,6 @@
 """Functions and classes to create and populate the target database."""
 import logging
-from typing import Any, Generator, Tuple
+from typing import Any, Generator, Mapping, Sequence, Tuple
 
 from sqlalchemy import Connection, insert
 from sqlalchemy.exc import IntegrityError
@@ -34,7 +34,7 @@ def create_db_tables(metadata: MetaData) -> None:
     metadata.create_all(engine)
 
 
-def create_db_vocab(vocab_dict: dict[str, FileUploader]) -> None:
+def create_db_vocab(vocab_dict: Mapping[str, FileUploader]) -> None:
     """Load vocabulary tables from files."""
     settings = get_settings()
     dst_dsn: str = settings.dst_dsn or ""
@@ -55,9 +55,9 @@ def create_db_vocab(vocab_dict: dict[str, FileUploader]) -> None:
 
 
 def create_db_data(
-    sorted_tables: list[Table],
-    table_generator_dict: dict[str, TableGenerator],
-    story_generator_list: list[dict[str, Any]],
+    sorted_tables: Sequence[Table],
+    table_generator_dict: Mapping[str, TableGenerator],
+    story_generator_list: Sequence[Mapping[str, Any]],
     num_passes: int,
 ) -> None:
     """Connect to a database and populate it with data."""
@@ -81,8 +81,8 @@ def create_db_data(
 
 def _populate_story(
     story: Story,
-    table_dict: dict[str, Table],
-    table_generator_dict: dict[str, TableGenerator],
+    table_dict: Mapping[str, Table],
+    table_generator_dict: Mapping[str, TableGenerator],
     dst_conn: Connection,
 ) -> None:
     """Write to the database all the rows created by the given story."""
@@ -121,9 +121,9 @@ def _populate_story(
 
 def populate(
     dst_conn: Connection,
-    tables: list[Table],
-    table_generator_dict: dict[str, TableGenerator],
-    story_generator_list: list[dict[str, Any]],
+    tables: Sequence[Table],
+    table_generator_dict: Mapping[str, TableGenerator],
+    story_generator_list: Sequence[Mapping[str, Any]],
 ) -> None:
     """Populate a database schema with synthetic data."""
     table_dict = {table.name: table for table in tables}

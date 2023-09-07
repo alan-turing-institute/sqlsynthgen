@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from sys import stderr
 from types import ModuleType
-from typing import Any, Final, Optional, Tuple
+from typing import Any, Final, Mapping, Optional, Sequence, Tuple
 
 import pandas as pd
 import snsql
@@ -100,8 +100,8 @@ def _orm_class_from_table_name(
 
 def _get_function_call(
     function_name: str,
-    positional_arguments: Optional[list[Any]] = None,
-    keyword_arguments: Optional[dict[str, Any]] = None,
+    positional_arguments: Optional[Sequence[Any]] = None,
+    keyword_arguments: Optional[Mapping[str, Any]] = None,
 ) -> FunctionCall:
     if positional_arguments is None:
         positional_arguments = []
@@ -116,7 +116,7 @@ def _get_function_call(
 
 
 def _get_row_generator(
-    table_config: dict[str, Any],
+    table_config: Mapping[str, Any],
 ) -> tuple[list[RowGeneratorInfo], list[str]]:
     """Get the row generators information, for the given table."""
     row_gen_info: list[RowGeneratorInfo] = []
@@ -125,8 +125,8 @@ def _get_row_generator(
     for gen_conf in config:
         name: str = gen_conf["name"]
         columns_assigned = gen_conf["columns_assigned"]
-        keyword_arguments: dict[str, Any] = gen_conf.get("kwargs", {})
-        positional_arguments: list[str] = gen_conf.get("args", [])
+        keyword_arguments: Mapping[str, Any] = gen_conf.get("kwargs", {})
+        positional_arguments: Sequence[str] = gen_conf.get("args", [])
 
         if isinstance(columns_assigned, str):
             columns_assigned = [columns_assigned]
@@ -291,7 +291,7 @@ def _enforce_unique_constraints(table_data: TableGeneratorInfo) -> None:
 
 
 def _get_generator_for_table(
-    tables_module: ModuleType, table_config: dict[str, Any], table: Table
+    tables_module: ModuleType, table_config: Mapping[str, Any], table: Table
 ) -> TableGeneratorInfo:
     """Get generator information for the given table."""
     unique_constraints = [
@@ -318,7 +318,7 @@ def _get_generator_for_table(
     return table_data
 
 
-def _get_story_generators(config: dict) -> list[StoryGeneratorInfo]:
+def _get_story_generators(config: Mapping) -> list[StoryGeneratorInfo]:
     """Get story generators."""
     generators = []
     for gen in config.get("story_generators", []):
@@ -339,7 +339,7 @@ def _get_story_generators(config: dict) -> list[StoryGeneratorInfo]:
 
 def make_table_generators(
     tables_module: ModuleType,
-    config: dict,
+    config: Mapping,
     src_stats_filename: Optional[str],
     overwrite_files: bool = False,
 ) -> str:
@@ -397,7 +397,7 @@ def make_table_generators(
     )
 
 
-def generate_ssg_content(template_context: dict[str, Any]) -> str:
+def generate_ssg_content(template_context: Mapping[str, Any]) -> str:
     """Generate the content of the ssg.py file as a string."""
     environment: Environment = Environment(
         loader=FileSystemLoader(TEMPLATE_DIRECTORY),
@@ -466,7 +466,7 @@ def make_tables_file(db_dsn: str, schema_name: Optional[str]) -> str:
 
 
 async def make_src_stats(
-    dsn: str, config: dict, schema_name: Optional[str] = None
+    dsn: str, config: Mapping, schema_name: Optional[str] = None
 ) -> dict[str, list[dict]]:
     """Run the src-stats queries specified by the configuration.
 
@@ -484,7 +484,7 @@ async def make_src_stats(
     use_asyncio = config.get("use-asyncio", False)
     engine = create_db_engine(dsn, schema_name=schema_name, use_asyncio=use_asyncio)
 
-    async def execute_query(query_block: dict[str, Any]) -> Any:
+    async def execute_query(query_block: Mapping[str, Any]) -> Any:
         """Execute query in query_block."""
         query = text(query_block["query"])
         if isinstance(engine, AsyncEngine):
