@@ -1,6 +1,6 @@
 """Functions and classes to create and populate the target database."""
 import logging
-from typing import Any, Dict, Generator, List, Tuple
+from typing import Any, Generator, Tuple
 
 from sqlalchemy import Connection, insert
 from sqlalchemy.exc import IntegrityError
@@ -10,7 +10,7 @@ from sqlsynthgen.base import FileUploader, TableGenerator
 from sqlsynthgen.settings import get_settings
 from sqlsynthgen.utils import create_db_engine, get_sync_engine
 
-Story = Generator[Tuple[str, Dict[str, Any]], Dict[str, Any], None]
+Story = Generator[Tuple[str, dict[str, Any]], dict[str, Any], None]
 
 
 def create_db_tables(metadata: MetaData) -> None:
@@ -34,7 +34,7 @@ def create_db_tables(metadata: MetaData) -> None:
     metadata.create_all(engine)
 
 
-def create_db_vocab(vocab_dict: Dict[str, FileUploader]) -> None:
+def create_db_vocab(vocab_dict: dict[str, FileUploader]) -> None:
     """Load vocabulary tables from files."""
     settings = get_settings()
     dst_dsn: str = settings.dst_dsn or ""
@@ -81,8 +81,8 @@ def create_db_data(
 
 def _populate_story(
     story: Story,
-    table_dict: Dict[str, Table],
-    table_generator_dict: Dict[str, TableGenerator],
+    table_dict: dict[str, Table],
+    table_generator_dict: dict[str, TableGenerator],
     dst_conn: Connection,
 ) -> None:
     """Write to the database all the rows created by the given story."""
@@ -131,7 +131,7 @@ def populate(
     # Each story generator returns a python generator (an unfortunate naming clash with
     # what we call generators). Iterating over it yields individual rows for the
     # database. First, collect all of the python generators into a single list.
-    stories: List[Story] = sum(
+    stories: list[Story] = sum(
         [
             [sg["name"](dst_conn) for _ in range(sg["num_stories_per_pass"])]
             for sg in story_generator_list

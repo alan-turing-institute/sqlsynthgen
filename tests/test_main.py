@@ -1,6 +1,5 @@
 """Tests for the main module."""
 from pathlib import Path
-from typing import Dict
 from unittest.mock import MagicMock, call, patch
 
 import yaml
@@ -368,12 +367,12 @@ class TestCLI(SSGTestCase):
         """Tests that the make-stats command overwrite files when instructed."""
         test_config_file: str = "tests/examples/example_config.yaml"
         with open(test_config_file, "r", encoding="utf8") as f:
-            config_file_content: Dict = yaml.safe_load(f)
+            config_file_content: dict = yaml.safe_load(f)
 
         mock_path.return_value.exists.return_value = True
         test_settings: Settings = get_test_settings()
         mock_get_settings.return_value = test_settings
-        make_test_output: Dict = {"some_stat": 0}
+        make_test_output: dict = {"some_stat": 0}
         mock_make.return_value = make_test_output
 
         for force_option in ["--force", "-f"]:
