@@ -1,6 +1,6 @@
 """Functions and classes to create and populate the target database."""
 import logging
-from typing import Any, Dict, Generator, List, Tuple
+from typing import Any, Generator, Mapping, Sequence, Tuple
 
 from sqlalchemy import Connection, insert
 from sqlalchemy.exc import IntegrityError
@@ -10,14 +10,16 @@ from sqlsynthgen.base import FileUploader, TableGenerator
 from sqlsynthgen.settings import get_settings
 from sqlsynthgen.utils import create_db_engine, get_sync_engine
 
-Story = Generator[Tuple[str, Dict[str, Any]], Dict[str, Any], None]
+Story = Generator[Tuple[str, dict[str, Any]], dict[str, Any], None]
 
 
 def create_db_tables(metadata: MetaData) -> None:
     """Create tables described by the sqlalchemy metadata object."""
     settings = get_settings()
+    dst_dsn: str = settings.dst_dsn or ""
+    assert dst_dsn != "", "Missing DST_DSN setting."
 
-    engine = get_sync_engine(create_db_engine(settings.dst_dsn))  # type: ignore
+    engine = get_sync_engine(create_db_engine(dst_dsn))
 
     # Create schema, if necessary.
     if settings.dst_schema:
@@ -27,21 +29,19 @@ def create_db_tables(metadata: MetaData) -> None:
                 connection.execute(CreateSchema(schema_name, if_not_exists=True))
 
         # Recreate the engine, this time with a schema specified
-        engine = get_sync_engine(
-            create_db_engine(settings.dst_dsn, schema_name=schema_name)  # type: ignore
-        )
+        engine = get_sync_engine(create_db_engine(dst_dsn, schema_name=schema_name))
 
     metadata.create_all(engine)
 
 
-def create_db_vocab(vocab_dict: Dict[str, FileUploader]) -> None:
+def create_db_vocab(vocab_dict: Mapping[str, FileUploader]) -> None:
     """Load vocabulary tables from files."""
     settings = get_settings()
+    dst_dsn: str = settings.dst_dsn or ""
+    assert dst_dsn != "", "Missing DST_DSN setting."
 
     dst_engine = get_sync_engine(
-        create_db_engine(
-            settings.dst_dsn, schema_name=settings.dst_schema  # type: ignore
-        )
+        create_db_engine(dst_dsn, schema_name=settings.dst_schema)
     )
 
     with dst_engine.connect() as dst_conn:
@@ -55,18 +55,18 @@ def create_db_vocab(vocab_dict: Dict[str, FileUploader]) -> None:
 
 
 def create_db_data(
-    sorted_tables: list[Table],
-    table_generator_dict: dict[str, TableGenerator],
-    story_generator_list: list[dict[str, Any]],
+    sorted_tables: Sequence[Table],
+    table_generator_dict: Mapping[str, TableGenerator],
+    story_generator_list: Sequence[Mapping[str, Any]],
     num_passes: int,
 ) -> None:
     """Connect to a database and populate it with data."""
     settings = get_settings()
+    dst_dsn: str = settings.dst_dsn or ""
+    assert dst_dsn != "", "Missing DST_DSN setting."
 
     dst_engine = get_sync_engine(
-        create_db_engine(
-            settings.dst_dsn, schema_name=settings.dst_schema  # type: ignore
-        )
+        create_db_engine(dst_dsn, schema_name=settings.dst_schema)
     )
 
     with dst_engine.connect() as dst_conn:
@@ -81,8 +81,8 @@ def create_db_data(
 
 def _populate_story(
     story: Story,
-    table_dict: Dict[str, Table],
-    table_generator_dict: Dict[str, TableGenerator],
+    table_dict: Mapping[str, Table],
+    table_generator_dict: Mapping[str, TableGenerator],
     dst_conn: Connection,
 ) -> None:
     """Write to the database all the rows created by the given story."""
@@ -121,9 +121,9 @@ def _populate_story(
 
 def populate(
     dst_conn: Connection,
-    tables: list[Table],
-    table_generator_dict: dict[str, TableGenerator],
-    story_generator_list: list[dict[str, Any]],
+    tables: Sequence[Table],
+    table_generator_dict: Mapping[str, TableGenerator],
+    story_generator_list: Sequence[Mapping[str, Any]],
 ) -> None:
     """Populate a database schema with synthetic data."""
     table_dict = {table.name: table for table in tables}
@@ -131,7 +131,7 @@ def populate(
     # Each story generator returns a python generator (an unfortunate naming clash with
     # what we call generators). Iterating over it yields individual rows for the
     # database. First, collect all of the python generators into a single list.
-    stories: List[Story] = sum(
+    stories: list[Story] = sum(
         [
             [sg["name"](dst_conn) for _ in range(sg["num_stories_per_pass"])]
             for sg in story_generator_list
