@@ -10,6 +10,7 @@ from typing import Final, Optional
 import yaml
 from jsonschema.exceptions import ValidationError
 from jsonschema.validators import validate
+from sqlalchemy.schema import MetaData
 from typer import Option, Typer, echo
 
 from sqlsynthgen.create import create_db_data, create_db_tables, create_db_vocab
@@ -82,10 +83,13 @@ def create_data(
         echo("Creating data.")
     orm_module = import_file(orm_file)
     ssg_module = import_file(ssg_file)
+    orm_metadata: MetaData = orm_module.Base.metadata
+    table_generator_dict = ssg_module.table_generator_dict
+    story_generator_list = ssg_module.story_generator_list
     create_db_data(
-        orm_module.Base.metadata.sorted_tables,
-        ssg_module.table_generator_dict,
-        ssg_module.story_generator_list,
+        orm_metadata.sorted_tables,
+        table_generator_dict,
+        story_generator_list,
         num_passes,
     )
     if verbose:
@@ -136,7 +140,8 @@ def create_tables(
         echo("Creating tables.")
 
     orm_module = import_file(orm_file)
-    create_db_tables(orm_module.Base.metadata)
+    orm_metadata: MetaData = orm_module.Base.metadata
+    create_db_tables(orm_metadata)
 
     if verbose:
         echo("Tables created.")

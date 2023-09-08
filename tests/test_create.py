@@ -89,7 +89,12 @@ class MyTestCase(SSGTestCase):
                     if num_stories_per_pass > 0
                     else []
                 )
-                populate(mock_dst_conn, tables, row_generators, story_generators)
+                populate(
+                    mock_dst_conn,
+                    tables,  # type: ignore
+                    row_generators,  # type: ignore
+                    story_generators,
+                )
 
                 self.assertListEqual(
                     [call(mock_dst_conn)] * (num_stories_per_pass + num_rows_per_pass),
@@ -124,7 +129,7 @@ class MyTestCase(SSGTestCase):
         tables = [mock_table_one, mock_table_two, mock_table_three]
         row_generators = {"two": mock_gen_two, "three": mock_gen_three}
 
-        populate(mock_dst_conn, tables, row_generators, [])
+        populate(mock_dst_conn, tables, row_generators, [])  # type: ignore
         self.assertListEqual(
             [call(mock_table_two), call(mock_table_three)], mock_insert.call_args_list
         )
@@ -140,7 +145,7 @@ class MyTestCase(SSGTestCase):
         """Test the create_db_vocab function."""
         mock_get_settings.return_value = get_test_settings()
         vocab_list = {"table_name": MagicMock()}
-        create_db_vocab(vocab_list)
+        create_db_vocab(vocab_list)  # type: ignore
         vocab_list["table_name"].load.assert_called_once_with(
             mock_create_engine.return_value.connect.return_value.__enter__.return_value
         )
@@ -148,7 +153,7 @@ class MyTestCase(SSGTestCase):
             mock_get_settings.return_value.dst_dsn
         )
         # Running the same insert twice should be fine.
-        create_db_vocab(vocab_list)
+        create_db_vocab(vocab_list)  # type: ignore
 
 
 class TestStoryDefaults(RequiresDBTestCase):
