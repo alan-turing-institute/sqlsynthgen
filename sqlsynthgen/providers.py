@@ -5,6 +5,7 @@ from typing import Any
 
 from mimesis import Datetime, Text
 from mimesis.providers.base import BaseDataProvider, BaseProvider
+from sqlalchemy import Connection
 from sqlalchemy.sql import functions, select
 
 
@@ -16,7 +17,9 @@ class ColumnValueProvider(BaseProvider):
 
         name = "column_value_provider"
 
-    def column_value(self, db_connection: Any, orm_class: Any, column_name: str) -> Any:
+    def column_value(
+        self, db_connection: Connection, orm_class: Any, column_name: str
+    ) -> Any:
         """Return a random value from the column specified."""
         query = select(orm_class).order_by(functions.random()).limit(1)
         random_row = db_connection.execute(query).first()
@@ -49,9 +52,9 @@ class TimedeltaProvider(BaseProvider):
 
     def timedelta(
         self,
-        min_dt: Any = dt.timedelta(seconds=0),
+        min_dt: dt.timedelta = dt.timedelta(seconds=0),
         # ints bigger than this cause trouble
-        max_dt: Any = dt.timedelta(seconds=2**32),
+        max_dt: dt.timedelta = dt.timedelta(seconds=2**32),
     ) -> dt.timedelta:
         """Return a random timedelta object."""
         min_s = min_dt.total_seconds()
@@ -74,11 +77,11 @@ class TimespanProvider(BaseProvider):
 
     def timespan(
         self,
-        earliest_start_year: Any,
-        last_start_year: Any,
-        min_dt: Any = dt.timedelta(seconds=0),
+        earliest_start_year: int,
+        last_start_year: int,
+        min_dt: dt.timedelta = dt.timedelta(seconds=0),
         # ints bigger than this cause trouble
-        max_dt: Any = dt.timedelta(seconds=2**32),
+        max_dt: dt.timedelta = dt.timedelta(seconds=2**32),
     ) -> tuple[dt.datetime, dt.datetime, dt.timedelta]:
         """Return a timespan as a 3-tuple of (start, end, delta)."""
         delta = TimedeltaProvider().timedelta(min_dt, max_dt)

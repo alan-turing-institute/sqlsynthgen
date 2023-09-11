@@ -3,7 +3,6 @@ import asyncio
 import os
 from io import StringIO
 from pathlib import Path
-from typing import Dict
 from unittest.mock import MagicMock, patch
 
 import yaml
@@ -83,7 +82,7 @@ class TestMakeGenerators(SSGTestCase):
         mock_get_settings.return_value = get_test_settings()
         configuration_file: str = "example_config.yaml"
         with open(configuration_file, "r", encoding="utf8") as f:
-            configuration: Dict = yaml.safe_load(f)
+            configuration: dict = yaml.safe_load(f)
         stats_path = "example_stats.yaml"
 
         try:
@@ -115,7 +114,7 @@ class TestMakeGenerators(SSGTestCase):
             expected: str = expected_output.read()
         conf_path = "example_config.yaml"
         with open(conf_path, "r", encoding="utf8") as f:
-            config: Dict = yaml.safe_load(f)
+            config: dict = yaml.safe_load(f)
         stats_path: str = "example_stats.yaml"
 
         actual: str = make_table_generators(

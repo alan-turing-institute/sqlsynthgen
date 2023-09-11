@@ -4,9 +4,11 @@ from pathlib import Path
 from typing import Any, Generator, Tuple
 from unittest.mock import MagicMock, call, patch
 
-from sqlalchemy import Column, Integer, create_engine
+from sqlalchemy import Column, Connection, Integer, create_engine
 from sqlalchemy.orm import declarative_base
+from sqlalchemy.schema import Table
 
+from sqlsynthgen.base import FileUploader, TableGenerator
 from sqlsynthgen.create import (
     Story,
     _populate_story,
@@ -69,17 +71,17 @@ class MyTestCase(SSGTestCase):
         for num_stories_per_pass, num_rows_per_pass in itt.product([0, 2], [0, 3]):
             with patch("sqlsynthgen.create.insert") as mock_insert:
                 mock_values = mock_insert.return_value.values
-                mock_dst_conn = MagicMock()
+                mock_dst_conn = MagicMock(spec=Connection)
                 mock_dst_conn.execute.return_value.returned_defaults = {}
-                mock_table = MagicMock()
+                mock_table = MagicMock(spec=Table)
                 mock_table.name = table_name
-                mock_gen = MagicMock()
+                mock_gen = MagicMock(spec=TableGenerator)
                 mock_gen.num_rows_per_pass = num_rows_per_pass
                 mock_gen.return_value = {}
 
-                tables = [mock_table]
-                row_generators = {table_name: mock_gen}
-                story_generators = (
+                tables: list[Table] = [mock_table]
+                row_generators: dict[str, TableGenerator] = {table_name: mock_gen}
+                story_generators: list[dict[str, Any]] = (
                     [
                         {
                             "name": mock_story_gen,
@@ -89,7 +91,12 @@ class MyTestCase(SSGTestCase):
                     if num_stories_per_pass > 0
                     else []
                 )
-                populate(mock_dst_conn, tables, row_generators, story_generators)
+                populate(
+                    mock_dst_conn,
+                    tables,
+                    row_generators,
+                    story_generators,
+                )
 
                 self.assertListEqual(
                     [call(mock_dst_conn)] * (num_stories_per_pass + num_rows_per_pass),
@@ -112,17 +119,20 @@ class MyTestCase(SSGTestCase):
     @patch("sqlsynthgen.create.insert")
     def test_populate_diff_length(self, mock_insert: MagicMock) -> None:
         """Test when generators and tables differ in length."""
-        mock_dst_conn = MagicMock()
-        mock_gen_two = MagicMock()
-        mock_gen_three = MagicMock()
-        mock_table_one = MagicMock()
+        mock_dst_conn = MagicMock(spec=Connection)
+        mock_gen_two = MagicMock(spec_set=TableGenerator)
+        mock_gen_three = MagicMock(spec_set=TableGenerator)
+        mock_table_one = MagicMock(spec=Table)
         mock_table_one.name = "one"
-        mock_table_two = MagicMock()
+        mock_table_two = MagicMock(spec=Table)
         mock_table_two.name = "two"
-        mock_table_three = MagicMock()
+        mock_table_three = MagicMock(spec=Table)
         mock_table_three.name = "three"
-        tables = [mock_table_one, mock_table_two, mock_table_three]
-        row_generators = {"two": mock_gen_two, "three": mock_gen_three}
+        tables: list[Table] = [mock_table_one, mock_table_two, mock_table_three]
+        row_generators: dict[str, TableGenerator] = {
+            "two": mock_gen_two,
+            "three": mock_gen_three,
+        }
 
         populate(mock_dst_conn, tables, row_generators, [])
         self.assertListEqual(
@@ -139,9 +149,15 @@ class MyTestCase(SSGTestCase):
     ) -> None:
         """Test the create_db_vocab function."""
         mock_get_settings.return_value = get_test_settings()
-        vocab_list = {"table_name": MagicMock()}
+
+        mock_load = MagicMock()
+        mock_vocab = MagicMock(spec=FileUploader)
+        mock_vocab.load = mock_load
+        vocab_list: dict[str, FileUploader] = {"table_name": mock_vocab}
+
         create_db_vocab(vocab_list)
-        vocab_list["table_name"].load.assert_called_once_with(
+
+        mock_load.assert_called_once_with(
             mock_create_engine.return_value.connect.return_value.__enter__.return_value
         )
         mock_create_engine.assert_called_once_with(
