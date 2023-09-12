@@ -35,6 +35,9 @@ emptyvocabulary_vocab = FileUploader(
     tests.examples.example_orm.EmptyVocabulary.__table__
 )
 mitigationtype_vocab = FileUploader(tests.examples.example_orm.MitigationType.__table__)
+reftounignorabletable_vocab = FileUploader(
+    tests.examples.example_orm.RefToUnignorableTable.__table__
+)
 concepttype_vocab = FileUploader(tests.examples.example_orm.ConceptType.__table__)
 concept_vocab = FileUploader(tests.examples.example_orm.Concept.__table__)
 
@@ -187,6 +190,7 @@ table_generator_dict = {
 vocab_dict = {
     "empty_vocabulary": emptyvocabulary_vocab,
     "mitigation_type": mitigationtype_vocab,
+    "ref_to_unignorable_table": reftounignorabletable_vocab,
     "concept_type": concepttype_vocab,
     "concept": concept_vocab,
 }

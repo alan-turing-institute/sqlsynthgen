@@ -71,6 +71,17 @@ class Person(Base):
     )
 
 
+class UnignorableTable(Base):
+    __tablename__ = "unignorable_table"
+    __table_args__ = (PrimaryKeyConstraint("id", name="unignorable_table_pkey"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    ref_to_unignorable_table: Mapped[List["RefToUnignorableTable"]] = relationship(
+        "RefToUnignorableTable", back_populates="unignorable_table"
+    )
+
+
 class UniqueConstraintTest(Base):
     __tablename__ = "unique_constraint_test"
     __table_args__ = (
@@ -120,6 +131,25 @@ class ConceptType(Base):
     )
     concept: Mapped[List["Concept"]] = relationship(
         "Concept", back_populates="concept_type"
+    )
+
+
+class RefToUnignorableTable(Base):
+    __tablename__ = "ref_to_unignorable_table"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["ref"],
+            ["unignorable_table.id"],
+            name="ref_to_unignorable_table_ref_unignorable_table_id_fkey",
+        ),
+        PrimaryKeyConstraint("id", name="ref_to_unignorable_table_pkey"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ref: Mapped[int] = mapped_column(Integer)
+
+    unignorable_table: Mapped["UnignorableTable"] = relationship(
+        "UnignorableTable", back_populates="ref_to_unignorable_table"
     )
 
 

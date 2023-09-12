@@ -23,7 +23,12 @@ from sqlalchemy.sql import sqltypes
 
 from sqlsynthgen import providers
 from sqlsynthgen.settings import get_settings
-from sqlsynthgen.utils import create_db_engine, download_table, get_sync_engine
+from sqlsynthgen.utils import (
+    create_db_engine,
+    download_table,
+    get_orm_metadata,
+    get_sync_engine,
+)
 
 PROVIDER_IMPORTS: Final[list[str]] = []
 for entry_name, entry in inspect.getmembers(providers, inspect.isclass):
@@ -353,7 +358,7 @@ def _get_story_generators(config: Mapping) -> list[StoryGeneratorInfo]:
     return generators
 
 
-def make_table_generators(
+def make_table_generators(  # pylint: disable=too-many-locals
     tables_module: ModuleType,
     config: Mapping,
     src_stats_filename: Optional[str],
@@ -378,13 +383,14 @@ def make_table_generators(
     src_dsn: str = settings.src_dsn or ""
     assert src_dsn != "", "Missing SRC_DSN setting."
 
+    tables_config = config.get("tables", {})
+    metadata = get_orm_metadata(tables_module, tables_config)
     engine = get_sync_engine(create_db_engine(src_dsn, schema_name=settings.src_schema))
 
     tables: list[TableGeneratorInfo] = []
     vocabulary_tables: list[VocabularyTableGeneratorInfo] = []
-
-    for table in tables_module.Base.metadata.sorted_tables:
-        table_config = config.get("tables", {}).get(table.name, {})
+    for table in metadata.sorted_tables:
+        table_config = tables_config.get(table.name, {})
 
         if table_config.get("vocabulary_table") is True:
             vocabulary_tables.append(
@@ -475,6 +481,18 @@ def make_tables_file(db_dsn: str, schema_name: Optional[str], config: dict) -> s
         # The type-ignore is due to an erroneous type annotation in SQLAlchemy.
         only=reflect_if,  # type: ignore
     )
+
+    for table_name in metadata.tables.keys():
+        table_config = tables_config.get(table_name, {})
+        ignore = table_config.get("ignore", False)
+        if ignore:
+            logging.warning(
+                "Table %s is supposed to be ignored but there is a foreign key "
+                "reference to it. "
+                "You may need to create this table manually at the dst schema before "
+                "running create-tables.",
+                table_name,
+            )
 
     generator = DeclarativeGenerator(metadata, engine, options=())
     code = str(generator.generate())

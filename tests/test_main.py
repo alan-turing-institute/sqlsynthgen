@@ -433,7 +433,7 @@ class TestCLI(SSGTestCase):
             catch_exceptions=False,
         )
         self.assertEqual(0, result.exit_code)
-        mock_remove.assert_called_once_with(1, 2)
+        mock_remove.assert_called_once_with(1, 2, {})
 
     @patch("sqlsynthgen.main.remove_db_vocab")
     @patch("sqlsynthgen.main.import_file", side_effect=(1, 2))
@@ -445,7 +445,7 @@ class TestCLI(SSGTestCase):
             catch_exceptions=False,
         )
         self.assertEqual(0, result.exit_code)
-        mock_remove.assert_called_once_with(1, 2)
+        mock_remove.assert_called_once_with(1, 2, {})
 
     @patch("sqlsynthgen.main.remove_db_tables")
     @patch("sqlsynthgen.main.import_file", side_effect=(1,))
@@ -457,4 +457,4 @@ class TestCLI(SSGTestCase):
             catch_exceptions=False,
         )
         self.assertEqual(0, result.exit_code)
-        mock_remove.assert_called_once_with(1)
+        mock_remove.assert_called_once_with(1, {})

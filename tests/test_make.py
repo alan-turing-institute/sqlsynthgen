@@ -60,9 +60,9 @@ class TestMakeGenerators(SSGTestCase):
         stats_path = "example_stats.yaml"
 
         actual = make_table_generators(example_orm, config, stats_path)
-        # 4 because there are 4 vocabulary tables in the example orm.
-        self.assertEqual(mock_path.call_count, 4)
-        self.assertEqual(mock_download.call_count, 4)
+        # 5 because there are 5 vocabulary tables in the example orm.
+        self.assertEqual(mock_path.call_count, 5)
+        self.assertEqual(mock_download.call_count, 5)
         mock_create.assert_called_once()
         self.assertEqual(expected, actual)
 
@@ -122,7 +122,7 @@ class TestMakeGenerators(SSGTestCase):
         )
 
         mock_create.assert_called_once()
-        self.assertEqual(mock_download.call_count, 4)
+        self.assertEqual(mock_download.call_count, 5)
 
         self.assertEqual(expected, actual)
 

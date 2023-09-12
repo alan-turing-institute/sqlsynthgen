@@ -19,6 +19,7 @@ class FunctionalTestCase(RequiresDBTestCase):
             ["sqlsynthgen", "version"],
             capture_output=True,
         )
+        self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
         self.assertRegex(
             completed_process.stdout.decode("utf-8"),
@@ -60,7 +61,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
     def setUp(self) -> None:
         """Pre-test setup."""
 
-        # Create a blank destination database
+        # Create a mostly-blank destination database
         run_psql(self.examples_dir / self.dump_file_path)
 
         # Copy some of the example files over to the workspace.
@@ -85,7 +86,13 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             capture_output=True,
             env=self.env,
         )
+        self.assertEqual(
+            "WARNING: Table without PK detected. sqlsynthgen may not be able to "
+            "continue.\n",
+            completed_process.stderr.decode("utf-8"),
+        )
         self.assertSuccess(completed_process)
+        self.assertEqual("", completed_process.stdout.decode("utf-8"))
 
         completed_process = run(
             ["sqlsynthgen", "make-generators", "--force"],
@@ -110,6 +117,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             completed_process.stderr.decode("utf-8"),
         )
         self.assertSuccess(completed_process)
+        self.assertEqual("", completed_process.stdout.decode("utf-8"))
 
         completed_process = run(
             ["sqlsynthgen", "create-tables"],
@@ -118,6 +126,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
+        self.assertEqual("", completed_process.stdout.decode("utf-8"))
 
         completed_process = run(
             ["sqlsynthgen", "create-vocab"],
@@ -126,6 +135,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
+        self.assertEqual("", completed_process.stdout.decode("utf-8"))
 
         completed_process = run(
             ["sqlsynthgen", "create-data"],
@@ -134,6 +144,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
+        self.assertEqual("", completed_process.stdout.decode("utf-8"))
 
         completed_process = run(
             ["sqlsynthgen", "remove-data"],
@@ -143,6 +154,11 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
+        self.assertEqual(
+            "Are you sure? [y/N]: "
+            "Would truncate non-vocabulary tables if called with --yes.\n",
+            completed_process.stdout.decode("utf-8"),
+        )
 
         completed_process = run(
             ["sqlsynthgen", "remove-vocab"],
@@ -152,6 +168,11 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
+        self.assertEqual(
+            "Are you sure? [y/N]: "
+            "Would truncate vocabulary tables if called with --yes.\n",
+            completed_process.stdout.decode("utf-8"),
+        )
 
         completed_process = run(
             ["sqlsynthgen", "remove-tables"],
@@ -161,6 +182,10 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
+        self.assertEqual(
+            "Are you sure? [y/N]: Would remove tables if called with --yes.\n",
+            completed_process.stdout.decode("utf-8"),
+        )
 
     def test_workflow_maximal_args(self) -> None:
         """Test the CLI workflow runs with optional arguments."""
@@ -178,11 +203,19 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             env=self.env,
         )
         self.assertEqual(
+            "WARNING:root:Table unignorable_table is supposed to be ignored but "
+            "there is a foreign key reference to it. "
+            "You may need to create this table manually at the dst schema before "
+            "running create-tables.\n"
             "WARNING: Table without PK detected. "
             "sqlsynthgen may not be able to continue.\n",
             completed_process.stderr.decode("utf-8"),
         )
         self.assertSuccess(completed_process)
+        self.assertEqual(
+            f"Creating {self.alt_orm_file_path}.\n{self.alt_orm_file_path} created.\n",
+            completed_process.stdout.decode("utf-8"),
+        )
 
         with self.alt_orm_file_path.open("r", encoding="UTF-8") as f:
             written_orm = f.readlines()
@@ -202,6 +235,10 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
+        self.assertEqual(
+            f"Creating {self.stats_file_path}.\n{self.stats_file_path} created.\n",
+            completed_process.stdout.decode("utf-8"),
+        )
 
         completed_process = run(
             [
@@ -219,12 +256,17 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
+        self.assertEqual(
+            f"Making {self.alt_ssg_file_path}.\n{self.alt_ssg_file_path} created.\n",
+            completed_process.stdout.decode("utf-8"),
+        )
 
         completed_process = run(
             [
                 "sqlsynthgen",
                 "create-tables",
                 f"--orm-file={self.alt_orm_file_path}",
+                f"--config-file={self.config_file_path}",
                 "--verbose",
             ],
             capture_output=True,
@@ -232,6 +274,10 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
+        self.assertEqual(
+            "Creating tables.\nTables created.\n",
+            completed_process.stdout.decode("utf-8"),
+        )
 
         completed_process = run(
             [
@@ -248,6 +294,10 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             completed_process.stderr.decode("utf-8"),
         )
         self.assertSuccess(completed_process)
+        self.assertEqual(
+            "Loading vocab.\n5 tables loaded.\n",
+            completed_process.stdout.decode("utf-8"),
+        )
 
         completed_process = run(
             [
@@ -255,6 +305,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
                 "create-data",
                 f"--orm-file={self.alt_orm_file_path}",
                 f"--ssg-file={self.alt_ssg_file_path}",
+                f"--config-file={self.config_file_path}",
                 "--num-passes=2",
                 "--verbose",
             ],
@@ -263,6 +314,10 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
+        self.assertEqual(
+            "Creating data.\nData created in 2 passes.\n",
+            completed_process.stdout.decode("utf-8"),
+        )
 
         completed_process = run(
             [
@@ -271,6 +326,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
                 "--yes",
                 f"--orm-file={self.alt_orm_file_path}",
                 f"--ssg-file={self.alt_ssg_file_path}",
+                f"--config-file={self.config_file_path}",
                 "--verbose",
             ],
             capture_output=True,
@@ -278,6 +334,10 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
+        self.assertEqual(
+            "Truncating non-vocabulary tables.\nNon-vocabulary tables truncated.\n",
+            completed_process.stdout.decode("utf-8"),
+        )
 
         completed_process = run(
             [
@@ -286,6 +346,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
                 "--yes",
                 f"--orm-file={self.alt_orm_file_path}",
                 f"--ssg-file={self.alt_ssg_file_path}",
+                f"--config-file={self.config_file_path}",
                 "--verbose",
             ],
             capture_output=True,
@@ -293,6 +354,10 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
+        self.assertEqual(
+            "Truncating vocabulary tables.\nVocabulary tables truncated.\n",
+            completed_process.stdout.decode("utf-8"),
+        )
 
         completed_process = run(
             [
@@ -300,6 +365,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
                 "remove-tables",
                 "--yes",
                 f"--orm-file={self.alt_orm_file_path}",
+                f"--config-file={self.config_file_path}",
                 "--verbose",
             ],
             capture_output=True,
@@ -307,6 +373,10 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
+        self.assertEqual(
+            "Dropping tables.\nTables dropped.\n",
+            completed_process.stdout.decode("utf-8"),
+        )
 
     def test_unique_constraint_fail(self) -> None:
         """Test that the unique constraint is triggered correctly.
@@ -391,6 +461,8 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
+        self.assertEqual("", completed_process.stdout.decode("utf-8"))
+
         completed_process = run(
             [
                 "sqlsynthgen",
@@ -404,6 +476,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
+        self.assertEqual("", completed_process.stdout.decode("utf-8"))
 
         # Writing one more row should fail.
         completed_process = run(

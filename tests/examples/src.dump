@@ -188,6 +188,27 @@ CREATE TABLE public.data_type_test (
 ALTER TABLE public.data_type_test OWNER TO postgres;
 
 --
+-- Name: unignorable_table; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.unignorable_table (
+    id integer NOT NULL
+);
+
+ALTER TABLE public.unignorable_table OWNER TO postgres;
+
+--
+-- Name: ref_to_unignorable_table ; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.ref_to_unignorable_table  (
+    id integer NOT NULL,
+    ref integer NOT NULL
+);
+
+ALTER TABLE public.ref_to_unignorable_table OWNER TO postgres;
+
+--
 -- Name: table_to_be_ignored; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -1241,6 +1262,20 @@ INSERT INTO public.person VALUES (1000, 'Randy Random', true, '2023-03-01 00:00:
 
 
 --
+-- Data for Name: unignorable_table; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO public.unignorable_table VALUES (1);
+
+
+--
+-- Data for Name: ref_to_unignorable_table; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO public.ref_to_unignorable_table VALUES (1, 1);
+
+
+--
 -- Name: unique_constraint_test ab_uniq; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1341,6 +1376,19 @@ ALTER TABLE ONLY public.unique_constraint_test
 ALTER TABLE ONLY public.unique_constraint_test2
     ADD CONSTRAINT unique_constraint_test_pkey2 PRIMARY KEY (id);
 
+--
+-- Name: ref_to_unignorable_table ref_to_unignorable_table_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ref_to_unignorable_table
+    ADD CONSTRAINT ref_to_unignorable_table_pkey PRIMARY KEY (id);
+
+--
+-- Name: unignorable_table unignorable_table_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.unignorable_table
+    ADD CONSTRAINT unignorable_table_pkey PRIMARY KEY (id);
 
 --
 -- Name: fki_concept_concept_type_id_fkey; Type: INDEX; Schema: public; Owner: postgres
@@ -1386,6 +1434,13 @@ ALTER TABLE ONLY public.hospital_visit
 ALTER TABLE ONLY public.hospital_visit
     ADD CONSTRAINT hospital_visit_visit_type_concept_id_fkey FOREIGN KEY (visit_type_concept_id) REFERENCES public.concept(concept_id);
 
+
+--
+-- Name: ref_to_unignorable_table ref_to_unignorable_table_ref_unignorable_table_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ref_to_unignorable_table
+    ADD CONSTRAINT ref_to_unignorable_table_ref_unignorable_table_id_fkey FOREIGN KEY (ref) REFERENCES public.unignorable_table(id);
 
 --
 -- PostgreSQL database dump complete

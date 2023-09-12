@@ -99,6 +99,14 @@ tables:
   table_to_be_ignored:
     ignore: true
 
+  # This one can't be ignored at ORM creation time, because the below table fk
+  # refs it. We thus ignore it at the later stages when loading the ORM.
+  unignorable_table:
+    ignore: true
+
+  ref_to_unignorable_table:
+    vocabulary_table: true
+
   concept:
     vocabulary_table: true
   concept_type:
