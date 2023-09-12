@@ -14,13 +14,6 @@ build:
     # nodejs: "19"
     # rust: "1.64"
     # golang: "1.19"
-  jobs:
-    # This pre-install job is a pyyaml v5 vs cython v3 conflict workaround
-    # see https://github.com/alan-turing-institute/sqlsynthgen/issues/120
-    pre_install:
-      - pip install "cython<3"
-      - pip install wheel
-      - pip install --no-build-isolation "pyyaml==5.4.1"
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
