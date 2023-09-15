@@ -529,6 +529,7 @@ async def make_src_stats(
 
     async def execute_query(query_block: Mapping[str, Any]) -> Any:
         """Execute query in query_block."""
+        logger.debug("Executing query %s", query_block["name"])
         query = text(query_block["query"])
         if isinstance(engine, AsyncEngine):
             async with engine.connect() as conn:
@@ -539,6 +540,7 @@ async def make_src_stats(
 
         if "dp-query" in query_block:
             result_df = pd.DataFrame(raw_result.mappings())
+            logger.debug("Executing dp-query for %s", query_block["name"])
             dp_query = query_block["dp-query"]
             snsql_metadata = {"": {"": {"query_result": query_block["snsql-metadata"]}}}
             privacy = snsql.Privacy(

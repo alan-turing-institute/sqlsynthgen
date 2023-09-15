@@ -45,6 +45,7 @@ def create_db_vocab(vocab_dict: Mapping[str, FileUploader]) -> None:
 
     with dst_engine.connect() as dst_conn:
         for vocab_table in vocab_dict.values():
+            logger.debug("Loading vocabulary table %s", vocab_table.table.name)
             try:
                 vocab_table.load(dst_conn)
             except IntegrityError:

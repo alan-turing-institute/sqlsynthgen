@@ -234,7 +234,12 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
         self.assertEqual(
-            f"Creating {self.stats_file_path}.\n{self.stats_file_path} created.\n",
+            f"Creating {self.stats_file_path}.\n"
+            "Executing query count_names\n"
+            "Executing query avg_person_id\n"
+            "Executing query count_opt_outs\n"
+            "Executing dp-query for count_opt_outs\n"
+            f"{self.stats_file_path} created.\n",
             completed_process.stdout.decode("utf-8"),
         )
 
@@ -304,7 +309,13 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         )
         self.assertSuccess(completed_process)
         self.assertEqual(
-            "Loading vocab.\n5 tables loaded.\n",
+            "Loading vocab.\n"
+            "Loading vocabulary table empty_vocabulary\n"
+            "Loading vocabulary table mitigation_type\n"
+            "Loading vocabulary table ref_to_unignorable_table\n"
+            "Loading vocabulary table concept_type\n"
+            "Loading vocabulary table concept\n"
+            "5 tables loaded.\n",
             completed_process.stdout.decode("utf-8"),
         )
 
@@ -371,7 +382,15 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
         self.assertEqual(
-            "Truncating non-vocabulary tables.\nNon-vocabulary tables truncated.\n",
+            "Truncating non-vocabulary tables.\n"
+            "Truncating table hospital_visit\n"
+            "Truncating table test_entity\n"
+            "Truncating table unique_constraint_test2\n"
+            "Truncating table unique_constraint_test\n"
+            "Truncating table person\n"
+            "Truncating table no_pk_test\n"
+            "Truncating table data_type_test\n"
+            "Non-vocabulary tables truncated.\n",
             completed_process.stdout.decode("utf-8"),
         )
 
@@ -391,7 +410,13 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
         self.assertEqual(
-            "Truncating vocabulary tables.\nVocabulary tables truncated.\n",
+            "Truncating vocabulary tables.\n"
+            "Truncating vocabulary table concept\n"
+            "Truncating vocabulary table concept_type\n"
+            "Truncating vocabulary table ref_to_unignorable_table\n"
+            "Truncating vocabulary table mitigation_type\n"
+            "Truncating vocabulary table empty_vocabulary\n"
+            "Vocabulary tables truncated.\n",
             completed_process.stdout.decode("utf-8"),
         )
 
