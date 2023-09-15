@@ -1,5 +1,4 @@
 """Base table generator classes."""
-import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
@@ -9,6 +8,8 @@ import yaml
 from sqlalchemy import Connection, insert
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.schema import Table
+
+from sqlsynthgen.utils import logger
 
 
 class TableGenerator(ABC):
@@ -39,17 +40,17 @@ class FileUploader:
         """Load the data from file."""
         yaml_file = Path(self.table.fullname + ".yaml")
         if not yaml_file.exists():
-            logging.warning("File %s not found. Skipping...", yaml_file)
+            logger.warning("File %s not found. Skipping...", yaml_file)
             return
         try:
             with yaml_file.open("r", newline="", encoding="utf-8") as yamlfile:
                 rows = yaml.load(yamlfile, Loader=yaml.Loader)
         except yaml.YAMLError as e:
-            logging.warning("Error reading YAML file %s: %s", yaml_file, e)
+            logger.warning("Error reading YAML file %s: %s", yaml_file, e)
             return
 
         if not rows:
-            logging.warning("No rows in %s. Skipping...", yaml_file)
+            logger.warning("No rows in %s. Skipping...", yaml_file)
             return
 
         try:
@@ -57,6 +58,6 @@ class FileUploader:
             connection.execute(stmt)
             connection.commit()
         except SQLAlchemyError as e:
-            logging.warning(
+            logger.warning(
                 "Error inserting rows into table %s: %s", self.table.fullname, e
             )

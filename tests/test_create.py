@@ -84,8 +84,9 @@ class MyTestCase(SSGTestCase):
                 story_generators: list[dict[str, Any]] = (
                     [
                         {
-                            "name": mock_story_gen,
+                            "function": mock_story_gen,
                             "num_stories_per_pass": num_stories_per_pass,
+                            "name": "mock_story_gen",
                         }
                     ]
                     if num_stories_per_pass > 0

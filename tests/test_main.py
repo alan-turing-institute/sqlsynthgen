@@ -64,9 +64,9 @@ class TestCLI(SSGTestCase):
         self.assertSuccess(result)
 
     @patch("sqlsynthgen.main.Path")
-    @patch("sqlsynthgen.main.echo")
+    @patch("sqlsynthgen.main.logger")
     def test_make_generators_errors_if_file_exists(
-        self, mock_echo: MagicMock, mock_path: MagicMock
+        self, mock_logger: MagicMock, mock_path: MagicMock
     ) -> None:
         """Test the make-generators sub-command doesn't overwrite."""
 
@@ -80,14 +80,14 @@ class TestCLI(SSGTestCase):
             ],
             catch_exceptions=False,
         )
-        mock_echo.assert_called_once_with(
-            "ssg.py should not already exist. Exiting...", err=True
+        mock_logger.error.assert_called_once_with(
+            "%s should not already exist. Exiting...", mock_path.return_value
         )
         self.assertEqual(1, result.exit_code)
 
-    @patch("sqlsynthgen.main.echo")
+    @patch("sqlsynthgen.main.logger")
     def test_make_generators_errors_if_src_dsn_missing(
-        self, mock_echo: MagicMock
+        self, mock_logger: MagicMock
     ) -> None:
         """Test the make-generators sub-command with missing db params."""
         result = runner.invoke(
@@ -97,8 +97,8 @@ class TestCLI(SSGTestCase):
             ],
             catch_exceptions=False,
         )
-        mock_echo.assert_called_once_with(
-            "Missing source database connection details.", err=True
+        mock_logger.error.assert_called_once_with(
+            "Missing source database connection details."
         )
         self.assertEqual(1, result.exit_code)
 
@@ -217,9 +217,9 @@ class TestCLI(SSGTestCase):
         self.assertSuccess(result)
 
     @patch("sqlsynthgen.main.Path")
-    @patch("sqlsynthgen.main.echo")
+    @patch("sqlsynthgen.main.logger")
     def test_make_tables_errors_if_file_exists(
-        self, mock_echo: MagicMock, mock_path: MagicMock
+        self, mock_logger: MagicMock, mock_path: MagicMock
     ) -> None:
         """Test the make-tables sub-command doesn't overwrite."""
 
@@ -233,13 +233,15 @@ class TestCLI(SSGTestCase):
             ],
             catch_exceptions=False,
         )
-        mock_echo.assert_called_once_with(
-            "orm.py should not already exist. Exiting...", err=True
+        mock_logger.error.assert_called_once_with(
+            "%s should not already exist. Exiting...", mock_path.return_value
         )
         self.assertEqual(1, result.exit_code)
 
-    @patch("sqlsynthgen.main.echo")
-    def test_make_tables_errors_if_src_dsn_missing(self, mock_echo: MagicMock) -> None:
+    @patch("sqlsynthgen.main.logger")
+    def test_make_tables_errors_if_src_dsn_missing(
+        self, mock_logger: MagicMock
+    ) -> None:
         """Test the make-tables sub-command doesn't overwrite."""
 
         result = runner.invoke(
@@ -249,8 +251,8 @@ class TestCLI(SSGTestCase):
             ],
             catch_exceptions=False,
         )
-        mock_echo.assert_called_once_with(
-            "Missing source database connection details.", err=True
+        mock_logger.error.assert_called_once_with(
+            "Missing source database connection details."
         )
         self.assertEqual(1, result.exit_code)
 
@@ -318,9 +320,9 @@ class TestCLI(SSGTestCase):
         )
 
     @patch("sqlsynthgen.main.Path")
-    @patch("sqlsynthgen.main.echo")
+    @patch("sqlsynthgen.main.logger")
     def test_make_stats_errors_if_file_exists(
-        self, mock_echo: MagicMock, mock_path: MagicMock
+        self, mock_logger: MagicMock, mock_path: MagicMock
     ) -> None:
         """Test the make-stats sub-command when the stats file already exists."""
         mock_path.return_value.exists.return_value = True
@@ -337,16 +339,13 @@ class TestCLI(SSGTestCase):
             ],
             catch_exceptions=False,
         )
-        mock_echo.assert_called_once_with(
-            f"{output_path} should not already exist. Exiting...", err=True
+        mock_logger.error.assert_called_once_with(
+            "%s should not already exist. Exiting...", mock_path.return_value
         )
         self.assertEqual(1, result.exit_code)
 
-    @patch("sqlsynthgen.main.echo")
-    def test_make_stats_errors_if_no_src_dsn(
-        self,
-        mock_echo: MagicMock,
-    ) -> None:
+    @patch("sqlsynthgen.main.logger")
+    def test_make_stats_errors_if_no_src_dsn(self, mock_logger: MagicMock) -> None:
         """Test the make-stats sub-command with missing settings."""
         example_conf_path = "tests/examples/example_config.yaml"
 
@@ -358,8 +357,8 @@ class TestCLI(SSGTestCase):
             ],
             catch_exceptions=False,
         )
-        mock_echo.assert_called_once_with(
-            "Missing source database connection details.", err=True
+        mock_logger.error.assert_called_once_with(
+            "Missing source database connection details."
         )
         self.assertEqual(1, result.exit_code)
 

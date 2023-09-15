@@ -1,5 +1,6 @@
 """Utility functions."""
 import json
+import logging
 import os
 import sys
 from importlib import import_module
@@ -15,7 +16,7 @@ from sqlalchemy.engine.interfaces import DBAPIConnection
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.schema import MetaData, Table
 
-# Define some types used in many places in the code base
+# Define some types used repeatedly in the code base
 MaybeAsyncEngine = Union[Engine, AsyncEngine]
 
 
@@ -42,7 +43,7 @@ def read_config_file(path: str) -> dict:
     try:
         validate(config, schema_config)
     except ValidationError as e:
-        print("The config file is invalid:", e.message)
+        logger.error("The config file is invalid: %s", e.message)
 
     return config
 
@@ -139,3 +140,49 @@ def get_orm_metadata(orm_module: ModuleType, tables_config: dict) -> MetaData:
         if ignore:
             metadata.remove(table)
     return metadata
+
+
+# # # # # # # # # # # # # # # # #
+# Logging stuff from here on down
+
+# This is the main logger that the other modules of sqlsynthgen import.
+# After conf_logger is called it will differentiate between three logging levels:
+# warning and error will always be printed to stderr
+# info will always be printed to stdout
+# debug will be printed to stdout only if verbose=True
+logger = logging.getLogger(__name__)
+
+
+class StdoutFilter(logging.Filter):
+    """Logging filter that only lets through message with levels INFO or lower."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Filter out records with level higher than INFO."""
+        return record.levelno in (logging.DEBUG, logging.INFO)
+
+
+class StderrFilter(logging.Filter):
+    """Logging filter that only lets through message with levels WARNING higher."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Filter out records with level lower than WARNING."""
+        return record.levelno in (logging.WARNING, logging.ERROR, logging.CRITICAL)
+
+
+def conf_logger(verbose: bool) -> None:
+    """Configure the logger."""
+    global logger
+    level = logging.DEBUG if verbose else logging.INFO
+    logger.setLevel(level)
+    log_format = "%(message)s"
+
+    stdout_handler = logging.StreamHandler(sys.stdout)
+    stdout_handler.setFormatter(logging.Formatter(log_format))
+    stdout_handler.addFilter(StdoutFilter())
+
+    stderr_handler = logging.StreamHandler(sys.stderr)
+    stderr_handler.setFormatter(logging.Formatter(log_format))
+    stderr_handler.addFilter(StderrFilter())
+
+    logger.addHandler(stdout_handler)
+    logger.addHandler(stderr_handler)
