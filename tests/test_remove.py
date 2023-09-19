@@ -12,21 +12,32 @@ class RemoveTestCase(SSGTestCase):
 
     @patch("sqlsynthgen.remove.get_settings", side_effect=get_test_settings)
     @patch("sqlsynthgen.remove.create_db_engine")
-    @patch("sqlsynthgen.remove.delete", side_effect=(9, 8, 7, 6))
+    @patch("sqlsynthgen.remove.delete", side_effect=range(1, 8))
     def test_remove_db_data(
         self, mock_delete: MagicMock, mock_engine: MagicMock, _: MagicMock
     ) -> None:
         """Test the remove_db_data function."""
-        remove_db_data(example_orm, remove_ssg)
+        config = {"tables": {"unignorable_table": {"ignore": True}}}
+        remove_db_data(example_orm, remove_ssg, config)
+        self.assertEqual(mock_delete.call_count, 7)
         mock_delete.assert_has_calls(
             [
                 call(example_orm.Base.metadata.tables[t])
-                for t in ("hospital_visit", "test_entity", "person", "entity")
-            ]
+                for t in (
+                    "hospital_visit",
+                    "test_entity",
+                    "unique_constraint_test2",
+                    "unique_constraint_test",
+                    "person",
+                    "no_pk_test",
+                    "data_type_test",
+                )
+            ],
+            any_order=True,
         )
         dst_engine = mock_engine.return_value
         dst_conn = dst_engine.connect.return_value.__enter__.return_value
-        dst_conn.execute.assert_has_calls([call(x) for x in (9, 8, 7, 6)])
+        dst_conn.execute.assert_has_calls([call(x) for x in range(1, 8)])
 
     @patch("sqlsynthgen.remove.get_settings")
     def test_remove_db_data_raises(self, mock_get: MagicMock) -> None:
@@ -37,25 +48,37 @@ class RemoveTestCase(SSGTestCase):
             _env_file=None,  # type: ignore[call-arg]
         )
         with self.assertRaises(AssertionError) as context_manager:
-            remove_db_data(example_orm, remove_ssg)
+            remove_db_data(example_orm, remove_ssg, {})
         self.assertEqual(
             context_manager.exception.args[0], "Missing destination database settings"
         )
 
     @patch("sqlsynthgen.remove.get_settings", side_effect=get_test_settings)
     @patch("sqlsynthgen.remove.create_db_engine")
-    @patch("sqlsynthgen.remove.delete", side_effect=(9,))
+    @patch("sqlsynthgen.remove.delete", side_effect=range(1, 6))
     def test_remove_db_vocab(
         self, mock_delete: MagicMock, mock_engine: MagicMock, _: MagicMock
     ) -> None:
         """Test the remove_db_vocab function."""
-        remove_db_vocab(example_orm, remove_ssg)
+        config = {"tables": {"unignorable_table": {"ignore": True}}}
+        remove_db_vocab(example_orm, remove_ssg, config)
+        self.assertEqual(mock_delete.call_count, 5)
         mock_delete.assert_has_calls(
-            [call(example_orm.Base.metadata.tables[t]) for t in ("concept",)]
+            [
+                call(example_orm.Base.metadata.tables[t])
+                for t in (
+                    "concept",
+                    "ref_to_unignorable_table",
+                    "concept_type",
+                    "mitigation_type",
+                    "empty_vocabulary",
+                )
+            ],
+            any_order=True,
         )
         dst_engine = mock_engine.return_value
         dst_conn = dst_engine.connect.return_value.__enter__.return_value
-        dst_conn.execute.assert_has_calls([call(x) for x in (9,)])
+        dst_conn.execute.assert_has_calls([call(x) for x in range(1, 6)])
 
     @patch("sqlsynthgen.remove.get_settings")
     def test_remove_db_vocab_raises(self, mock_get: MagicMock) -> None:
@@ -66,7 +89,7 @@ class RemoveTestCase(SSGTestCase):
             _env_file=None,  # type: ignore[call-arg]
         )
         with self.assertRaises(AssertionError) as context_manager:
-            remove_db_vocab(example_orm, remove_ssg)
+            remove_db_vocab(example_orm, remove_ssg, {})
         self.assertEqual(
             context_manager.exception.args[0], "Missing destination database settings"
         )
@@ -76,7 +99,7 @@ class RemoveTestCase(SSGTestCase):
     def test_remove_tables(self, mock_engine: MagicMock, _: MagicMock) -> None:
         """Test the remove_db_tables function."""
         mock_orm = MagicMock()
-        remove_db_tables(mock_orm)
+        remove_db_tables(mock_orm, {})
         dst_engine = mock_engine.return_value
         mock_orm.Base.metadata.drop_all.assert_called_once_with(dst_engine)
 
@@ -89,7 +112,7 @@ class RemoveTestCase(SSGTestCase):
             _env_file=None,  # type: ignore[call-arg]
         )
         with self.assertRaises(AssertionError) as context_manager:
-            remove_db_tables(example_orm)
+            remove_db_tables(example_orm, {})
         self.assertEqual(
             context_manager.exception.args[0], "Missing destination database settings"
         )

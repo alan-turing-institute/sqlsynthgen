@@ -30,12 +30,11 @@ jobs:
         shell: bash
         run: |
           python -m poetry config virtualenvs.in-project true
-      - name: Cache Poetry dependencies
-        uses: actions/cache@v3
-        id: poetry-cache
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
+      # - name: Cache Poetry dependencies uses: actions/cache@v3
+      #   id: poetry-cache
+      #   with:
+      #     path: .venv
+      #     key: venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
       - name: Install dependencies
         shell: bash
         if: steps.poetry-cache.outputs.cache-hit != 'true'

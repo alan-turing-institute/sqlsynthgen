@@ -5,7 +5,7 @@ import sys
 from importlib import import_module
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Final, Optional, Union
+from typing import Any, Final, Mapping, Optional, Union
 
 import yaml
 from jsonschema.exceptions import ValidationError
@@ -13,7 +13,7 @@ from jsonschema.validators import validate
 from sqlalchemy import Engine, create_engine, event, select
 from sqlalchemy.engine.interfaces import DBAPIConnection
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
-from sqlalchemy.schema import Table
+from sqlalchemy.schema import MetaData, Table
 
 # Define some types used in many places in the code base
 MaybeAsyncEngine = Union[Engine, AsyncEngine]
@@ -124,3 +124,20 @@ def set_search_path(connection: DBAPIConnection, schema: str) -> None:
     cursor.close()
 
     connection.autocommit = existing_autocommit
+
+
+def get_orm_metadata(
+    orm_module: ModuleType, tables_config: Mapping[str, Any]
+) -> MetaData:
+    """Get the SQLAlchemy Metadata object from an ORM module.
+
+    Drop all tables from the metadata that are marked with `ignore` in `tables_config`.
+    """
+    metadata: MetaData = orm_module.Base.metadata
+    # The call to tuple makes a copy of the iterable, allowing us to mutate the original
+    # within the loop.
+    for table_name, table in tuple(metadata.tables.items()):
+        ignore = tables_config.get(table_name, {}).get("ignore", False)
+        if ignore:
+            metadata.remove(table)
+    return metadata

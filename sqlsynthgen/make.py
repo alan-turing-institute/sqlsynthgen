@@ -23,7 +23,12 @@ from sqlalchemy.sql import sqltypes
 
 from sqlsynthgen import providers
 from sqlsynthgen.settings import get_settings
-from sqlsynthgen.utils import create_db_engine, download_table, get_sync_engine
+from sqlsynthgen.utils import (
+    create_db_engine,
+    download_table,
+    get_orm_metadata,
+    get_sync_engine,
+)
 
 PROVIDER_IMPORTS: Final[list[str]] = []
 for entry_name, entry in inspect.getmembers(providers, inspect.isclass):
@@ -290,15 +295,31 @@ def _enforce_unique_constraints(table_data: TableGeneratorInfo) -> None:
             row_gen.function_call = new_function_call
 
 
+def _constraint_sort_key(constraint: UniqueConstraint) -> str:
+    """Extract a string out of a UniqueConstraint that is unique to that constraint.
+
+    We sort the constraints so that the output of make_tables is deterministic, this is
+    the sort key.
+    """
+    return (
+        constraint.name
+        if isinstance(constraint.name, str)
+        else "_".join(map(str, constraint.columns))
+    )
+
+
 def _get_generator_for_table(
     tables_module: ModuleType, table_config: Mapping[str, Any], table: Table
 ) -> TableGeneratorInfo:
     """Get generator information for the given table."""
-    unique_constraints = [
-        constraint
-        for constraint in table.constraints
-        if isinstance(constraint, UniqueConstraint)
-    ]
+    unique_constraints = sorted(
+        (
+            constraint
+            for constraint in table.constraints
+            if isinstance(constraint, UniqueConstraint)
+        ),
+        key=_constraint_sort_key,
+    )
     table_data: TableGeneratorInfo = TableGeneratorInfo(
         table_name=table.name,
         class_name=table.name + "Generator",
@@ -337,7 +358,7 @@ def _get_story_generators(config: Mapping) -> list[StoryGeneratorInfo]:
     return generators
 
 
-def make_table_generators(
+def make_table_generators(  # pylint: disable=too-many-locals
     tables_module: ModuleType,
     config: Mapping,
     src_stats_filename: Optional[str],
@@ -362,13 +383,14 @@ def make_table_generators(
     src_dsn: str = settings.src_dsn or ""
     assert src_dsn != "", "Missing SRC_DSN setting."
 
+    tables_config = config.get("tables", {})
+    metadata = get_orm_metadata(tables_module, tables_config)
     engine = get_sync_engine(create_db_engine(src_dsn, schema_name=settings.src_schema))
 
     tables: list[TableGeneratorInfo] = []
     vocabulary_tables: list[VocabularyTableGeneratorInfo] = []
-
-    for table in tables_module.Base.metadata.sorted_tables:
-        table_config = config.get("tables", {}).get(table.name, {})
+    for table in metadata.sorted_tables:
+        table_config = tables_config.get(table.name, {})
 
         if table_config.get("vocabulary_table") is True:
             vocabulary_tables.append(
@@ -440,15 +462,39 @@ def _get_generator_for_vocabulary_table(
     )
 
 
-def make_tables_file(db_dsn: str, schema_name: Optional[str]) -> str:
+def make_tables_file(
+    db_dsn: str, schema_name: Optional[str], config: Mapping[str, Any]
+) -> str:
     """Write a file with the SQLAlchemy ORM classes.
 
-    Exists with an error if sqlacodegen is unsuccessful.
+    Exits with an error if sqlacodegen is unsuccessful.
     """
+    tables_config = config.get("tables", {})
     engine = get_sync_engine(create_db_engine(db_dsn, schema_name=schema_name))
 
+    def reflect_if(table_name: str, _: Any) -> bool:
+        table_config = tables_config.get(table_name, {})
+        ignore = table_config.get("ignore", False)
+        return not ignore
+
     metadata = MetaData()
-    metadata.reflect(engine)
+    metadata.reflect(
+        engine,
+        # The type-ignore is due to an erroneous type annotation in SQLAlchemy.
+        only=reflect_if,  # type: ignore
+    )
+
+    for table_name in metadata.tables.keys():
+        table_config = tables_config.get(table_name, {})
+        ignore = table_config.get("ignore", False)
+        if ignore:
+            logging.warning(
+                "Table %s is supposed to be ignored but there is a foreign key "
+                "reference to it. "
+                "You may need to create this table manually at the dst schema before "
+                "running create-tables.",
+                table_name,
+            )
 
     generator = DeclarativeGenerator(metadata, engine, options=())
     code = str(generator.generate())
@@ -462,7 +508,7 @@ def make_tables_file(db_dsn: str, schema_name: Optional[str]) -> str:
             file=stderr,
         )
 
-    return code
+    return format_str(code, mode=FileMode())
 
 
 async def make_src_stats(

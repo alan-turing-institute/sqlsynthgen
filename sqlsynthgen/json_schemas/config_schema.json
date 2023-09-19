@@ -145,6 +145,10 @@
           "additionalProperties": false,
           "type": "object",
           "properties": {
+            "ignore": {
+              "description": "Whether to completely ignore this table.",
+              "type": "boolean"
+            },
             "vocabulary_table": {
               "description": "Whether to export the table data.",
               "type": "boolean"

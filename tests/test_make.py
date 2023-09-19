@@ -60,10 +60,10 @@ class TestMakeGenerators(SSGTestCase):
         stats_path = "example_stats.yaml"
 
         actual = make_table_generators(example_orm, config, stats_path)
-        mock_download.assert_called_once()
+        # 5 because there are 5 vocabulary tables in the example orm.
+        self.assertEqual(mock_path.call_count, 5)
+        self.assertEqual(mock_download.call_count, 5)
         mock_create.assert_called_once()
-        mock_path.assert_called_once()
-
         self.assertEqual(expected, actual)
 
     @patch("sqlsynthgen.make.stderr", new_callable=StringIO)
@@ -92,7 +92,7 @@ class TestMakeGenerators(SSGTestCase):
 
         mock_create.assert_called_once()
         self.assertEqual(
-            "concept.yaml already exists. Exiting...\n", mock_stderr.getvalue()
+            "empty_vocabulary.yaml already exists. Exiting...\n", mock_stderr.getvalue()
         )
 
     @patch("sqlsynthgen.make.download_table")
@@ -122,7 +122,7 @@ class TestMakeGenerators(SSGTestCase):
         )
 
         mock_create.assert_called_once()
-        mock_download.assert_called_once()
+        self.assertEqual(mock_download.call_count, 5)
 
         self.assertEqual(expected, actual)
 
@@ -204,12 +204,12 @@ class TestMakeTables(SSGTestCase):
     @patch("sqlsynthgen.make.DeclarativeGenerator")
     def test_make_tables_file(self, mock_declarative: MagicMock, _: MagicMock) -> None:
         """Test the make_tables_file function."""
-        mock_declarative.return_value.generate.return_value = "some generated code"
+        mock_declarative.return_value.generate.return_value = "pass\n"
 
         self.assertEqual(
-            "some generated code",
+            "pass\n",
             make_tables_file(
-                parse_obj_as(PostgresDsn, "postgresql://postgres@1.2.3.4/db"), None
+                parse_obj_as(PostgresDsn, "postgresql://postgres@1.2.3.4/db"), None, {}
             ),
         )
 
@@ -219,13 +219,14 @@ class TestMakeTables(SSGTestCase):
         self, mock_declarative: MagicMock, _: MagicMock
     ) -> None:
         """Check that the function handles the schema setting."""
-        mock_declarative.return_value.generate.return_value = "some generated code"
+        mock_declarative.return_value.generate.return_value = "pass\n"
 
         self.assertEqual(
-            "some generated code",
+            "pass\n",
             make_tables_file(
                 parse_obj_as(PostgresDsn, "postgresql://postgres@1.2.3.4/db"),
                 "myschema",
+                {},
             ),
         )
 
@@ -236,10 +237,10 @@ class TestMakeTables(SSGTestCase):
         self, mock_declarative: MagicMock, mock_stderr: MagicMock, _: MagicMock
     ) -> None:
         """Test the make-tables sub-command warns about Tables()."""
-        mock_declarative.return_value.generate.return_value = "t_nopk_table = Table("
+        mock_declarative.return_value.generate.return_value = "t_nopk_table = Table()"
 
         make_tables_file(
-            parse_obj_as(PostgresDsn, "postgresql://postgres@127.0.0.1:5432"), None
+            parse_obj_as(PostgresDsn, "postgresql://postgres@127.0.0.1:5432"), None, {}
         )
 
         self.assertEqual(

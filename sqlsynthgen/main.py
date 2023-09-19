@@ -10,14 +10,18 @@ from typing import Final, Optional
 import yaml
 from jsonschema.exceptions import ValidationError
 from jsonschema.validators import validate
-from sqlalchemy.schema import MetaData
 from typer import Option, Typer, echo
 
 from sqlsynthgen.create import create_db_data, create_db_tables, create_db_vocab
 from sqlsynthgen.make import make_src_stats, make_table_generators, make_tables_file
 from sqlsynthgen.remove import remove_db_data, remove_db_tables, remove_db_vocab
 from sqlsynthgen.settings import Settings, get_settings
-from sqlsynthgen.utils import CONFIG_SCHEMA_PATH, import_file, read_config_file
+from sqlsynthgen.utils import (
+    CONFIG_SCHEMA_PATH,
+    get_orm_metadata,
+    import_file,
+    read_config_file,
+)
 
 # pylint: disable=too-many-arguments
 
@@ -50,6 +54,7 @@ def _require_src_db_dsn(settings: Settings) -> str:
 def create_data(
     orm_file: str = Option(ORM_FILENAME),
     ssg_file: str = Option(SSG_FILENAME),
+    config_file: Optional[str] = Option(None),
     num_passes: int = Option(1),
     verbose: bool = Option(False, "--verbose", "-v"),
 ) -> None:
@@ -83,7 +88,9 @@ def create_data(
         echo("Creating data.")
     orm_module = import_file(orm_file)
     ssg_module = import_file(ssg_file)
-    orm_metadata: MetaData = orm_module.Base.metadata
+    config = read_config_file(config_file) if config_file is not None else {}
+    tables_config = config.get("tables", {})
+    orm_metadata = get_orm_metadata(orm_module, tables_config)
     table_generator_dict = ssg_module.table_generator_dict
     story_generator_list = ssg_module.story_generator_list
     create_db_data(
@@ -122,6 +129,7 @@ def create_vocab(
 @app.command()
 def create_tables(
     orm_file: str = Option(ORM_FILENAME),
+    config_file: Optional[str] = Option(None),
     verbose: bool = Option(False, "--verbose", "-v"),
 ) -> None:
     """Create schema from a SQLAlchemy ORM file.
@@ -135,12 +143,16 @@ def create_tables(
     Args:
         orm_file (str): Name of Python ORM file.
           Must be in the current working directory.
+        config_file (str): Path to configuration file.
+        verbose (bool): Be verbose. Default to False.
     """
     if verbose:
         echo("Creating tables.")
 
+    config = read_config_file(config_file) if config_file is not None else {}
+    tables_config = config.get("tables", {})
     orm_module = import_file(orm_file)
-    orm_metadata: MetaData = orm_module.Base.metadata
+    orm_metadata = get_orm_metadata(orm_module, tables_config)
     create_db_tables(orm_metadata)
 
     if verbose:
@@ -232,6 +244,7 @@ def make_stats(
 
 @app.command()
 def make_tables(
+    config_file: Optional[str] = Option(None),
     orm_file: str = Option(ORM_FILENAME),
     force: bool = Option(False, "--force", "-f"),
     verbose: bool = Option(False, "--verbose", "-v"),
@@ -246,6 +259,7 @@ def make_tables(
         $ sqlsynthgen make_tables
 
     Args:
+        config_file (str): Path to configuration file.
         orm_file (str): Path to write the Python ORM file.
         force (bool): Overwrite ORM file, if exists. Default to False.
         verbose (bool): Be verbose. Default to False.
@@ -257,10 +271,11 @@ def make_tables(
     if not force:
         _check_file_non_existence(orm_file_path)
 
+    config = read_config_file(config_file) if config_file is not None else {}
     settings = get_settings()
     src_dsn: str = _require_src_db_dsn(settings)
 
-    content = make_tables_file(src_dsn, settings.src_schema)
+    content = make_tables_file(src_dsn, settings.src_schema, config)
     orm_file_path.write_text(content, encoding="utf-8")
 
     if verbose:
@@ -292,6 +307,7 @@ def validate_config(
 def remove_data(
     orm_file: str = Option(ORM_FILENAME),
     ssg_file: str = Option(SSG_FILENAME),
+    config_file: Optional[str] = Option(None),
     yes: bool = Option(False, "--yes", prompt="Are you sure?"),
     verbose: bool = Option(False, "--verbose", "-v"),
 ) -> None:
@@ -300,9 +316,10 @@ def remove_data(
         if verbose:
             echo("Truncating non-vocabulary tables.")
 
+        config = read_config_file(config_file) if config_file is not None else {}
         orm_module = import_file(orm_file)
         ssg_module = import_file(ssg_file)
-        remove_db_data(orm_module, ssg_module)
+        remove_db_data(orm_module, ssg_module, config)
 
         if verbose:
             echo("Non-vocabulary tables truncated.")
@@ -314,6 +331,7 @@ def remove_data(
 def remove_vocab(
     orm_file: str = Option(ORM_FILENAME),
     ssg_file: str = Option(SSG_FILENAME),
+    config_file: Optional[str] = Option(None),
     yes: bool = Option(False, "--yes", prompt="Are you sure?"),
     verbose: bool = Option(False, "--verbose", "-v"),
 ) -> None:
@@ -322,9 +340,10 @@ def remove_vocab(
         if verbose:
             echo("Truncating vocabulary tables.")
 
+        config = read_config_file(config_file) if config_file is not None else {}
         orm_module = import_file(orm_file)
         ssg_module = import_file(ssg_file)
-        remove_db_vocab(orm_module, ssg_module)
+        remove_db_vocab(orm_module, ssg_module, config)
 
         if verbose:
             echo("Vocabulary tables truncated.")
@@ -335,6 +354,7 @@ def remove_vocab(
 @app.command()
 def remove_tables(
     orm_file: str = Option(ORM_FILENAME),
+    config_file: Optional[str] = Option(None),
     yes: bool = Option(False, "--yes", prompt="Are you sure?"),
     verbose: bool = Option(False, "--verbose", "-v"),
 ) -> None:
@@ -346,8 +366,9 @@ def remove_tables(
         if verbose:
             echo("Dropping tables.")
 
+        config = read_config_file(config_file) if config_file is not None else {}
         orm_module = import_file(orm_file)
-        remove_db_tables(orm_module)
+        remove_db_tables(orm_module, config)
 
         if verbose:
             echo("Tables dropped.")
