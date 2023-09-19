@@ -5,7 +5,7 @@ import sys
 from importlib import import_module
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Final, Optional, Union
+from typing import Any, Final, Mapping, Optional, Union
 
 import yaml
 from jsonschema.exceptions import ValidationError
@@ -126,8 +126,10 @@ def set_search_path(connection: DBAPIConnection, schema: str) -> None:
     connection.autocommit = existing_autocommit
 
 
-def get_orm_metadata(orm_module: ModuleType, tables_config: dict) -> MetaData:
-    """Get the SQLAlchemy Metadata object from an ORM modudle.
+def get_orm_metadata(
+    orm_module: ModuleType, tables_config: Mapping[str, Any]
+) -> MetaData:
+    """Get the SQLAlchemy Metadata object from an ORM module.
 
     Drop all tables from the metadata that are marked with `ignore` in `tables_config`.
     """

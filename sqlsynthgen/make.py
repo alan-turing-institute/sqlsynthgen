@@ -462,10 +462,12 @@ def _get_generator_for_vocabulary_table(
     )
 
 
-def make_tables_file(db_dsn: str, schema_name: Optional[str], config: dict) -> str:
+def make_tables_file(
+    db_dsn: str, schema_name: Optional[str], config: Mapping[str, Any]
+) -> str:
     """Write a file with the SQLAlchemy ORM classes.
 
-    Exists with an error if sqlacodegen is unsuccessful.
+    Exits with an error if sqlacodegen is unsuccessful.
     """
     tables_config = config.get("tables", {})
     engine = get_sync_engine(create_db_engine(db_dsn, schema_name=schema_name))

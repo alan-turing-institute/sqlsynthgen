@@ -12,7 +12,7 @@ class RemoveTestCase(SSGTestCase):
 
     @patch("sqlsynthgen.remove.get_settings", side_effect=get_test_settings)
     @patch("sqlsynthgen.remove.create_db_engine")
-    @patch("sqlsynthgen.remove.delete", side_effect=tuple(range(1, 8)))
+    @patch("sqlsynthgen.remove.delete", side_effect=range(1, 8))
     def test_remove_db_data(
         self, mock_delete: MagicMock, mock_engine: MagicMock, _: MagicMock
     ) -> None:
@@ -37,7 +37,7 @@ class RemoveTestCase(SSGTestCase):
         )
         dst_engine = mock_engine.return_value
         dst_conn = dst_engine.connect.return_value.__enter__.return_value
-        dst_conn.execute.assert_has_calls([call(x) for x in tuple(range(1, 8))])
+        dst_conn.execute.assert_has_calls([call(x) for x in range(1, 8)])
 
     @patch("sqlsynthgen.remove.get_settings")
     def test_remove_db_data_raises(self, mock_get: MagicMock) -> None:
@@ -55,7 +55,7 @@ class RemoveTestCase(SSGTestCase):
 
     @patch("sqlsynthgen.remove.get_settings", side_effect=get_test_settings)
     @patch("sqlsynthgen.remove.create_db_engine")
-    @patch("sqlsynthgen.remove.delete", side_effect=tuple(range(1, 6)))
+    @patch("sqlsynthgen.remove.delete", side_effect=range(1, 6))
     def test_remove_db_vocab(
         self, mock_delete: MagicMock, mock_engine: MagicMock, _: MagicMock
     ) -> None:
@@ -78,7 +78,7 @@ class RemoveTestCase(SSGTestCase):
         )
         dst_engine = mock_engine.return_value
         dst_conn = dst_engine.connect.return_value.__enter__.return_value
-        dst_conn.execute.assert_has_calls([call(x) for x in tuple(range(1, 6))])
+        dst_conn.execute.assert_has_calls([call(x) for x in range(1, 6)])
 
     @patch("sqlsynthgen.remove.get_settings")
     def test_remove_db_vocab_raises(self, mock_get: MagicMock) -> None:

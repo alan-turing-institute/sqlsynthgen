@@ -1,5 +1,6 @@
 """Functions and classes to undo the operations in create.py."""
 from types import ModuleType
+from typing import Any, Mapping
 
 from sqlalchemy import delete
 
@@ -8,7 +9,7 @@ from sqlsynthgen.utils import create_db_engine, get_orm_metadata, get_sync_engin
 
 
 def remove_db_data(
-    orm_module: ModuleType, ssg_module: ModuleType, config: dict
+    orm_module: ModuleType, ssg_module: ModuleType, config: Mapping[str, Any]
 ) -> None:
     """Truncate the synthetic data tables but not the vocabularies."""
     settings = get_settings()
@@ -28,7 +29,7 @@ def remove_db_data(
 
 
 def remove_db_vocab(
-    orm_module: ModuleType, ssg_module: ModuleType, config: dict
+    orm_module: ModuleType, ssg_module: ModuleType, config: Mapping[str, Any]
 ) -> None:
     """Truncate the vocabulary tables."""
     settings = get_settings()
@@ -47,7 +48,7 @@ def remove_db_vocab(
                 dst_conn.commit()
 
 
-def remove_db_tables(orm_module: ModuleType, config: dict) -> None:
+def remove_db_tables(orm_module: ModuleType, config: Mapping[str, Any]) -> None:
     """Drop the tables in the destination schema."""
     settings = get_settings()
     assert settings.dst_dsn, "Missing destination database settings"
