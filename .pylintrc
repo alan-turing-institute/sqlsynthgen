@@ -87,7 +87,6 @@ disable=raw-checker-failed,
         deprecated-pragma,
         use-symbolic-message-instead,
         too-few-public-methods,
-        global-variable-not-assigned,
         duplicate-code
 
 # Enable the message, report, category or checker with the given id(s). You can

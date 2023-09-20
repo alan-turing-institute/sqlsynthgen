@@ -161,7 +161,7 @@ def warning_or_higher(record: logging.LogRecord) -> bool:
 
 def conf_logger(verbose: bool) -> None:
     """Configure the logger."""
-    global logger
+    # Note that this function modifies the global `logger`.
     level = logging.DEBUG if verbose else logging.INFO
     logger.setLevel(level)
     log_format = "%(message)s"
