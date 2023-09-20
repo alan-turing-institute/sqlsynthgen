@@ -1,7 +1,6 @@
 """Tests for the utils module."""
 import os
 import sys
-from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
@@ -130,7 +129,8 @@ class TestReadConfig(SSGTestCase):
 
     def test_warns_of_invalid_config(self) -> None:
         """Test that we get a warning if the config is invalid."""
-        with patch("sys.stdout", new=StringIO()) as mock_stdout:
+        with patch("sqlsynthgen.utils.logger") as mock_logger:
             read_config_file("tests/examples/invalid_config.yaml")
-
-        self.assertIn("The config file is invalid:", mock_stdout.getvalue())
+            mock_logger.error.assert_called_with(
+                "The config file is invalid: %s", "'a' is not of type 'integer'"
+            )

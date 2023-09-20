@@ -1,7 +1,6 @@
 """Tests for the main module."""
 import asyncio
 import os
-from io import StringIO
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -66,7 +65,7 @@ class TestMakeGenerators(SSGTestCase):
         mock_create.assert_called_once()
         self.assertEqual(expected, actual)
 
-    @patch("sqlsynthgen.make.stderr", new_callable=StringIO)
+    @patch("sqlsynthgen.make.logger")
     @patch("sqlsynthgen.make.Path")
     @patch("sqlsynthgen.make.get_settings")
     @patch("sqlsynthgen.utils.create_engine")
@@ -75,7 +74,7 @@ class TestMakeGenerators(SSGTestCase):
         mock_create: MagicMock,
         mock_get_settings: MagicMock,
         mock_path: MagicMock,
-        mock_stderr: MagicMock,
+        mock_logger: MagicMock,
     ) -> None:
         """Tests that the making generators do not overwrite files."""
         mock_path.return_value.exists.return_value = True
@@ -91,8 +90,8 @@ class TestMakeGenerators(SSGTestCase):
             pass
 
         mock_create.assert_called_once()
-        self.assertEqual(
-            "empty_vocabulary.yaml already exists. Exiting...\n", mock_stderr.getvalue()
+        mock_logger.error.assert_called_with(
+            "%s already exists. Exiting...", "empty_vocabulary.yaml"
         )
 
     @patch("sqlsynthgen.make.download_table")
@@ -231,10 +230,10 @@ class TestMakeTables(SSGTestCase):
         )
 
     @patch("sqlsynthgen.make.MetaData")
-    @patch("sqlsynthgen.make.stderr", new_callable=StringIO)
+    @patch("sqlsynthgen.make.logger")
     @patch("sqlsynthgen.make.DeclarativeGenerator")
     def test_make_tables_warns_no_pk(
-        self, mock_declarative: MagicMock, mock_stderr: MagicMock, _: MagicMock
+        self, mock_declarative: MagicMock, mock_logger: MagicMock, _: MagicMock
     ) -> None:
         """Test the make-tables sub-command warns about Tables()."""
         mock_declarative.return_value.generate.return_value = "t_nopk_table = Table()"
@@ -243,10 +242,8 @@ class TestMakeTables(SSGTestCase):
             parse_obj_as(PostgresDsn, "postgresql://postgres@127.0.0.1:5432"), None, {}
         )
 
-        self.assertEqual(
-            "WARNING: Table without PK detected. sqlsynthgen may not be able to "
-            "continue.\n",
-            mock_stderr.getvalue(),
+        mock_logger.warning.assert_called_with(
+            "Table without PK detected. sqlsynthgen may not be able to continue.",
         )
 
 
@@ -317,8 +314,8 @@ class TestMakeStats(RequiresDBTestCase):
         )
         self.check_make_stats_output(src_stats)
 
-    @patch("sqlsynthgen.make.logging")
-    def test_make_stats_empty_result(self, mock_logging: MagicMock) -> None:
+    @patch("sqlsynthgen.make.logger")
+    def test_make_stats_empty_result(self, mock_logger: MagicMock) -> None:
         """Test that make_src_stats logs a warning if a query returns nothing."""
         query_name1 = "non-existent-person"
         query_name2 = "extreme-dp-parameters"
@@ -349,6 +346,6 @@ class TestMakeStats(RequiresDBTestCase):
         self.assertEqual(src_stats[query_name1], [])
         self.assertEqual(src_stats[query_name2], [])
         warning_template = "src-stats query %s returned no results"
-        mock_logging.warning.assert_any_call(warning_template, query_name1)
-        mock_logging.warning.assert_any_call(warning_template, query_name2)
-        self.assertEqual(len(mock_logging.warning.call_args_list), 2)
+        mock_logger.warning.assert_any_call(warning_template, query_name1)
+        mock_logger.warning.assert_any_call(warning_template, query_name2)
+        self.assertEqual(len(mock_logger.warning.call_args_list), 2)

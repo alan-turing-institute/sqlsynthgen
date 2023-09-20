@@ -1,8 +1,9 @@
 """Module for the UniqueGenerator class."""
-import logging
 from typing import Any, Callable, List, Optional, Set
 
 import sqlalchemy as sqla
+
+from sqlsynthgen.utils import logger
 
 
 class UniqueGenerator:
@@ -100,7 +101,7 @@ class UniqueGenerator:
                     # output of inner_generator. This means we can't guarantee enforcing
                     # the constraint.
                     enforceable = False
-                    logging.warning("Unenforceable unique constraint")
+                    logger.warning("Unenforceable unique constraint")
                     break
 
         for _ in range(self.max_tries):

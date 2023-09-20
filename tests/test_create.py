@@ -84,8 +84,9 @@ class MyTestCase(SSGTestCase):
                 story_generators: list[dict[str, Any]] = (
                     [
                         {
-                            "name": mock_story_gen,
+                            "function": mock_story_gen,
                             "num_stories_per_pass": num_stories_per_pass,
+                            "name": "mock_story_gen",
                         }
                     ]
                     if num_stories_per_pass > 0
@@ -151,9 +152,12 @@ class MyTestCase(SSGTestCase):
         mock_get_settings.return_value = get_test_settings()
 
         mock_load = MagicMock()
-        mock_vocab = MagicMock(spec=FileUploader)
-        mock_vocab.load = mock_load
-        vocab_list: dict[str, FileUploader] = {"table_name": mock_vocab}
+        mock_table = MagicMock()
+        mock_table.name = "Mock table"
+        mock_file_uploader = MagicMock(spec=FileUploader)
+        mock_file_uploader.load = mock_load
+        mock_file_uploader.table = mock_table
+        vocab_list: dict[str, FileUploader] = {mock_table.name: mock_file_uploader}
 
         create_db_vocab(vocab_list)
 

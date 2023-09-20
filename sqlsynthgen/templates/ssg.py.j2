@@ -81,8 +81,9 @@ def {{ gen_data.wrapper_name }}(dst_db_conn):
 story_generator_list = [
     {% for gen_data in story_generators %}
     {
-        "name": {{ gen_data.wrapper_name }},
+        "function": {{ gen_data.wrapper_name }},
         "num_stories_per_pass": {{ gen_data.num_stories_per_pass }},
+        "name": "{{ gen_data.function_call.function_name }}",
     },
     {% endfor %}
 ]

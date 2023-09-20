@@ -87,8 +87,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             env=self.env,
         )
         self.assertEqual(
-            "WARNING: Table without PK detected. sqlsynthgen may not be able to "
-            "continue.\n",
+            "Table without PK detected. sqlsynthgen may not be able to continue.\n",
             completed_process.stderr.decode("utf-8"),
         )
         self.assertSuccess(completed_process)
@@ -104,15 +103,15 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         # this could mean that we might accidentally violate the constraints. In
         # practice this won't happen because we only write one row to an empty table.
         self.assertEqual(
-            "WARNING:root:A unique constraint (ab_uniq) isn't fully covered by one "
+            "A unique constraint (ab_uniq) isn't fully covered by one "
             "row generator (['a']). Enforcement of the constraint may not work.\n"
-            "WARNING:root:A unique constraint (ab_uniq) isn't fully covered by one "
+            "A unique constraint (ab_uniq) isn't fully covered by one "
             "row generator (['b']). Enforcement of the constraint may not work.\n"
-            "WARNING:root:A unique constraint (abc_uniq2) isn't fully covered by one "
+            "A unique constraint (abc_uniq2) isn't fully covered by one "
             "row generator (['a']). Enforcement of the constraint may not work.\n"
-            "WARNING:root:A unique constraint (abc_uniq2) isn't fully covered by one "
+            "A unique constraint (abc_uniq2) isn't fully covered by one "
             "row generator (['b']). Enforcement of the constraint may not work.\n"
-            "WARNING:root:A unique constraint (abc_uniq2) isn't fully covered by one "
+            "A unique constraint (abc_uniq2) isn't fully covered by one "
             "row generator (['c']). Enforcement of the constraint may not work.\n",
             completed_process.stderr.decode("utf-8"),
         )
@@ -203,12 +202,11 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             env=self.env,
         )
         self.assertEqual(
-            "WARNING:root:Table unignorable_table is supposed to be ignored but "
+            "Table unignorable_table is supposed to be ignored but "
             "there is a foreign key reference to it. "
             "You may need to create this table manually at the dst schema before "
             "running create-tables.\n"
-            "WARNING: Table without PK detected. "
-            "sqlsynthgen may not be able to continue.\n",
+            "Table without PK detected. sqlsynthgen may not be able to continue.\n",
             completed_process.stderr.decode("utf-8"),
         )
         self.assertSuccess(completed_process)
@@ -236,7 +234,12 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
         self.assertEqual(
-            f"Creating {self.stats_file_path}.\n{self.stats_file_path} created.\n",
+            f"Creating {self.stats_file_path}.\n"
+            "Executing query count_names\n"
+            "Executing query avg_person_id\n"
+            "Executing query count_opt_outs\n"
+            "Executing dp-query for count_opt_outs\n"
+            f"{self.stats_file_path} created.\n",
             completed_process.stdout.decode("utf-8"),
         )
 
@@ -257,7 +260,18 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
         self.assertEqual(
-            f"Making {self.alt_ssg_file_path}.\n{self.alt_ssg_file_path} created.\n",
+            f"Making {self.alt_ssg_file_path}.\n"
+            "Downloading vocabulary table empty_vocabulary\n"
+            "Done downloading empty_vocabulary\n"
+            "Downloading vocabulary table mitigation_type\n"
+            "Done downloading mitigation_type\n"
+            "Downloading vocabulary table ref_to_unignorable_table\n"
+            "Done downloading ref_to_unignorable_table\n"
+            "Downloading vocabulary table concept_type\n"
+            "Done downloading concept_type\n"
+            "Downloading vocabulary table concept\n"
+            "Done downloading concept\n"
+            f"{self.alt_ssg_file_path} created.\n",
             completed_process.stdout.decode("utf-8"),
         )
 
@@ -290,12 +304,18 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             env=self.env,
         )
         self.assertEqual(
-            "WARNING:root:No rows in empty_vocabulary.yaml. Skipping...\n",
+            "No rows in empty_vocabulary.yaml. Skipping...\n",
             completed_process.stderr.decode("utf-8"),
         )
         self.assertSuccess(completed_process)
         self.assertEqual(
-            "Loading vocab.\n5 tables loaded.\n",
+            "Loading vocab.\n"
+            "Loading vocabulary table empty_vocabulary\n"
+            "Loading vocabulary table mitigation_type\n"
+            "Loading vocabulary table ref_to_unignorable_table\n"
+            "Loading vocabulary table concept_type\n"
+            "Loading vocabulary table concept\n"
+            "5 tables loaded.\n",
             completed_process.stdout.decode("utf-8"),
         )
 
@@ -315,7 +335,34 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
         self.assertEqual(
-            "Creating data.\nData created in 2 passes.\n",
+            "Creating data.\n"
+            "Generating data for story story_generators.short_story\n"
+            "Generating data for story story_generators.short_story\n"
+            "Generating data for story story_generators.short_story\n"
+            "Generating data for story story_generators.full_row_story\n"
+            "Generating data for story story_generators.long_story\n"
+            "Generating data for story story_generators.long_story\n"
+            "Generating data for table data_type_test\n"
+            "Generating data for table no_pk_test\n"
+            "Generating data for table person\n"
+            "Generating data for table unique_constraint_test\n"
+            "Generating data for table unique_constraint_test2\n"
+            "Generating data for table test_entity\n"
+            "Generating data for table hospital_visit\n"
+            "Generating data for story story_generators.short_story\n"
+            "Generating data for story story_generators.short_story\n"
+            "Generating data for story story_generators.short_story\n"
+            "Generating data for story story_generators.full_row_story\n"
+            "Generating data for story story_generators.long_story\n"
+            "Generating data for story story_generators.long_story\n"
+            "Generating data for table data_type_test\n"
+            "Generating data for table no_pk_test\n"
+            "Generating data for table person\n"
+            "Generating data for table unique_constraint_test\n"
+            "Generating data for table unique_constraint_test2\n"
+            "Generating data for table test_entity\n"
+            "Generating data for table hospital_visit\n"
+            "Data created in 2 passes.\n",
             completed_process.stdout.decode("utf-8"),
         )
 
@@ -335,7 +382,15 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
         self.assertEqual(
-            "Truncating non-vocabulary tables.\nNon-vocabulary tables truncated.\n",
+            "Truncating non-vocabulary tables.\n"
+            "Truncating table hospital_visit\n"
+            "Truncating table test_entity\n"
+            "Truncating table unique_constraint_test2\n"
+            "Truncating table unique_constraint_test\n"
+            "Truncating table person\n"
+            "Truncating table no_pk_test\n"
+            "Truncating table data_type_test\n"
+            "Non-vocabulary tables truncated.\n",
             completed_process.stdout.decode("utf-8"),
         )
 
@@ -355,7 +410,13 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
         self.assertEqual(
-            "Truncating vocabulary tables.\nVocabulary tables truncated.\n",
+            "Truncating vocabulary tables.\n"
+            "Truncating vocabulary table concept\n"
+            "Truncating vocabulary table concept_type\n"
+            "Truncating vocabulary table ref_to_unignorable_table\n"
+            "Truncating vocabulary table mitigation_type\n"
+            "Truncating vocabulary table empty_vocabulary\n"
+            "Vocabulary tables truncated.\n",
             completed_process.stdout.decode("utf-8"),
         )
 

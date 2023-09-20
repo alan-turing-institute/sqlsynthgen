@@ -1,11 +1,9 @@
 """Functions to make a module of generator classes."""
 import asyncio
 import inspect
-import logging
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from sys import stderr
 from types import ModuleType
 from typing import Any, Final, Mapping, Optional, Sequence, Tuple
 
@@ -28,6 +26,7 @@ from sqlsynthgen.utils import (
     download_table,
     get_orm_metadata,
     get_sync_engine,
+    logger,
 )
 
 PROVIDER_IMPORTS: Final[list[str]] = []
@@ -277,7 +276,7 @@ def _enforce_unique_constraints(table_data: TableGeneratorInfo) -> None:
                     "A unique constraint (%s) isn't fully covered by one row "
                     "generator (%s). Enforcement of the constraint may not work."
                 )
-                logging.warning(msg, constraint.name, row_gen.variable_names)
+                logger.warning(msg, constraint.name, row_gen.variable_names)
 
             # Make a new function call that wraps the old one in a UniqueGenerator
             old_function_call = row_gen.function_call
@@ -449,10 +448,12 @@ def _get_generator_for_vocabulary_table(
 
     yaml_file_name: str = table_file_name or table.fullname + ".yaml"
     if Path(yaml_file_name).exists() and not overwrite_files:
-        print(f"{str(yaml_file_name)} already exists. Exiting...", file=stderr)
+        logger.error("%s already exists. Exiting...", yaml_file_name)
         sys.exit(1)
     else:
+        logger.debug("Downloading vocabulary table %s", table.name)
         download_table(table, engine, yaml_file_name)
+        logger.debug("Done downloading %s", table.name)
 
     return VocabularyTableGeneratorInfo(
         class_name=class_name,
@@ -488,7 +489,7 @@ def make_tables_file(
         table_config = tables_config.get(table_name, {})
         ignore = table_config.get("ignore", False)
         if ignore:
-            logging.warning(
+            logger.warning(
                 "Table %s is supposed to be ignored but there is a foreign key "
                 "reference to it. "
                 "You may need to create this table manually at the dst schema before "
@@ -502,10 +503,8 @@ def make_tables_file(
     # sqlacodegen falls back on Tables() for tables without PKs,
     # but we don't explicitly support Tables and behaviour is unpredictable.
     if " = Table(" in code:
-        print(
-            "WARNING: Table without PK detected. "
-            "sqlsynthgen may not be able to continue.",
-            file=stderr,
+        logger.warning(
+            "Table without PK detected. sqlsynthgen may not be able to continue.",
         )
 
     return format_str(code, mode=FileMode())
@@ -532,6 +531,7 @@ async def make_src_stats(
 
     async def execute_query(query_block: Mapping[str, Any]) -> Any:
         """Execute query in query_block."""
+        logger.debug("Executing query %s", query_block["name"])
         query = text(query_block["query"])
         if isinstance(engine, AsyncEngine):
             async with engine.connect() as conn:
@@ -542,6 +542,7 @@ async def make_src_stats(
 
         if "dp-query" in query_block:
             result_df = pd.DataFrame(raw_result.mappings())
+            logger.debug("Executing dp-query for %s", query_block["name"])
             dp_query = query_block["dp-query"]
             snsql_metadata = {"": {"": {"query_result": query_block["snsql-metadata"]}}}
             privacy = snsql.Privacy(
@@ -569,5 +570,5 @@ async def make_src_stats(
 
     for name, result in src_stats.items():
         if not result:
-            logging.warning("src-stats query %s returned no results", name)
+            logger.warning("src-stats query %s returned no results", name)
     return src_stats

@@ -1,5 +1,4 @@
 """Functions and classes to create and populate the target database."""
-import logging
 from typing import Any, Generator, Mapping, Sequence, Tuple
 
 from sqlalchemy import Connection, insert
@@ -8,7 +7,7 @@ from sqlalchemy.schema import CreateSchema, MetaData, Table
 
 from sqlsynthgen.base import FileUploader, TableGenerator
 from sqlsynthgen.settings import get_settings
-from sqlsynthgen.utils import create_db_engine, get_sync_engine
+from sqlsynthgen.utils import create_db_engine, get_sync_engine, logger
 
 Story = Generator[Tuple[str, dict[str, Any]], dict[str, Any], None]
 
@@ -46,12 +45,11 @@ def create_db_vocab(vocab_dict: Mapping[str, FileUploader]) -> None:
 
     with dst_engine.connect() as dst_conn:
         for vocab_table in vocab_dict.values():
+            logger.debug("Loading vocabulary table %s", vocab_table.table.name)
             try:
                 vocab_table.load(dst_conn)
             except IntegrityError:
-                logging.exception(
-                    "Loading the vocabulary table %s failed:", vocab_table
-                )
+                logger.exception("Loading the vocabulary table %s failed:", vocab_table)
 
 
 def create_db_data(
@@ -131,15 +129,19 @@ def populate(
     # Each story generator returns a python generator (an unfortunate naming clash with
     # what we call generators). Iterating over it yields individual rows for the
     # database. First, collect all of the python generators into a single list.
-    stories: list[Story] = sum(
+    stories: list[tuple[str, Story]] = sum(
         [
-            [sg["name"](dst_conn) for _ in range(sg["num_stories_per_pass"])]
+            [
+                (sg["name"], sg["function"](dst_conn))
+                for _ in range(sg["num_stories_per_pass"])
+            ]
             for sg in story_generator_list
         ],
         [],
     )
-    for story in stories:
+    for name, story in stories:
         # Run the inserts for each story within a transaction.
+        logger.debug("Generating data for story %s", name)
         with dst_conn.begin():
             _populate_story(story, table_dict, table_generator_dict, dst_conn)
 
@@ -150,6 +152,9 @@ def populate(
             # vocabulary table.
             continue
         table_generator = table_generator_dict[table.name]
+        if table_generator.num_rows_per_pass == 0:
+            continue
+        logger.debug("Generating data for table %s", table.name)
         # Run all the inserts for one table in a transaction
         with dst_conn.begin():
             for _ in range(table_generator.num_rows_per_pass):

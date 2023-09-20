@@ -5,7 +5,12 @@ from typing import Any, Mapping
 from sqlalchemy import delete
 
 from sqlsynthgen.settings import get_settings
-from sqlsynthgen.utils import create_db_engine, get_orm_metadata, get_sync_engine
+from sqlsynthgen.utils import (
+    create_db_engine,
+    get_orm_metadata,
+    get_sync_engine,
+    logger,
+)
 
 
 def remove_db_data(
@@ -24,6 +29,7 @@ def remove_db_data(
         for table in reversed(metadata.sorted_tables):
             # We presume that all tables that aren't vocab should be truncated
             if table.name not in ssg_module.vocab_dict:
+                logger.debug("Truncating table %s", table.name)
                 dst_conn.execute(delete(table))
                 dst_conn.commit()
 
@@ -44,6 +50,7 @@ def remove_db_vocab(
         for table in reversed(metadata.sorted_tables):
             # We presume that all tables that are vocab should be truncated
             if table.name in ssg_module.vocab_dict:
+                logger.debug("Truncating vocabulary table %s", table.name)
                 dst_conn.execute(delete(table))
                 dst_conn.commit()
 

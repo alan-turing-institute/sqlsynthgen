@@ -10,7 +10,7 @@ from typing import Final, Optional
 import yaml
 from jsonschema.exceptions import ValidationError
 from jsonschema.validators import validate
-from typer import Option, Typer, echo
+from typer import Option, Typer
 
 from sqlsynthgen.create import create_db_data, create_db_tables, create_db_vocab
 from sqlsynthgen.make import make_src_stats, make_table_generators, make_tables_file
@@ -18,8 +18,10 @@ from sqlsynthgen.remove import remove_db_data, remove_db_tables, remove_db_vocab
 from sqlsynthgen.settings import Settings, get_settings
 from sqlsynthgen.utils import (
     CONFIG_SCHEMA_PATH,
+    conf_logger,
     get_orm_metadata,
     import_file,
+    logger,
     read_config_file,
 )
 
@@ -35,7 +37,7 @@ app = Typer(no_args_is_help=True)
 def _check_file_non_existence(file_path: Path) -> None:
     """Check that a given file does not exist. Exit with an error message if it does."""
     if file_path.exists():
-        echo(f"{file_path} should not already exist. Exiting...", err=True)
+        logger.error("%s should not already exist. Exiting...", file_path)
         sys.exit(1)
 
 
@@ -45,7 +47,7 @@ def _require_src_db_dsn(settings: Settings) -> str:
     Check that source DB details have been set. Exit with error message if not.
     """
     if (src_dsn := settings.src_dsn) is None:
-        echo("Missing source database connection details.", err=True)
+        logger.error("Missing source database connection details.")
         sys.exit(1)
     return src_dsn
 
@@ -81,11 +83,12 @@ def create_data(
           Must be in the current working directory.
         ssg_file (str): Name of generators file.
           Must be in the current working directory.
+        config_file (str): Path to configuration file.
         num_passes (int): Number of passes to make.
         verbose (bool): Be verbose. Default to False.
     """
-    if verbose:
-        echo("Creating data.")
+    conf_logger(verbose)
+    logger.debug("Creating data.")
     orm_module = import_file(orm_file)
     ssg_module = import_file(ssg_file)
     config = read_config_file(config_file) if config_file is not None else {}
@@ -99,8 +102,7 @@ def create_data(
         story_generator_list,
         num_passes,
     )
-    if verbose:
-        echo(f"Data created in {num_passes} passes.")
+    logger.debug("Data created in %s passes.", num_passes)
 
 
 @app.command()
@@ -116,14 +118,14 @@ def create_vocab(
     Args:
         ssg_file (str): Name of generators file.
           Must be in the current working directory.
+        verbose (bool): Be verbose. Default to False.
     """
-    if verbose:
-        echo("Loading vocab.")
+    conf_logger(verbose)
+    logger.debug("Loading vocab.")
     ssg_module = import_file(ssg_file)
     create_db_vocab(ssg_module.vocab_dict)
-    if verbose:
-        num_vocabs = len(ssg_module.vocab_dict)
-        echo(f"{num_vocabs} {'table' if num_vocabs == 1 else 'tables'} loaded.")
+    num_vocabs = len(ssg_module.vocab_dict)
+    logger.debug("%s %s loaded.", num_vocabs, "table" if num_vocabs == 1 else "tables")
 
 
 @app.command()
@@ -146,17 +148,14 @@ def create_tables(
         config_file (str): Path to configuration file.
         verbose (bool): Be verbose. Default to False.
     """
-    if verbose:
-        echo("Creating tables.")
-
+    conf_logger(verbose)
+    logger.debug("Creating tables.")
     config = read_config_file(config_file) if config_file is not None else {}
     tables_config = config.get("tables", {})
     orm_module = import_file(orm_file)
     orm_metadata = get_orm_metadata(orm_module, tables_config)
     create_db_tables(orm_metadata)
-
-    if verbose:
-        echo("Tables created.")
+    logger.debug("Tables created.")
 
 
 @app.command()
@@ -185,8 +184,8 @@ def make_generators(
         force (bool): Overwrite the ORM file if exists. Default to False.
         verbose (bool): Be verbose. Default to False.
     """
-    if verbose:
-        echo(f"Making {ssg_file}.")
+    conf_logger(verbose)
+    logger.debug("Making %s.", ssg_file)
 
     ssg_file_path = Path(ssg_file)
     if not force:
@@ -203,8 +202,7 @@ def make_generators(
 
     ssg_file_path.write_text(result, encoding="utf-8")
 
-    if verbose:
-        echo(f"{ssg_file} created.")
+    logger.debug("%s created.", ssg_file)
 
 
 @app.command()
@@ -221,8 +219,8 @@ def make_stats(
     Example:
         $ sqlsynthgen make_stats --config-file=example_config.yaml
     """
-    if verbose:
-        echo(f"Creating {stats_file}.")
+    conf_logger(verbose)
+    logger.debug("Creating %s.", stats_file)
 
     stats_file_path = Path(stats_file)
     if not force:
@@ -237,9 +235,7 @@ def make_stats(
         make_src_stats(src_dsn, config, settings.src_schema)
     )
     stats_file_path.write_text(yaml.dump(src_stats), encoding="utf-8")
-
-    if verbose:
-        echo(f"{stats_file} created.")
+    logger.debug("%s created.", stats_file)
 
 
 @app.command()
@@ -264,8 +260,8 @@ def make_tables(
         force (bool): Overwrite ORM file, if exists. Default to False.
         verbose (bool): Be verbose. Default to False.
     """
-    if verbose:
-        echo(f"Creating {orm_file}.")
+    conf_logger(verbose)
+    logger.debug("Creating %s.", orm_file)
 
     orm_file_path = Path(orm_file)
     if not force:
@@ -277,9 +273,7 @@ def make_tables(
 
     content = make_tables_file(src_dsn, settings.src_schema, config)
     orm_file_path.write_text(content, encoding="utf-8")
-
-    if verbose:
-        echo(f"{orm_file} created.")
+    logger.debug("%s created.", orm_file)
 
 
 @app.command()
@@ -288,19 +282,17 @@ def validate_config(
     verbose: bool = Option(False, "--verbose", "-v"),
 ) -> None:
     """Validate the format of a config file."""
-    if verbose:
-        echo(f"Validating config file: {config_file}.")
+    conf_logger(verbose)
+    logger.debug("Validating config file: %s.", config_file)
 
     config = yaml.load(config_file.read_text(encoding="UTF-8"), Loader=yaml.SafeLoader)
     schema_config = json.loads(CONFIG_SCHEMA_PATH.read_text(encoding="UTF-8"))
     try:
         validate(config, schema_config)
     except ValidationError as e:
-        echo(e, err=True)
+        logger.error(e)
         sys.exit(1)
-
-    if verbose:
-        echo("Config file is valid.")
+    logger.debug("Config file is valid.")
 
 
 @app.command()
@@ -312,19 +304,16 @@ def remove_data(
     verbose: bool = Option(False, "--verbose", "-v"),
 ) -> None:
     """Truncate non-vocabulary tables in the destination schema."""
+    conf_logger(verbose)
     if yes:
-        if verbose:
-            echo("Truncating non-vocabulary tables.")
-
+        logger.debug("Truncating non-vocabulary tables.")
         config = read_config_file(config_file) if config_file is not None else {}
         orm_module = import_file(orm_file)
         ssg_module = import_file(ssg_file)
         remove_db_data(orm_module, ssg_module, config)
-
-        if verbose:
-            echo("Non-vocabulary tables truncated.")
+        logger.debug("Non-vocabulary tables truncated.")
     else:
-        echo("Would truncate non-vocabulary tables if called with --yes.")
+        logger.info("Would truncate non-vocabulary tables if called with --yes.")
 
 
 @app.command()
@@ -336,19 +325,16 @@ def remove_vocab(
     verbose: bool = Option(False, "--verbose", "-v"),
 ) -> None:
     """Truncate vocabulary tables in the destination schema."""
+    conf_logger(verbose)
     if yes:
-        if verbose:
-            echo("Truncating vocabulary tables.")
-
+        logger.debug("Truncating vocabulary tables.")
         config = read_config_file(config_file) if config_file is not None else {}
         orm_module = import_file(orm_file)
         ssg_module = import_file(ssg_file)
         remove_db_vocab(orm_module, ssg_module, config)
-
-        if verbose:
-            echo("Vocabulary tables truncated.")
+        logger.debug("Vocabulary tables truncated.")
     else:
-        echo("Would truncate vocabulary tables if called with --yes.")
+        logger.info("Would truncate vocabulary tables if called with --yes.")
 
 
 @app.command()
@@ -362,26 +348,22 @@ def remove_tables(
 
     Does not drop the schema itself.
     """
+    conf_logger(verbose)
     if yes:
-        if verbose:
-            echo("Dropping tables.")
-
+        logger.debug("Dropping tables.")
         config = read_config_file(config_file) if config_file is not None else {}
         orm_module = import_file(orm_file)
         remove_db_tables(orm_module, config)
-
-        if verbose:
-            echo("Tables dropped.")
+        logger.debug("Tables dropped.")
     else:
-        echo("Would remove tables if called with --yes.")
+        logger.info("Would remove tables if called with --yes.")
 
 
 @app.command()
 def version() -> None:
     """Display version information."""
-    echo(
-        f"sqlsynthgen version {metadata.version(__package__)}",
-    )
+    conf_logger(True)
+    logger.info("sqlsynthgen version %s", metadata.version(__package__))
 
 
 if __name__ == "__main__":

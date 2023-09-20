@@ -1,5 +1,6 @@
 """Utility functions."""
 import json
+import logging
 import os
 import sys
 from importlib import import_module
@@ -15,7 +16,7 @@ from sqlalchemy.engine.interfaces import DBAPIConnection
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.schema import MetaData, Table
 
-# Define some types used in many places in the code base
+# Define some types used repeatedly in the code base
 MaybeAsyncEngine = Union[Engine, AsyncEngine]
 
 
@@ -42,7 +43,7 @@ def read_config_file(path: str) -> dict:
     try:
         validate(config, schema_config)
     except ValidationError as e:
-        print("The config file is invalid:", e.message)
+        logger.error("The config file is invalid: %s", e.message)
 
     return config
 
@@ -141,3 +142,40 @@ def get_orm_metadata(
         if ignore:
             metadata.remove(table)
     return metadata
+
+
+# This is the main logger that the other modules of sqlsynthgen should use for output.
+# conf_logger() should be called once, as early as possible, to configure this logger.
+logger = logging.getLogger(__name__)
+
+
+def info_or_lower(record: logging.LogRecord) -> bool:
+    """Allow records with level of INFO or lower."""
+    return record.levelno in (logging.DEBUG, logging.INFO)
+
+
+def warning_or_higher(record: logging.LogRecord) -> bool:
+    """Allow records with level of WARNING or higher."""
+    return record.levelno in (logging.WARNING, logging.ERROR, logging.CRITICAL)
+
+
+def conf_logger(verbose: bool) -> None:
+    """Configure the logger."""
+    # Note that this function modifies the global `logger`.
+    level = logging.DEBUG if verbose else logging.INFO
+    logger.setLevel(level)
+    log_format = "%(message)s"
+
+    # info will always be printed to stdout
+    # debug will be printed to stdout only if verbose=True
+    stdout_handler = logging.StreamHandler(sys.stdout)
+    stdout_handler.setFormatter(logging.Formatter(log_format))
+    stdout_handler.addFilter(info_or_lower)
+
+    # warning and error will always be printed to stderr
+    stderr_handler = logging.StreamHandler(sys.stderr)
+    stderr_handler.setFormatter(logging.Formatter(log_format))
+    stderr_handler.addFilter(warning_or_higher)
+
+    logger.addHandler(stdout_handler)
+    logger.addHandler(stderr_handler)
