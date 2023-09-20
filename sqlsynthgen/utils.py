@@ -143,8 +143,9 @@ def get_orm_metadata(
             metadata.remove(table)
     return metadata
 
+
 # This is the main logger that the other modules of sqlsynthgen should use for output.
-# conf_logger() should be called once, as early as possible, to configure this logger. 
+# conf_logger() should be called once, as early as possible, to configure this logger.
 logger = logging.getLogger(__name__)
 
 
@@ -164,7 +165,7 @@ def conf_logger(verbose: bool) -> None:
     level = logging.DEBUG if verbose else logging.INFO
     logger.setLevel(level)
     log_format = "%(message)s"
-    
+
     # info will always be printed to stdout
     # debug will be printed to stdout only if verbose=True
     stdout_handler = logging.StreamHandler(sys.stdout)
