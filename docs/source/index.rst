@@ -32,7 +32,6 @@ Contents:
    configuration
    sqlsynthgen
    faq
-   changelog
    glossary
 
 
