@@ -1,4 +1,4 @@
-.. _example_loan_data:
+.. _page-example-loan-data:
 
 Example: Loan data
 ===================
@@ -15,7 +15,7 @@ Setup
 +++++
 
 The PKDD'99 dataset is stored on a MariaDB database, which means that we need a local MariaDB database to store the synthetic data.
-MariaDB installation instructions can be found `here <https://mariadb.org/download/?t=mariadb&p=mariadb&r=11.2.0#entry-header>`_.
+MariaDB installation instructions can be found `here <https://mariadb.org/download/?t=mariadb&p=mariadb&r=11.2.0#entry-header>`__.
 We presume that you have a local server running on port 3306, with a user called ``myuser``, a password ``mypassword`` and a database called ``financial``.
 
 .. code-block:: console
@@ -26,7 +26,7 @@ We presume that you have a local server running on port 3306, with a user called
     MariaDB > grant all privileges on financial.* to 'myuser'@'localhost';
     MariaDB > \q
 
-After :ref:`installing SqlSynthGen <enduser>`, we create a `.env` file to set some environment variables to define the source database as the one linked at the bottom of the PKDD'99 page, and the destination database as the local one:
+After :ref:`installing SqlSynthGen <page-installation>`, we create a `.env` file to set some environment variables to define the source database as the one linked at the bottom of the PKDD'99 page, and the destination database as the local one:
 
 **.env**
 
@@ -223,4 +223,4 @@ As before, we will need to re-create ``ssg.py`` and the data.
     $ sqlsynthgen create-data --num-passes 100
 
 For further refinement, you can use "story generators" to create inter-table correlations so that, for example, the number of loan applications depends on the number of cards they have or the average amount of a bank transfer depends on the home city of a client.
-See the :ref:`introduction <introduction>` for more.
+See the :ref:`introduction <page-introduction>` for more.

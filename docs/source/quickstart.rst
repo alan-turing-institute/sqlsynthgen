@@ -1,9 +1,9 @@
-.. _quickstart:
+.. _page-quickstart:
 
 Quick Start
 ===========
 
-After :ref:`Installation <installation>`, we can run ``sqlsynthgen`` to see the available commands:
+After :ref:`Installation <page-installation>`, we can run ``sqlsynthgen`` to see the available commands:
 
 .. code-block:: console
 

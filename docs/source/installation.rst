@@ -1,9 +1,7 @@
-.. _installation:
+.. _page-installation:
 
 Installation
 ============
-
-.. _enduser:
 
 End User
 --------

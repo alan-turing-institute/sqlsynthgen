@@ -1,15 +1,15 @@
-.. _example_health_data:
+.. _page-example-health-data:
 
 Advanced example: OMOP health data
 ==================================
 
 The OMOP common data model (CDM) is a widely used format for storing health data.
 Here we will show how `SqlSynthGen` (SSG) can be configured to generate data for OMOP.
-We also use this as an opportunity to demonstrate some typical patterns in advanced usage of SSG, beyond what is covered in the :ref:`introduction <introduction>`, which we encourage the reader to go through first.
+We also use this as an opportunity to demonstrate some typical patterns in advanced usage of SSG, beyond what is covered in the :ref:`introduction <page-introduction>`, which we encourage the reader to go through first.
 
 There are multiple versions of the OMOP CDM and variations between implementations as well (at schema and data levels).
 SSG allows you to generate data irrespective of your schema peculiarities, but the example configuration we demonstrate here was originally built for the `CCHIC dataset <https://pubmed.ncbi.nlm.nih.gov/29500026/>`_ for critical care data.
-The full configuration we wrote for the CCHIC data set is available `here <https://github.com/alan-turing-institute/sqlsynthgen/blob/main/examples/cchic_omop/>`_, in this tutorial page we will only discuss some aspects of it.
+The full configuration we wrote for the CCHIC data set is available `here <https://github.com/alan-turing-institute/sqlsynthgen/blob/main/examples/cchic_omop/>`__, in this tutorial page we will only discuss some aspects of it.
 
 Before getting into the config itself, we need to discuss a few peculiarities of the OMOP CDM that need to be taken into account:
 
@@ -123,7 +123,7 @@ Configuration for OMOP
 
 With the above speed bumps cleared we can focus on the usual work of using SSG:
 Writing generators and source statistics queries to increase fidelity of the synthetic data.
-The complete CC HIC config we've written is available `here <https://github.com/alan-turing-institute/sqlsynthgen/blob/main/examples/cchic_omop/>`_.
+The complete CC HIC config we've written is available `here <https://github.com/alan-turing-institute/sqlsynthgen/blob/main/examples/cchic_omop/>`__.
 It consists of a ``config.yaml``, ``row_generators.py``, and ``story_generators.py``.
 
 The row generators do little, most of the work is in the one big story generator, ``patient_story``, and the ``src-stats`` queries that it uses.

@@ -1,4 +1,4 @@
-.. _introduction:
+.. _page-introduction:
 
 Introductory tutorial
 ==============================
