@@ -1,7 +1,9 @@
+.. _quickstart:
+
 Quick Start
 ===========
 
-After :ref:`Installation <enduser>`, we can run ``sqlsynthgen`` to see the available commands:
+After :ref:`Installation <installation>`, we can run ``sqlsynthgen`` to see the available commands:
 
 .. code-block:: console
 

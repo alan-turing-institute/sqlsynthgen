@@ -1,4 +1,6 @@
-The sqlsynthgen Package
+.. _api:
+
+API reference
 =======================
 
 Submodules

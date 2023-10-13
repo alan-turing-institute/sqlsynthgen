@@ -1,4 +1,6 @@
-Tutorial: Loan Data
+.. _example_loan_data:
+
+Example: Loan data
 ===================
 
 Intro
@@ -66,7 +68,7 @@ we see that they are always 0 or 1 so we will pick randomly from 0 and 1 for our
 
 **config.yaml**
 
-.. literalinclude:: ../../../tests/examples/loans/config1.yaml
+.. literalinclude:: ../../tests/examples/loans/config1.yaml
    :language: yaml
 
 We run SqlSynthGen's ``make-generators`` command to create ``ssg.py``, which contains a generator class for each table in the source database:
@@ -99,7 +101,7 @@ We notice that the ``districts`` table doesn't contain any sensitive data so we 
 
 **config.yaml**
 
-.. literalinclude:: ../../../tests/examples/loans/config2.yaml
+.. literalinclude:: ../../tests/examples/loans/config2.yaml
    :language: yaml
 
 We can export the vocabularies to `.yaml` files, delete the old synthetic data, import the vocabularies and create new synthetic data with:
@@ -200,14 +202,14 @@ We can take the real values in the right proportions, and even add noise to make
 
 **config.yaml**
 
-.. literalinclude:: ../../../tests/examples/loans/config3.yaml
+.. literalinclude:: ../../tests/examples/loans/config3.yaml
    :language: yaml
 
 We define a custom row-generator to use the source statistics and Python's ``random.choices()`` function to choose a value:
 
 **my_row_generators.py**
 
-.. literalinclude:: ../../../tests/examples/loans/my_row_generators.py
+.. literalinclude:: ../../tests/examples/loans/my_row_generators.py
    :language: python
 
 As before, we will need to re-create ``ssg.py`` and the data.

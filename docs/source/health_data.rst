@@ -1,5 +1,7 @@
+.. _example_health_data:
+
 Advanced example: OMOP health data
-==================
+==================================
 
 The OMOP common data model (CDM) is a widely used format for storing health data.
 Here we will show how `SqlSynthGen` (SSG) can be configured to generate data for OMOP.
@@ -19,7 +21,7 @@ Before getting into the config itself, we need to discuss a few peculiarities of
    You should also check the license agreement of each standardized vocabulary before sharing any of the ``.yaml`` files.
 
 Dealing with circular foreign keys
-+++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++
 
 SSG is currently unable to handle schemas with circular foreign keys properly.
 By this we mean situations where foreign key references form a loop, where for instance table `A` references table `B`, which references table `C`, which in turn references table `A` again.
