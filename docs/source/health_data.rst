@@ -1,6 +1,6 @@
 .. _page-example-health-data:
 
-Advanced example: OMOP health data
+Advanced Example: OMOP Health Data
 ==================================
 
 The OMOP common data model (CDM) is a widely used format for storing health data.
@@ -361,27 +361,29 @@ As an example, let's look at ``measurement_categoricals``.
           join concept concept on concept.concept_id = measurement.measurement_concept_id
           where
             -- This is a manually curated list of measurements we are interested in.
-            concept_name = 'Pulse rate'
-            or concept_name = 'Arterial oxygen saturation'
-            or concept_name = 'Respiratory rate'
-            or concept_name = 'Systolic blood pressure'
-            or concept_name = 'Diastolic blood pressure'
-            or concept_name = 'Urine output 1 hour'
-            or concept_name = 'Body temperature'
-            or concept_name = 'Inspired oxygen concentration'
-            or concept_name = 'SOFA (Sequential Organ Failure Assessment) score'
-            or concept_name = 'Oral fluid input'
-            or concept_name = 'Tidal volume'
-            or concept_name = 'Ventilator delivered minute volume'
-            or concept_name = 'End tidal carbon dioxide concentration'
-            or concept_name = 'Total breath rate'
-            or concept_name = 'Peak inspiratory pressure'
-            or concept_name = 'pH of Blood'
-            or concept_name = 'Carbon dioxide [Partial pressure] in Blood'
-            or concept_name = 'Oxygen [Partial pressure] in Blood]'
-            or concept_name = 'Base excess in Blood by calculation'
-            or concept_name = 'Chloride [Moles/volume] in Blood'
-            or concept_name = 'Leukocytes [#/volume] in Blood by Automated count'
+            concept_name in (
+              'Pulse rate',
+              'Arterial oxygen saturation',
+              'Respiratory rate',
+              'Systolic blood pressure',
+              'Diastolic blood pressure',
+              'Urine output 1 hour',
+              'Body temperature',
+              'Inspired oxygen concentration',
+              'SOFA (Sequential Organ Failure Assessment) score',
+              'Oral fluid input',
+              'Tidal volume',
+              'Ventilator delivered minute volume',
+              'End tidal carbon dioxide concentration',
+              'Total breath rate',
+              'Peak inspiratory pressure',
+              'pH of Blood',
+              'Carbon dioxide [Partial pressure] in Blood',
+              'Oxygen [Partial pressure] in Blood]',
+              'Base excess in Blood by calculation',
+              'Chloride [Moles/volume] in Blood',
+              'Leukocytes [#/volume] in Blood by Automated count'
+          )
           limit 10000000
         )
       select

@@ -1,6 +1,6 @@
 .. _page-introduction:
 
-Introductory tutorial
+Introductory Tutorial
 ==============================
 
 

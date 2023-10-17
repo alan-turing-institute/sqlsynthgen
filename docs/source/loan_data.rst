@@ -1,6 +1,6 @@
 .. _page-example-loan-data:
 
-Example: Loan data
+Example: Loan Data
 ===================
 
 Intro

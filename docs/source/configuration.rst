@@ -1,4 +1,4 @@
-Configuration reference
+Configuration Reference
 =======================
 
 SqlSynthGen is configured using a YAML file, which is passed to several commands with the ``--config`` option.

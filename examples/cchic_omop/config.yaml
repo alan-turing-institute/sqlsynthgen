@@ -362,27 +362,29 @@ src-stats:
           join concept concept on concept.concept_id = measurement.measurement_concept_id
           where
             -- This is a manually curated list of measurements we are interested in.
-            concept_name = 'Pulse rate'
-            or concept_name = 'Arterial oxygen saturation'
-            or concept_name = 'Respiratory rate'
-            or concept_name = 'Systolic blood pressure'
-            or concept_name = 'Diastolic blood pressure'
-            or concept_name = 'Urine output 1 hour'
-            or concept_name = 'Body temperature'
-            or concept_name = 'Inspired oxygen concentration'
-            or concept_name = 'SOFA (Sequential Organ Failure Assessment) score'
-            or concept_name = 'Oral fluid input'
-            or concept_name = 'Tidal volume'
-            or concept_name = 'Ventilator delivered minute volume'
-            or concept_name = 'End tidal carbon dioxide concentration'
-            or concept_name = 'Total breath rate'
-            or concept_name = 'Peak inspiratory pressure'
-            or concept_name = 'pH of Blood'
-            or concept_name = 'Carbon dioxide [Partial pressure] in Blood'
-            or concept_name = 'Oxygen [Partial pressure] in Blood]'
-            or concept_name = 'Base excess in Blood by calculation'
-            or concept_name = 'Chloride [Moles/volume] in Blood'
-            or concept_name = 'Leukocytes [#/volume] in Blood by Automated count'
+            concept_name in (
+              'Pulse rate',
+              'Arterial oxygen saturation',
+              'Respiratory rate',
+              'Systolic blood pressure',
+              'Diastolic blood pressure',
+              'Urine output 1 hour',
+              'Body temperature',
+              'Inspired oxygen concentration',
+              'SOFA (Sequential Organ Failure Assessment) score',
+              'Oral fluid input',
+              'Tidal volume',
+              'Ventilator delivered minute volume',
+              'End tidal carbon dioxide concentration',
+              'Total breath rate',
+              'Peak inspiratory pressure',
+              'pH of Blood',
+              'Carbon dioxide [Partial pressure] in Blood',
+              'Oxygen [Partial pressure] in Blood]',
+              'Base excess in Blood by calculation',
+              'Chloride [Moles/volume] in Blood',
+              'Leukocytes [#/volume] in Blood by Automated count'
+            )
           limit 10000000
         )
       select count(*) as num, m.measurement_concept_id, m.person_id
@@ -419,27 +421,29 @@ src-stats:
           join concept concept on concept.concept_id = measurement.measurement_concept_id
           where
             -- This is a manually curated list of measurements we are interested in.
-            concept_name = 'Pulse rate'
-            or concept_name = 'Arterial oxygen saturation'
-            or concept_name = 'Respiratory rate'
-            or concept_name = 'Systolic blood pressure'
-            or concept_name = 'Diastolic blood pressure'
-            or concept_name = 'Urine output 1 hour'
-            or concept_name = 'Body temperature'
-            or concept_name = 'Inspired oxygen concentration'
-            or concept_name = 'SOFA (Sequential Organ Failure Assessment) score'
-            or concept_name = 'Oral fluid input'
-            or concept_name = 'Tidal volume'
-            or concept_name = 'Ventilator delivered minute volume'
-            or concept_name = 'End tidal carbon dioxide concentration'
-            or concept_name = 'Total breath rate'
-            or concept_name = 'Peak inspiratory pressure'
-            or concept_name = 'pH of Blood'
-            or concept_name = 'Carbon dioxide [Partial pressure] in Blood'
-            or concept_name = 'Oxygen [Partial pressure] in Blood]'
-            or concept_name = 'Base excess in Blood by calculation'
-            or concept_name = 'Chloride [Moles/volume] in Blood'
-            or concept_name = 'Leukocytes [#/volume] in Blood by Automated count'
+            concept_name in (
+              'Pulse rate',
+              'Arterial oxygen saturation',
+              'Respiratory rate',
+              'Systolic blood pressure',
+              'Diastolic blood pressure',
+              'Urine output 1 hour',
+              'Body temperature',
+              'Inspired oxygen concentration',
+              'SOFA (Sequential Organ Failure Assessment) score',
+              'Oral fluid input',
+              'Tidal volume',
+              'Ventilator delivered minute volume',
+              'End tidal carbon dioxide concentration',
+              'Total breath rate',
+              'Peak inspiratory pressure',
+              'pH of Blood',
+              'Carbon dioxide [Partial pressure] in Blood',
+              'Oxygen [Partial pressure] in Blood]',
+              'Base excess in Blood by calculation',
+              'Chloride [Moles/volume] in Blood',
+              'Leukocytes [#/volume] in Blood by Automated count'
+            )
           limit 10000000
         )
       select
@@ -566,27 +570,29 @@ src-stats:
           from measurement as measurement
           join concept concept on concept.concept_id = measurement.measurement_concept_id
           where
-            concept_name = 'Pulse rate'
-            or concept_name = 'Arterial oxygen saturation'
-            or concept_name = 'Respiratory rate'
-            or concept_name = 'Systolic blood pressure'
-            or concept_name = 'Diastolic blood pressure'
-            or concept_name = 'Urine output 1 hour'
-            or concept_name = 'Body temperature'
-            or concept_name = 'Inspired oxygen concentration'
-            or concept_name = 'SOFA (Sequential Organ Failure Assessment) score'
-            or concept_name = 'Oral fluid input'
-            or concept_name = 'Tidal volume'
-            or concept_name = 'Ventilator delivered minute volume'
-            or concept_name = 'End tidal carbon dioxide concentration'
-            or concept_name = 'Total breath rate'
-            or concept_name = 'Peak inspiratory pressure'
-            or concept_name = 'pH of Blood'
-            or concept_name = 'Carbon dioxide [Partial pressure] in Blood'
-            or concept_name = 'Oxygen [Partial pressure] in Blood]'
-            or concept_name = 'Base excess in Blood by calculation'
-            or concept_name = 'Chloride [Moles/volume] in Blood'
-            or concept_name = 'Leukocytes [#/volume] in Blood by Automated count'
+            concept_name in (
+              'Pulse rate',
+              'Arterial oxygen saturation',
+              'Respiratory rate',
+              'Systolic blood pressure',
+              'Diastolic blood pressure',
+              'Urine output 1 hour',
+              'Body temperature',
+              'Inspired oxygen concentration',
+              'SOFA (Sequential Organ Failure Assessment) score',
+              'Oral fluid input',
+              'Tidal volume',
+              'Ventilator delivered minute volume',
+              'End tidal carbon dioxide concentration',
+              'Total breath rate',
+              'Peak inspiratory pressure',
+              'pH of Blood',
+              'Carbon dioxide [Partial pressure] in Blood',
+              'Oxygen [Partial pressure] in Blood]',
+              'Base excess in Blood by calculation',
+              'Chloride [Moles/volume] in Blood',
+              'Leukocytes [#/volume] in Blood by Automated count'
+            )
           limit 10000000
           )
       select
@@ -644,18 +650,20 @@ src-stats:
           from device_exposure as device_exposure
           join concept concept on concept.concept_id = device_exposure.device_concept_id
           where
-            concept_name = 'Endotracheal tube'
-            or concept_name = 'Intensive-care ventilator'
-            or concept_name = 'Tracheostomy tube'
-            or concept_name = 'High flow oxygen nasal cannula'
-            or concept_name = 'Sodium chloride 7% inhalation solution 4ml vials'
-            or concept_name = 'Tracheostomy mask, oxygen'
-            or concept_name = 'Water for irrigation 2litre Flowfusor bottles'
-            or concept_name = 'Continuous positive airway pressure/Bilevel positive airway pressure mask'
-            or concept_name = 'Oxygen mask'
-            or concept_name = 'Ensure Compact liquid'
-            or concept_name = 'Ensure TwoCal liquid'
-            or concept_name = 'Ensure Plus milkshake style liquid'
+            concept_name in (
+              'Endotracheal tube',
+              'Intensive-care ventilator',
+              'Tracheostomy tube',
+              'High flow oxygen nasal cannula',
+              'Sodium chloride 7% inhalation solution 4ml vials',
+              'Tracheostomy mask, oxygen',
+              'Water for irrigation 2litre Flowfusor bottles',
+              'Continuous positive airway pressure/Bilevel positive airway pressure mask',
+              'Oxygen mask',
+              'Ensure Compact liquid',
+              'Ensure TwoCal liquid',
+              'Ensure Plus milkshake style liquid'
+            )
           limit 1000000
         )
       select
@@ -750,18 +758,20 @@ src-stats:
           from device_exposure as device_exposure
           join concept concept on concept.concept_id = device_exposure.device_concept_id
           where
-            concept_name = 'Endotracheal tube'
-            or concept_name = 'Intensive-care ventilator'
-            or concept_name = 'Tracheostomy tube'
-            or concept_name = 'High flow oxygen nasal cannula'
-            or concept_name = 'Sodium chloride 7% inhalation solution 4ml vials'
-            or concept_name = 'Tracheostomy mask, oxygen'
-            or concept_name = 'Water for irrigation 2litre Flowfusor bottles'
-            or concept_name = 'Continuous positive airway pressure/Bilevel positive airway pressure mask'
-            or concept_name = 'Oxygen mask'
-            or concept_name = 'Ensure Compact liquid'
-            or concept_name = 'Ensure TwoCal liquid'
-            or concept_name = 'Ensure Plus milkshake style liquid'
+            concept_name in (
+              'Endotracheal tube',
+              'Intensive-care ventilator',
+              'Tracheostomy tube',
+              'High flow oxygen nasal cannula',
+              'Sodium chloride 7% inhalation solution 4ml vials',
+              'Tracheostomy mask, oxygen',
+              'Water for irrigation 2litre Flowfusor bottles',
+              'Continuous positive airway pressure/Bilevel positive airway pressure mask',
+              'Oxygen mask',
+              'Ensure Compact liquid',
+              'Ensure TwoCal liquid',
+              'Ensure Plus milkshake style liquid'
+            )
           limit 100000000
         )
       select count(*) as num, device_concept_id, person_id
@@ -863,25 +873,27 @@ src-stats:
           join concept concept on concept.concept_id = observation.observation_concept_id
           where
             -- This is a manually curated list of observations we are interested in.
-            concept_name = 'Pulse'
-            or concept_name = 'Pain score'
-            or concept_name = 'Feature of heart rhythm'
-            or concept_name = 'Respiratory function'
-            or concept_name = 'SOFA (Sequential Organ Failure Assessment) score'
-            or concept_name = 'Glasgow Coma Score eye opening subscore'
-            or concept_name = 'Glasgow Coma Scale verbal response subscore'
-            or concept_name = 'Glasgow Coma Scale motor response subscore'
-            or concept_name = 'Ventilator generated pressure'
-            or concept_name = 'Oral fluid input'
-            or concept_name = 'Ventilator delivered minute volume'
-            or concept_name = 'Positive end expiratory pressure setting'
-            or concept_name = 'Mandatory breath rate'
-            or concept_name = 'Airway patency status'
-            or concept_name = 'Tidal volume setting'
-            or concept_name = 'Haemodialysis ultrafiltration rate'
-            or concept_name = 'Intracranial pressure'
-            or concept_name = 'Neurological status'
-            or concept_name = 'Ideal body weight'
+            concept_name in (
+              'Pulse',
+              'Pain score',
+              'Feature of heart rhythm',
+              'Respiratory function',
+              'SOFA (Sequential Organ Failure Assessment) score',
+              'Glasgow Coma Score eye opening subscore',
+              'Glasgow Coma Scale verbal response subscore',
+              'Glasgow Coma Scale motor response subscore',
+              'Ventilator generated pressure',
+              'Oral fluid input',
+              'Ventilator delivered minute volume',
+              'Positive end expiratory pressure setting',
+              'Mandatory breath rate',
+              'Airway patency status',
+              'Tidal volume setting',
+              'Haemodialysis ultrafiltration rate',
+              'Intracranial pressure',
+              'Neurological status',
+              'Ideal body weight'
+            )
           limit 10000000
         )
       select count(*) as num, o.observation_concept_id, o.person_id
@@ -918,25 +930,27 @@ src-stats:
           join concept concept on concept.concept_id = observation.observation_concept_id
           where
             -- This is a manually curated list of observations we are interested in.
-            concept_name = 'Pulse'
-            or concept_name = 'Pain score'
-            or concept_name = 'Feature of heart rhythm'
-            or concept_name = 'Respiratory function'
-            or concept_name = 'SOFA (Sequential Organ Failure Assessment) score'
-            or concept_name = 'Glasgow Coma Score eye opening subscore'
-            or concept_name = 'Glasgow Coma Scale verbal response subscore'
-            or concept_name = 'Glasgow Coma Scale motor response subscore'
-            or concept_name = 'Ventilator generated pressure'
-            or concept_name = 'Oral fluid input'
-            or concept_name = 'Ventilator delivered minute volume'
-            or concept_name = 'Positive end expiratory pressure setting'
-            or concept_name = 'Mandatory breath rate'
-            or concept_name = 'Airway patency status'
-            or concept_name = 'Tidal volume setting'
-            or concept_name = 'Haemodialysis ultrafiltration rate'
-            or concept_name = 'Intracranial pressure'
-            or concept_name = 'Neurological status'
-            or concept_name = 'Ideal body weight'
+            concept_name in (
+              'Pulse',
+              'Pain score',
+              'Feature of heart rhythm',
+              'Respiratory function',
+              'SOFA (Sequential Organ Failure Assessment) score',
+              'Glasgow Coma Score eye opening subscore',
+              'Glasgow Coma Scale verbal response subscore',
+              'Glasgow Coma Scale motor response subscore',
+              'Ventilator generated pressure',
+              'Oral fluid input',
+              'Ventilator delivered minute volume',
+              'Positive end expiratory pressure setting',
+              'Mandatory breath rate',
+              'Airway patency status',
+              'Tidal volume setting',
+              'Haemodialysis ultrafiltration rate',
+              'Intracranial pressure',
+              'Neurological status',
+              'Ideal body weight'
+            )
           limit 10000000
         )
       select
@@ -1057,25 +1071,27 @@ src-stats:
           from observation as observation
           join concept concept on concept.concept_id = observation.observation_concept_id
           where
-            concept_name = 'Pulse'
-            or concept_name = 'Pain score'
-            or concept_name = 'Feature of heart rhythm'
-            or concept_name = 'Respiratory function'
-            or concept_name = 'SOFA (Sequential Organ Failure Assessment) score'
-            or concept_name = 'Glasgow Coma Score eye opening subscore'
-            or concept_name = 'Glasgow Coma Scale verbal response subscore'
-            or concept_name = 'Glasgow Coma Scale motor response subscore'
-            or concept_name = 'Ventilator generated pressure'
-            or concept_name = 'Oral fluid input'
-            or concept_name = 'Ventilator delivered minute volume'
-            or concept_name = 'Positive end expiratory pressure setting'
-            or concept_name = 'Mandatory breath rate'
-            or concept_name = 'Airway patency status'
-            or concept_name = 'Tidal volume setting'
-            or concept_name = 'Haemodialysis ultrafiltration rate'
-            or concept_name = 'Intracranial pressure'
-            or concept_name = 'Neurological status'
-            or concept_name = 'Ideal body weight'
+            concept_name in (
+              'Pulse',
+              'Pain score',
+              'Feature of heart rhythm',
+              'Respiratory function',
+              'SOFA (Sequential Organ Failure Assessment) score',
+              'Glasgow Coma Score eye opening subscore',
+              'Glasgow Coma Scale verbal response subscore',
+              'Glasgow Coma Scale motor response subscore',
+              'Ventilator generated pressure',
+              'Oral fluid input',
+              'Ventilator delivered minute volume',
+              'Positive end expiratory pressure setting',
+              'Mandatory breath rate',
+              'Airway patency status',
+              'Tidal volume setting',
+              'Haemodialysis ultrafiltration rate',
+              'Intracranial pressure',
+              'Neurological status',
+              'Ideal body weight'
+            )
           limit 10000000
           )
       select
@@ -1153,34 +1169,36 @@ src-stats:
           join concept c on c.concept_id = procedure_occurrence.procedure_concept_id
           where
             -- This is a manually curated list of procedure occurrences we are interested in.
-            concept_name = 'Assessment of skin integrity'
-            or concept_name = 'Artificial respiration'
-            or concept_name = 'Continuous renal replacement therapy'
-            or concept_name = 'Removal of peripheral intravenous cannula'
-            or concept_name = 'Peripheral venous cannula insertion'
-            or concept_name = 'Closure of skin wound'
-            or concept_name = 'Incision'
-            or concept_name = 'Removal of urethral catheter'
-            or concept_name = 'Urethral catheterization'
-            or concept_name = 'Plain chest X-ray'
-            or concept_name = 'Removal of arterial cannula'
-            or concept_name = 'Insertion of catheter into artery'
-            or concept_name = 'Removal of orogastric tube'
-            or concept_name = 'Insertion of orogastric tube'
-            or concept_name = 'Removal of drain'
-            or concept_name = 'Removal of central venous line'
-            or concept_name = 'Central venous cannula insertion'
-            or concept_name = 'No matching concept'
-            or concept_name = 'Suction drainage'
-            or concept_name = 'Wound assessment'
-            or concept_name = 'Checking position of nasogastric tube using X-ray'
-            or concept_name = 'Removal of endotracheal tube'
-            or concept_name = 'Nasogastric tube removal'
-            or concept_name = 'Insertion of endotracheal tube'
-            or concept_name = 'Insertion of nasogastric tube'
-            or concept_name = 'Closure of tracheostomy'
-            or concept_name = 'Intercostal drain removal'
-            or concept_name = 'Insertion of pleural tube drain'
+            concept_name in (
+              'Assessment of skin integrity',
+              'Artificial respiration',
+              'Continuous renal replacement therapy',
+              'Removal of peripheral intravenous cannula',
+              'Peripheral venous cannula insertion',
+              'Closure of skin wound',
+              'Incision',
+              'Removal of urethral catheter',
+              'Urethral catheterization',
+              'Plain chest X-ray',
+              'Removal of arterial cannula',
+              'Insertion of catheter into artery',
+              'Removal of orogastric tube',
+              'Insertion of orogastric tube',
+              'Removal of drain',
+              'Removal of central venous line',
+              'Central venous cannula insertion',
+              'No matching concept',
+              'Suction drainage',
+              'Wound assessment',
+              'Checking position of nasogastric tube using X-ray',
+              'Removal of endotracheal tube',
+              'Nasogastric tube removal',
+              'Insertion of endotracheal tube',
+              'Insertion of nasogastric tube',
+              'Closure of tracheostomy',
+              'Intercostal drain removal',
+              'Insertion of pleural tube drain'
+            )
           limit 10000000
         )
       select count(*) as num, po.procedure_concept_id, po.person_id
@@ -1217,34 +1235,36 @@ src-stats:
           join concept c on c.concept_id = procedure_occurrence.procedure_concept_id
           where
             -- This is a manually curated list of procedure occurrences we are interested in.
-            concept_name = 'Assessment of skin integrity'
-            or concept_name = 'Artificial respiration'
-            or concept_name = 'Continuous renal replacement therapy'
-            or concept_name = 'Removal of peripheral intravenous cannula'
-            or concept_name = 'Peripheral venous cannula insertion'
-            or concept_name = 'Closure of skin wound'
-            or concept_name = 'Incision'
-            or concept_name = 'Removal of urethral catheter'
-            or concept_name = 'Urethral catheterization'
-            or concept_name = 'Plain chest X-ray'
-            or concept_name = 'Removal of arterial cannula'
-            or concept_name = 'Insertion of catheter into artery'
-            or concept_name = 'Removal of orogastric tube'
-            or concept_name = 'Insertion of orogastric tube'
-            or concept_name = 'Removal of drain'
-            or concept_name = 'Removal of central venous line'
-            or concept_name = 'Central venous cannula insertion'
-            or concept_name = 'No matching concept'
-            or concept_name = 'Suction drainage'
-            or concept_name = 'Wound assessment'
-            or concept_name = 'Checking position of nasogastric tube using X-ray'
-            or concept_name = 'Removal of endotracheal tube'
-            or concept_name = 'Nasogastric tube removal'
-            or concept_name = 'Insertion of endotracheal tube'
-            or concept_name = 'Insertion of nasogastric tube'
-            or concept_name = 'Closure of tracheostomy'
-            or concept_name = 'Intercostal drain removal'
-            or concept_name = 'Insertion of pleural tube drain'
+            concept_name in (
+              'Assessment of skin integrity',
+              'Artificial respiration',
+              'Continuous renal replacement therapy',
+              'Removal of peripheral intravenous cannula',
+              'Peripheral venous cannula insertion',
+              'Closure of skin wound',
+              'Incision',
+              'Removal of urethral catheter',
+              'Urethral catheterization',
+              'Plain chest X-ray',
+              'Removal of arterial cannula',
+              'Insertion of catheter into artery',
+              'Removal of orogastric tube',
+              'Insertion of orogastric tube',
+              'Removal of drain',
+              'Removal of central venous line',
+              'Central venous cannula insertion',
+              'No matching concept',
+              'Suction drainage',
+              'Wound assessment',
+              'Checking position of nasogastric tube using X-ray',
+              'Removal of endotracheal tube',
+              'Nasogastric tube removal',
+              'Insertion of endotracheal tube',
+              'Insertion of nasogastric tube',
+              'Closure of tracheostomy',
+              'Intercostal drain removal',
+              'Insertion of pleural tube drain'
+            )
           limit 10000000
         )
       select
@@ -1375,19 +1395,21 @@ src-stats:
           join concept concept on concept.concept_id = specimen.specimen_concept_id
           where
             -- This is a manually curated list of specimens we are interested in.
-            concept_name = 'Blood specimen'
-            or concept_name = 'Specimen from patient'
-            or concept_name = 'Arterial blood specimen'
-            or concept_name = 'Combined oropharyngeal and nasopharyngeal swab'
-            or concept_name = 'Venous blood specimen'
-            or concept_name = 'Capillary blood specimen'
-            or concept_name = 'Mid-stream urine sample'
-            or concept_name = 'Stool specimen'
-            or concept_name = 'Urine specimen'
-            or concept_name = 'Swab'
-            or concept_name = 'Urinary catheter specimen'
-            or concept_name = 'Sputum specimen'
-            or concept_name = 'Rectal swab'
+            concept_name in (
+              'Blood specimen',
+              'Specimen from patient',
+              'Arterial blood specimen',
+              'Combined oropharyngeal and nasopharyngeal swab',
+              'Venous blood specimen',
+              'Capillary blood specimen',
+              'Mid-stream urine sample',
+              'Stool specimen',
+              'Urine specimen',
+              'Swab',
+              'Urinary catheter specimen',
+              'Sputum specimen',
+              'Rectal swab'
+            )
           limit 10000000
         )
       select count(*) as num, s.specimen_concept_id, s.person_id
@@ -1424,19 +1446,21 @@ src-stats:
           join concept concept on concept.concept_id = specimen.specimen_concept_id
           where
             -- This is a manually curated list of specimens we are interested in.
-            concept_name = 'Blood specimen'
-            or concept_name = 'Specimen from patient'
-            or concept_name = 'Arterial blood specimen'
-            or concept_name = 'Combined oropharyngeal and nasopharyngeal swab'
-            or concept_name = 'Venous blood specimen'
-            or concept_name = 'Capillary blood specimen'
-            or concept_name = 'Mid-stream urine sample'
-            or concept_name = 'Stool specimen'
-            or concept_name = 'Urine specimen'
-            or concept_name = 'Swab'
-            or concept_name = 'Urinary catheter specimen'
-            or concept_name = 'Sputum specimen'
-            or concept_name = 'Rectal swab'
+            concept_name in (
+              'Blood specimen',
+              'Specimen from patient',
+              'Arterial blood specimen',
+              'Combined oropharyngeal and nasopharyngeal swab',
+              'Venous blood specimen',
+              'Capillary blood specimen',
+              'Mid-stream urine sample',
+              'Stool specimen',
+              'Urine specimen',
+              'Swab',
+              'Urinary catheter specimen',
+              'Sputum specimen',
+              'Rectal swab'
+            )
           limit 10000000
         )
       select
@@ -1574,36 +1598,38 @@ src-stats:
           join concept concept on concept.concept_id = condition_occurrence.condition_concept_id
           where
             -- This is a manually curated list of condition_occurrences we are interested in.
-            concept_name = 'Essential (primary) hypertension'
-            or concept_name = 'Pure hypercholesterolaemia'
-            or concept_name = 'Acute renal failure, unspecified'
-            or concept_name = 'Type 2 diabetes mellitus, without complications'
-            or concept_name = 'Obesity, unspecified'
-            or concept_name = 'Constipation'
-            or concept_name = 'Mental and behavioural disorders due to use of tobacco, harmful use'
-            or concept_name = 'Hypotension, unspecified'
-            or concept_name = 'Pleural effusion, not elsewhere classified'
-            or concept_name = 'Pulmonary collapse'
-            or concept_name = 'Atrial fibrillation and atrial flutter, unspecified'
-            or concept_name = 'Gastro-oesophageal reflux disease without oesophagitis'
-            or concept_name = 'Lobar pneumonia, unspecified'
-            or concept_name = 'Anaemia, unspecified'
-            or concept_name = 'Emergency use of U07.1 | COVID-19, virus identified'
-            or concept_name = 'Nosocomial condition'
-            or concept_name = 'Depressive episode, unspecified'
-            or concept_name = 'Hypo-osmolality and hyponatraemia'
-            or concept_name = 'Acidosis'
-            or concept_name = 'Urinary tract infection, site not specified'
-            or concept_name = 'Other specified cerebrovascular diseases'
-            or concept_name = 'Asthma, unspecified'
-            or concept_name = 'Anxiety disorder, unspecified'
-            or concept_name = 'Tachycardia, unspecified'
-            or concept_name = 'Hypothyroidism, unspecified'
-            or concept_name = 'Nausea and vomiting'
-            or concept_name = 'Fever, unspecified'
-            or concept_name = 'Chronic ischaemic heart disease, unspecified'
-            or concept_name = 'Hypokalaemia'
-            or concept_name = 'Hypertensive disorder'
+            concept_name in (
+              'Essential (primary) hypertension',
+              'Pure hypercholesterolaemia',
+              'Acute renal failure, unspecified',
+              'Type 2 diabetes mellitus, without complications',
+              'Obesity, unspecified',
+              'Constipation',
+              'Mental and behavioural disorders due to use of tobacco, harmful use',
+              'Hypotension, unspecified',
+              'Pleural effusion, not elsewhere classified',
+              'Pulmonary collapse',
+              'Atrial fibrillation and atrial flutter, unspecified',
+              'Gastro-oesophageal reflux disease without oesophagitis',
+              'Lobar pneumonia, unspecified',
+              'Anaemia, unspecified',
+              'Emergency use of U07.1 | COVID-19, virus identified',
+              'Nosocomial condition',
+              'Depressive episode, unspecified',
+              'Hypo-osmolality and hyponatraemia',
+              'Acidosis',
+              'Urinary tract infection, site not specified',
+              'Other specified cerebrovascular diseases',
+              'Asthma, unspecified',
+              'Anxiety disorder, unspecified',
+              'Tachycardia, unspecified',
+              'Hypothyroidism, unspecified',
+              'Nausea and vomiting',
+              'Fever, unspecified',
+              'Chronic ischaemic heart disease, unspecified',
+              'Hypokalaemia',
+              'Hypertensive disorder'
+            )
           limit 10000000
         )
       select count(*) as num, co.condition_concept_id, co.person_id
@@ -1640,36 +1666,38 @@ src-stats:
           join concept concept on concept.concept_id = condition_occurrence.condition_concept_id
           where
             -- This is a manually curated list of condition_occurrences we are interested in.
-            concept_name = 'Essential (primary) hypertension'
-            or concept_name = 'Pure hypercholesterolaemia'
-            or concept_name = 'Acute renal failure, unspecified'
-            or concept_name = 'Type 2 diabetes mellitus, without complications'
-            or concept_name = 'Obesity, unspecified'
-            or concept_name = 'Constipation'
-            or concept_name = 'Mental and behavioural disorders due to use of tobacco, harmful use'
-            or concept_name = 'Hypotension, unspecified'
-            or concept_name = 'Pleural effusion, not elsewhere classified'
-            or concept_name = 'Pulmonary collapse'
-            or concept_name = 'Atrial fibrillation and atrial flutter, unspecified'
-            or concept_name = 'Gastro-oesophageal reflux disease without oesophagitis'
-            or concept_name = 'Lobar pneumonia, unspecified'
-            or concept_name = 'Anaemia, unspecified'
-            or concept_name = 'Emergency use of U07.1 | COVID-19, virus identified'
-            or concept_name = 'Nosocomial condition'
-            or concept_name = 'Depressive episode, unspecified'
-            or concept_name = 'Hypo-osmolality and hyponatraemia'
-            or concept_name = 'Acidosis'
-            or concept_name = 'Urinary tract infection, site not specified'
-            or concept_name = 'Other specified cerebrovascular diseases'
-            or concept_name = 'Asthma, unspecified'
-            or concept_name = 'Anxiety disorder, unspecified'
-            or concept_name = 'Tachycardia, unspecified'
-            or concept_name = 'Hypothyroidism, unspecified'
-            or concept_name = 'Nausea and vomiting'
-            or concept_name = 'Fever, unspecified'
-            or concept_name = 'Chronic ischaemic heart disease, unspecified'
-            or concept_name = 'Hypokalaemia'
-            or concept_name = 'Hypertensive disorder'
+            concept_name in (
+              'Essential (primary) hypertension',
+              'Pure hypercholesterolaemia',
+              'Acute renal failure, unspecified',
+              'Type 2 diabetes mellitus, without complications',
+              'Obesity, unspecified',
+              'Constipation',
+              'Mental and behavioural disorders due to use of tobacco, harmful use',
+              'Hypotension, unspecified',
+              'Pleural effusion, not elsewhere classified',
+              'Pulmonary collapse',
+              'Atrial fibrillation and atrial flutter, unspecified',
+              'Gastro-oesophageal reflux disease without oesophagitis',
+              'Lobar pneumonia, unspecified',
+              'Anaemia, unspecified',
+              'Emergency use of U07.1 | COVID-19, virus identified',
+              'Nosocomial condition',
+              'Depressive episode, unspecified',
+              'Hypo-osmolality and hyponatraemia',
+              'Acidosis',
+              'Urinary tract infection, site not specified',
+              'Other specified cerebrovascular diseases',
+              'Asthma, unspecified',
+              'Anxiety disorder, unspecified',
+              'Tachycardia, unspecified',
+              'Hypothyroidism, unspecified',
+              'Nausea and vomiting',
+              'Fever, unspecified',
+              'Chronic ischaemic heart disease, unspecified',
+              'Hypokalaemia',
+              'Hypertensive disorder'
+            )
           limit 10000000
         )
       select
@@ -1755,36 +1783,38 @@ src-stats:
           join concept concept on concept.concept_id = condition_occurrence.condition_concept_id
           where
             -- This is a manually curated list of condition_occurrences we are interested in.
-            concept_name = 'Essential (primary) hypertension'
-            or concept_name = 'Pure hypercholesterolaemia'
-            or concept_name = 'Acute renal failure, unspecified'
-            or concept_name = 'Type 2 diabetes mellitus, without complications'
-            or concept_name = 'Obesity, unspecified'
-            or concept_name = 'Constipation'
-            or concept_name = 'Mental and behavioural disorders due to use of tobacco, harmful use'
-            or concept_name = 'Hypotension, unspecified'
-            or concept_name = 'Pleural effusion, not elsewhere classified'
-            or concept_name = 'Pulmonary collapse'
-            or concept_name = 'Atrial fibrillation and atrial flutter, unspecified'
-            or concept_name = 'Gastro-oesophageal reflux disease without oesophagitis'
-            or concept_name = 'Lobar pneumonia, unspecified'
-            or concept_name = 'Anaemia, unspecified'
-            or concept_name = 'Emergency use of U07.1 | COVID-19, virus identified'
-            or concept_name = 'Nosocomial condition'
-            or concept_name = 'Depressive episode, unspecified'
-            or concept_name = 'Hypo-osmolality and hyponatraemia'
-            or concept_name = 'Acidosis'
-            or concept_name = 'Urinary tract infection, site not specified'
-            or concept_name = 'Other specified cerebrovascular diseases'
-            or concept_name = 'Asthma, unspecified'
-            or concept_name = 'Anxiety disorder, unspecified'
-            or concept_name = 'Tachycardia, unspecified'
-            or concept_name = 'Hypothyroidism, unspecified'
-            or concept_name = 'Nausea and vomiting'
-            or concept_name = 'Fever, unspecified'
-            or concept_name = 'Chronic ischaemic heart disease, unspecified'
-            or concept_name = 'Hypokalaemia'
-            or concept_name = 'Hypertensive disorder'
+            concept_name in (
+              'Essential (primary) hypertension',
+              'Pure hypercholesterolaemia',
+              'Acute renal failure, unspecified',
+              'Type 2 diabetes mellitus, without complications',
+              'Obesity, unspecified',
+              'Constipation',
+              'Mental and behavioural disorders due to use of tobacco, harmful use',
+              'Hypotension, unspecified',
+              'Pleural effusion, not elsewhere classified',
+              'Pulmonary collapse',
+              'Atrial fibrillation and atrial flutter, unspecified',
+              'Gastro-oesophageal reflux disease without oesophagitis',
+              'Lobar pneumonia, unspecified',
+              'Anaemia, unspecified',
+              'Emergency use of U07.1 | COVID-19, virus identified',
+              'Nosocomial condition',
+              'Depressive episode, unspecified',
+              'Hypo-osmolality and hyponatraemia',
+              'Acidosis',
+              'Urinary tract infection, site not specified',
+              'Other specified cerebrovascular diseases',
+              'Asthma, unspecified',
+              'Anxiety disorder, unspecified',
+              'Tachycardia, unspecified',
+              'Hypothyroidism, unspecified',
+              'Nausea and vomiting',
+              'Fever, unspecified',
+              'Chronic ischaemic heart disease, unspecified',
+              'Hypokalaemia',
+              'Hypertensive disorder'
+            )
           limit 10000000
         ),
         sub as (
@@ -1886,36 +1916,38 @@ src-stats:
           join concept concept on concept.concept_id = drug_exposure.drug_concept_id
           where
             -- This is a manually curated list of drug_exposures we are interested in.
-            concept_name = '1000 ML Sodium Chloride 9 MG/ML Injectable Solution'
-            or concept_name = 'acetaminophen 500 MG Oral Tablet'
-            or concept_name = '50 ML Propofol 20 MG/ML Injectable Suspension'
-            or concept_name = '2 ML Fentanyl 0.05 MG/ML Injectable Solution'
-            or concept_name = '1000 ML Calcium Chloride 0.268 MG/ML / Lactate 3.1 MG/ML / Potassium Chloride 0.4 MG/ML / Sodium Chloride 6 MG/ML Injectable Solution'
-            or concept_name = '10 ML Sodium Chloride 9 MG/ML Injectable Solution'
-            or concept_name = '100 ML Glucose 50 MG/ML Injectable Solution'
-            or concept_name = '10 ML Regular Insulin, Human 100 UNT/ML Injectable Solution'
-            or concept_name = '10 ML Fentanyl 0.05 MG/ML Injectable Solution'
-            or concept_name = '100 ML Acetaminophen 10 MG/ML Injectable Solution'
-            or concept_name = '0.4 ML Enoxaparin 100 MG/ML Injectable Solution'
-            or concept_name = '4 ML Norepinephrine 1 MG/ML Injectable Solution'
-            or concept_name = '1 ML Clonidine 0.15 MG/ML Injectable Solution'
-            or concept_name = 'potassium bicarbonate 384 MG / Potassium Chloride 600 MG Disintegrating Oral Tablet'
-            or concept_name = 'carbocysteine 50 MG/ML Oral Solution'
-            or concept_name = 'morphine sulfate 2 MG/ML Oral Solution'
-            or concept_name = '1000 ML bicarbonate ion 0.017 MMOL/ML / POLYETHYLENE GLYCOL 3350 105 MG/ML / Potassium 0.0054 MMOL/ML / Sodium 0.065 MMOL/ML Oral Powder'
-            or concept_name = 'Piperacillin 4000 MG / tazobactam 500 MG Injectable Solution'
-            or concept_name = '1 ML Metaraminol 10 MG/ML Injectable Solution'
-            or concept_name = '2.5 ML Albuterol 1 MG/ML Inhalation Solution'
-            or concept_name = 'Acyclovir 200 MG Disintegrating Oral Tablet'
-            or concept_name = 'amlodipine 5 MG Oral Tablet'
-            or concept_name = 'lansoprazole 30 MG Delayed Release Oral Capsule'
-            or concept_name = '20 ML Magnesium sulfate heptahydrate 500 MG/ML Injectable Solution'
-            or concept_name = 'nimodipine 30 MG Oral Tablet'
-            or concept_name = 'Water 10000 MG Injectable Solution'
-            or concept_name = 'pantoprazole 40 MG Injectable Solution'
-            or concept_name = '20 ML Propofol 10 MG/ML Injectable Suspension'
-            or concept_name = 'bisoprolol fumarate 2.5 MG Oral Tablet'
-            or concept_name = 'gabapentin 300 MG Oral Capsule'
+            concept_name in (
+              '1000 ML Sodium Chloride 9 MG/ML Injectable Solution',
+              'acetaminophen 500 MG Oral Tablet',
+              '50 ML Propofol 20 MG/ML Injectable Suspension',
+              '2 ML Fentanyl 0.05 MG/ML Injectable Solution',
+              '1000 ML Calcium Chloride 0.268 MG/ML / Lactate 3.1 MG/ML / Potassium Chloride 0.4 MG/ML / Sodium Chloride 6 MG/ML Injectable Solution',
+              '10 ML Sodium Chloride 9 MG/ML Injectable Solution',
+              '100 ML Glucose 50 MG/ML Injectable Solution',
+              '10 ML Regular Insulin, Human 100 UNT/ML Injectable Solution',
+              '10 ML Fentanyl 0.05 MG/ML Injectable Solution',
+              '100 ML Acetaminophen 10 MG/ML Injectable Solution',
+              '0.4 ML Enoxaparin 100 MG/ML Injectable Solution',
+              '4 ML Norepinephrine 1 MG/ML Injectable Solution',
+              '1 ML Clonidine 0.15 MG/ML Injectable Solution',
+              'potassium bicarbonate 384 MG / Potassium Chloride 600 MG Disintegrating Oral Tablet',
+              'carbocysteine 50 MG/ML Oral Solution',
+              'morphine sulfate 2 MG/ML Oral Solution',
+              '1000 ML bicarbonate ion 0.017 MMOL/ML / POLYETHYLENE GLYCOL 3350 105 MG/ML / Potassium 0.0054 MMOL/ML / Sodium 0.065 MMOL/ML Oral Powder',
+              'Piperacillin 4000 MG / tazobactam 500 MG Injectable Solution',
+              '1 ML Metaraminol 10 MG/ML Injectable Solution',
+              '2.5 ML Albuterol 1 MG/ML Inhalation Solution',
+              'Acyclovir 200 MG Disintegrating Oral Tablet',
+              'amlodipine 5 MG Oral Tablet',
+              'lansoprazole 30 MG Delayed Release Oral Capsule',
+              '20 ML Magnesium sulfate heptahydrate 500 MG/ML Injectable Solution',
+              'nimodipine 30 MG Oral Tablet',
+              'Water 10000 MG Injectable Solution',
+              'pantoprazole 40 MG Injectable Solution',
+              '20 ML Propofol 10 MG/ML Injectable Suspension',
+              'bisoprolol fumarate 2.5 MG Oral Tablet',
+              'gabapentin 300 MG Oral Capsule'
+            )
           limit 10000000
         )
       select count(*) as num, de.drug_concept_id, de.person_id
@@ -1952,36 +1984,38 @@ src-stats:
           join concept concept on concept.concept_id = drug_exposure.drug_concept_id
           where
             -- This is a manually curated list of drug_exposures we are interested in.
-            concept_name = '1000 ML Sodium Chloride 9 MG/ML Injectable Solution'
-            or concept_name = 'acetaminophen 500 MG Oral Tablet'
-            or concept_name = '50 ML Propofol 20 MG/ML Injectable Suspension'
-            or concept_name = '2 ML Fentanyl 0.05 MG/ML Injectable Solution'
-            or concept_name = '1000 ML Calcium Chloride 0.268 MG/ML / Lactate 3.1 MG/ML / Potassium Chloride 0.4 MG/ML / Sodium Chloride 6 MG/ML Injectable Solution'
-            or concept_name = '10 ML Sodium Chloride 9 MG/ML Injectable Solution'
-            or concept_name = '100 ML Glucose 50 MG/ML Injectable Solution'
-            or concept_name = '10 ML Regular Insulin, Human 100 UNT/ML Injectable Solution'
-            or concept_name = '10 ML Fentanyl 0.05 MG/ML Injectable Solution'
-            or concept_name = '100 ML Acetaminophen 10 MG/ML Injectable Solution'
-            or concept_name = '0.4 ML Enoxaparin 100 MG/ML Injectable Solution'
-            or concept_name = '4 ML Norepinephrine 1 MG/ML Injectable Solution'
-            or concept_name = '1 ML Clonidine 0.15 MG/ML Injectable Solution'
-            or concept_name = 'potassium bicarbonate 384 MG / Potassium Chloride 600 MG Disintegrating Oral Tablet'
-            or concept_name = 'carbocysteine 50 MG/ML Oral Solution'
-            or concept_name = 'morphine sulfate 2 MG/ML Oral Solution'
-            or concept_name = '1000 ML bicarbonate ion 0.017 MMOL/ML / POLYETHYLENE GLYCOL 3350 105 MG/ML / Potassium 0.0054 MMOL/ML / Sodium 0.065 MMOL/ML Oral Powder'
-            or concept_name = 'Piperacillin 4000 MG / tazobactam 500 MG Injectable Solution'
-            or concept_name = '1 ML Metaraminol 10 MG/ML Injectable Solution'
-            or concept_name = '2.5 ML Albuterol 1 MG/ML Inhalation Solution'
-            or concept_name = 'Acyclovir 200 MG Disintegrating Oral Tablet'
-            or concept_name = 'amlodipine 5 MG Oral Tablet'
-            or concept_name = 'lansoprazole 30 MG Delayed Release Oral Capsule'
-            or concept_name = '20 ML Magnesium sulfate heptahydrate 500 MG/ML Injectable Solution'
-            or concept_name = 'nimodipine 30 MG Oral Tablet'
-            or concept_name = 'Water 10000 MG Injectable Solution'
-            or concept_name = 'pantoprazole 40 MG Injectable Solution'
-            or concept_name = '20 ML Propofol 10 MG/ML Injectable Suspension'
-            or concept_name = 'bisoprolol fumarate 2.5 MG Oral Tablet'
-            or concept_name = 'gabapentin 300 MG Oral Capsule'
+            concept_name in (
+              '1000 ML Sodium Chloride 9 MG/ML Injectable Solution',
+              'acetaminophen 500 MG Oral Tablet',
+              '50 ML Propofol 20 MG/ML Injectable Suspension',
+              '2 ML Fentanyl 0.05 MG/ML Injectable Solution',
+              '1000 ML Calcium Chloride 0.268 MG/ML / Lactate 3.1 MG/ML / Potassium Chloride 0.4 MG/ML / Sodium Chloride 6 MG/ML Injectable Solution',
+              '10 ML Sodium Chloride 9 MG/ML Injectable Solution',
+              '100 ML Glucose 50 MG/ML Injectable Solution',
+              '10 ML Regular Insulin, Human 100 UNT/ML Injectable Solution',
+              '10 ML Fentanyl 0.05 MG/ML Injectable Solution',
+              '100 ML Acetaminophen 10 MG/ML Injectable Solution',
+              '0.4 ML Enoxaparin 100 MG/ML Injectable Solution',
+              '4 ML Norepinephrine 1 MG/ML Injectable Solution',
+              '1 ML Clonidine 0.15 MG/ML Injectable Solution',
+              'potassium bicarbonate 384 MG / Potassium Chloride 600 MG Disintegrating Oral Tablet',
+              'carbocysteine 50 MG/ML Oral Solution',
+              'morphine sulfate 2 MG/ML Oral Solution',
+              '1000 ML bicarbonate ion 0.017 MMOL/ML / POLYETHYLENE GLYCOL 3350 105 MG/ML / Potassium 0.0054 MMOL/ML / Sodium 0.065 MMOL/ML Oral Powder',
+              'Piperacillin 4000 MG / tazobactam 500 MG Injectable Solution',
+              '1 ML Metaraminol 10 MG/ML Injectable Solution',
+              '2.5 ML Albuterol 1 MG/ML Inhalation Solution',
+              'Acyclovir 200 MG Disintegrating Oral Tablet',
+              'amlodipine 5 MG Oral Tablet',
+              'lansoprazole 30 MG Delayed Release Oral Capsule',
+              '20 ML Magnesium sulfate heptahydrate 500 MG/ML Injectable Solution',
+              'nimodipine 30 MG Oral Tablet',
+              'Water 10000 MG Injectable Solution',
+              'pantoprazole 40 MG Injectable Solution',
+              '20 ML Propofol 10 MG/ML Injectable Suspension',
+              'bisoprolol fumarate 2.5 MG Oral Tablet',
+              'gabapentin 300 MG Oral Capsule'
+            )
           limit 10000000
         )
       select
@@ -2112,36 +2146,38 @@ src-stats:
           join concept concept on concept.concept_id = drug_exposure.drug_concept_id
           where
             -- This is a manually curated list of drug_exposures we are interested in.
-            concept_name = '1000 ML Sodium Chloride 9 MG/ML Injectable Solution'
-            or concept_name = 'acetaminophen 500 MG Oral Tablet'
-            or concept_name = '50 ML Propofol 20 MG/ML Injectable Suspension'
-            or concept_name = '2 ML Fentanyl 0.05 MG/ML Injectable Solution'
-            or concept_name = '1000 ML Calcium Chloride 0.268 MG/ML / Lactate 3.1 MG/ML / Potassium Chloride 0.4 MG/ML / Sodium Chloride 6 MG/ML Injectable Solution'
-            or concept_name = '10 ML Sodium Chloride 9 MG/ML Injectable Solution'
-            or concept_name = '100 ML Glucose 50 MG/ML Injectable Solution'
-            or concept_name = '10 ML Regular Insulin, Human 100 UNT/ML Injectable Solution'
-            or concept_name = '10 ML Fentanyl 0.05 MG/ML Injectable Solution'
-            or concept_name = '100 ML Acetaminophen 10 MG/ML Injectable Solution'
-            or concept_name = '0.4 ML Enoxaparin 100 MG/ML Injectable Solution'
-            or concept_name = '4 ML Norepinephrine 1 MG/ML Injectable Solution'
-            or concept_name = '1 ML Clonidine 0.15 MG/ML Injectable Solution'
-            or concept_name = 'potassium bicarbonate 384 MG / Potassium Chloride 600 MG Disintegrating Oral Tablet'
-            or concept_name = 'carbocysteine 50 MG/ML Oral Solution'
-            or concept_name = 'morphine sulfate 2 MG/ML Oral Solution'
-            or concept_name = '1000 ML bicarbonate ion 0.017 MMOL/ML / POLYETHYLENE GLYCOL 3350 105 MG/ML / Potassium 0.0054 MMOL/ML / Sodium 0.065 MMOL/ML Oral Powder'
-            or concept_name = 'Piperacillin 4000 MG / tazobactam 500 MG Injectable Solution'
-            or concept_name = '1 ML Metaraminol 10 MG/ML Injectable Solution'
-            or concept_name = '2.5 ML Albuterol 1 MG/ML Inhalation Solution'
-            or concept_name = 'Acyclovir 200 MG Disintegrating Oral Tablet'
-            or concept_name = 'amlodipine 5 MG Oral Tablet'
-            or concept_name = 'lansoprazole 30 MG Delayed Release Oral Capsule'
-            or concept_name = '20 ML Magnesium sulfate heptahydrate 500 MG/ML Injectable Solution'
-            or concept_name = 'nimodipine 30 MG Oral Tablet'
-            or concept_name = 'Water 10000 MG Injectable Solution'
-            or concept_name = 'pantoprazole 40 MG Injectable Solution'
-            or concept_name = '20 ML Propofol 10 MG/ML Injectable Suspension'
-            or concept_name = 'bisoprolol fumarate 2.5 MG Oral Tablet'
-            or concept_name = 'gabapentin 300 MG Oral Capsule'
+            concept_name in (
+              '1000 ML Sodium Chloride 9 MG/ML Injectable Solution',
+              'acetaminophen 500 MG Oral Tablet',
+              '50 ML Propofol 20 MG/ML Injectable Suspension',
+              '2 ML Fentanyl 0.05 MG/ML Injectable Solution',
+              '1000 ML Calcium Chloride 0.268 MG/ML / Lactate 3.1 MG/ML / Potassium Chloride 0.4 MG/ML / Sodium Chloride 6 MG/ML Injectable Solution',
+              '10 ML Sodium Chloride 9 MG/ML Injectable Solution',
+              '100 ML Glucose 50 MG/ML Injectable Solution',
+              '10 ML Regular Insulin, Human 100 UNT/ML Injectable Solution',
+              '10 ML Fentanyl 0.05 MG/ML Injectable Solution',
+              '100 ML Acetaminophen 10 MG/ML Injectable Solution',
+              '0.4 ML Enoxaparin 100 MG/ML Injectable Solution',
+              '4 ML Norepinephrine 1 MG/ML Injectable Solution',
+              '1 ML Clonidine 0.15 MG/ML Injectable Solution',
+              'potassium bicarbonate 384 MG / Potassium Chloride 600 MG Disintegrating Oral Tablet',
+              'carbocysteine 50 MG/ML Oral Solution',
+              'morphine sulfate 2 MG/ML Oral Solution',
+              '1000 ML bicarbonate ion 0.017 MMOL/ML / POLYETHYLENE GLYCOL 3350 105 MG/ML / Potassium 0.0054 MMOL/ML / Sodium 0.065 MMOL/ML Oral Powder',
+              'Piperacillin 4000 MG / tazobactam 500 MG Injectable Solution',
+              '1 ML Metaraminol 10 MG/ML Injectable Solution',
+              '2.5 ML Albuterol 1 MG/ML Inhalation Solution',
+              'Acyclovir 200 MG Disintegrating Oral Tablet',
+              'amlodipine 5 MG Oral Tablet',
+              'lansoprazole 30 MG Delayed Release Oral Capsule',
+              '20 ML Magnesium sulfate heptahydrate 500 MG/ML Injectable Solution',
+              'nimodipine 30 MG Oral Tablet',
+              'Water 10000 MG Injectable Solution',
+              'pantoprazole 40 MG Injectable Solution',
+              '20 ML Propofol 10 MG/ML Injectable Suspension',
+              'bisoprolol fumarate 2.5 MG Oral Tablet',
+              'gabapentin 300 MG Oral Capsule'
+            )
           limit 10000000
         ),
         sub as (
@@ -2207,36 +2243,38 @@ src-stats:
           join concept concept on concept.concept_id = drug_exposure.drug_concept_id
           where
             -- This is a manually curated list of drug_exposures we are interested in.
-            concept_name = '1000 ML Sodium Chloride 9 MG/ML Injectable Solution'
-            or concept_name = 'acetaminophen 500 MG Oral Tablet'
-            or concept_name = '50 ML Propofol 20 MG/ML Injectable Suspension'
-            or concept_name = '2 ML Fentanyl 0.05 MG/ML Injectable Solution'
-            or concept_name = '1000 ML Calcium Chloride 0.268 MG/ML / Lactate 3.1 MG/ML / Potassium Chloride 0.4 MG/ML / Sodium Chloride 6 MG/ML Injectable Solution'
-            or concept_name = '10 ML Sodium Chloride 9 MG/ML Injectable Solution'
-            or concept_name = '100 ML Glucose 50 MG/ML Injectable Solution'
-            or concept_name = '10 ML Regular Insulin, Human 100 UNT/ML Injectable Solution'
-            or concept_name = '10 ML Fentanyl 0.05 MG/ML Injectable Solution'
-            or concept_name = '100 ML Acetaminophen 10 MG/ML Injectable Solution'
-            or concept_name = '0.4 ML Enoxaparin 100 MG/ML Injectable Solution'
-            or concept_name = '4 ML Norepinephrine 1 MG/ML Injectable Solution'
-            or concept_name = '1 ML Clonidine 0.15 MG/ML Injectable Solution'
-            or concept_name = 'potassium bicarbonate 384 MG / Potassium Chloride 600 MG Disintegrating Oral Tablet'
-            or concept_name = 'carbocysteine 50 MG/ML Oral Solution'
-            or concept_name = 'morphine sulfate 2 MG/ML Oral Solution'
-            or concept_name = '1000 ML bicarbonate ion 0.017 MMOL/ML / POLYETHYLENE GLYCOL 3350 105 MG/ML / Potassium 0.0054 MMOL/ML / Sodium 0.065 MMOL/ML Oral Powder'
-            or concept_name = 'Piperacillin 4000 MG / tazobactam 500 MG Injectable Solution'
-            or concept_name = '1 ML Metaraminol 10 MG/ML Injectable Solution'
-            or concept_name = '2.5 ML Albuterol 1 MG/ML Inhalation Solution'
-            or concept_name = 'Acyclovir 200 MG Disintegrating Oral Tablet'
-            or concept_name = 'amlodipine 5 MG Oral Tablet'
-            or concept_name = 'lansoprazole 30 MG Delayed Release Oral Capsule'
-            or concept_name = '20 ML Magnesium sulfate heptahydrate 500 MG/ML Injectable Solution'
-            or concept_name = 'nimodipine 30 MG Oral Tablet'
-            or concept_name = 'Water 10000 MG Injectable Solution'
-            or concept_name = 'pantoprazole 40 MG Injectable Solution'
-            or concept_name = '20 ML Propofol 10 MG/ML Injectable Suspension'
-            or concept_name = 'bisoprolol fumarate 2.5 MG Oral Tablet'
-            or concept_name = 'gabapentin 300 MG Oral Capsule'
+            concept_name in (
+              '1000 ML Sodium Chloride 9 MG/ML Injectable Solution',
+              'acetaminophen 500 MG Oral Tablet',
+              '50 ML Propofol 20 MG/ML Injectable Suspension',
+              '2 ML Fentanyl 0.05 MG/ML Injectable Solution',
+              '1000 ML Calcium Chloride 0.268 MG/ML / Lactate 3.1 MG/ML / Potassium Chloride 0.4 MG/ML / Sodium Chloride 6 MG/ML Injectable Solution',
+              '10 ML Sodium Chloride 9 MG/ML Injectable Solution',
+              '100 ML Glucose 50 MG/ML Injectable Solution',
+              '10 ML Regular Insulin, Human 100 UNT/ML Injectable Solution',
+              '10 ML Fentanyl 0.05 MG/ML Injectable Solution',
+              '100 ML Acetaminophen 10 MG/ML Injectable Solution',
+              '0.4 ML Enoxaparin 100 MG/ML Injectable Solution',
+              '4 ML Norepinephrine 1 MG/ML Injectable Solution',
+              '1 ML Clonidine 0.15 MG/ML Injectable Solution',
+              'potassium bicarbonate 384 MG / Potassium Chloride 600 MG Disintegrating Oral Tablet',
+              'carbocysteine 50 MG/ML Oral Solution',
+              'morphine sulfate 2 MG/ML Oral Solution',
+              '1000 ML bicarbonate ion 0.017 MMOL/ML / POLYETHYLENE GLYCOL 3350 105 MG/ML / Potassium 0.0054 MMOL/ML / Sodium 0.065 MMOL/ML Oral Powder',
+              'Piperacillin 4000 MG / tazobactam 500 MG Injectable Solution',
+              '1 ML Metaraminol 10 MG/ML Injectable Solution',
+              '2.5 ML Albuterol 1 MG/ML Inhalation Solution',
+              'Acyclovir 200 MG Disintegrating Oral Tablet',
+              'amlodipine 5 MG Oral Tablet',
+              'lansoprazole 30 MG Delayed Release Oral Capsule',
+              '20 ML Magnesium sulfate heptahydrate 500 MG/ML Injectable Solution',
+              'nimodipine 30 MG Oral Tablet',
+              'Water 10000 MG Injectable Solution',
+              'pantoprazole 40 MG Injectable Solution',
+              '20 ML Propofol 10 MG/ML Injectable Suspension',
+              'bisoprolol fumarate 2.5 MG Oral Tablet',
+              'gabapentin 300 MG Oral Capsule'
+            )
           limit 10000000
         )
       select
