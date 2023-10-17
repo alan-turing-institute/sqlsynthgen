@@ -285,14 +285,14 @@ With differential privacy, the query has to be done in two stages.
 First, we simply get 100,000 rows from the person table.
 These are downloaded to the local machine running SSG, hence the maximum limit on number of rows.
 Then the second part, the ``dp-query``, is run on those rows, using the `smartnoise-sql <https://github.com/opendp/smartnoise-sdk/tree/main/sql>`_ package, which adds noise to the result of any query to guarantee differential privacy.
-The ``epsilon`` and ``delta`` are given to smartnoise-sql (snsql from now on) to determine how much noise needs to be added (lower values mean more noise and stronger privacy guarantees) and the ``snsql-metadata`` block gives snsql information about the columns.
+The ``epsilon`` and ``delta`` are given to smartnoise-sql (SNSQL from now on) to determine how much noise needs to be added (lower values mean more noise and stronger privacy guarantees) and the ``snsql-metadata`` block gives SNSQL information about the columns.
 Notice that the 100,000 rows downloaded to the local machine need to include the ``person_id`` column, even though it is not used by the ``dp-query``.
-This is because snsql needs to know which rows belong to the same person, to estimate how much noise needs to be added to protect the privacy of any one indvidual, and the ``private_id: true`` bit tells it that the ``person_id`` column holds that information.
+This is because SNSQL needs to know which rows belong to the same person, to estimate how much noise needs to be added to protect the privacy of any one indvidual, and the ``private_id: true`` bit tells it that the ``person_id`` column holds that information.
 In this case there is only one row per person, hence the ``max_ids: 1``, but in other queries this is not the case.
 
-Using snsql and differential privacy can be tricky.
-We encourage to read up on the basics of differential privacy to understand the ``epsilon`` and ``delta`` parameters, and the `snsql docs <https://docs.smartnoise.org/sql/index.html>`_ to understand the metadata needed.
-snsql is quite limited in what kinds of queries it is able to execute, and thus in many cases the preceding ``query``, the ``query_result`` of which the ``dp-query`` runs on, needs to do some preprocessing.
+Using SNSQL and differential privacy can be tricky.
+We encourage to read up on the basics of differential privacy to understand the ``epsilon`` and ``delta`` parameters, and the `SNSQL docs <https://docs.smartnoise.org/sql/index.html>`_ to understand the metadata needed.
+SNSQL is quite limited in what kinds of queries it is able to execute, and thus in many cases the preceding ``query``, the ``query_result`` of which the ``dp-query`` runs on, needs to do some preprocessing.
 You can find examples of this in the `full configuration <https://github.com/alan-turing-institute/sqlsynthgen/blob/main/examples/cchic_omop/>`_.
 
 After creating a person, ``patient_story`` creates possibly an entry in the ``death`` table, and then one for ``visit_occurrence``.
@@ -512,8 +512,8 @@ Note that in principle, with such a large number of variables being grouped over
 The rest of the src-stats block sets the differential privacy parameters.
 Notably we have to both set a ``max_ids``, which limits how many different measurement types a single patient can have, and an upper bound for the value of ``num``, i.e. a bound for how many instances of a single measurement type any one patient can have.
 The limits we use are low enough that they might sometimes be exceeded in the real data, which results in the data being clipped to fit within the bounds.
-However, increasing the bounds increases the amount of noise snsql needs to add to guarantee differential privacy, which can quickly lead to the result of the query being too noisy to be useful.
-snsql also drops rows where ``num`` is too small, to avoid small histogram bins causing privacy leaks, and if the bounds are made too large (or ``epsilon`` too small), snsql may judge most of the bins to be too small, resulting the output of the query missing data for many types of measurements.
+However, increasing the bounds increases the amount of noise SNSQL needs to add to guarantee differential privacy, which can quickly lead to the result of the query being too noisy to be useful.
+SNSQL also drops rows where ``num`` is too small, to avoid small histogram bins causing privacy leaks, and if the bounds are made too large (or ``epsilon`` too small), SNSQL may judge most of the bins to be too small, resulting the output of the query missing data for many types of measurements.
 
 In ``patient_story`` we use ``sample_from_sql_group_by`` to sample from the result of ``measurement_categoricals`` what a typical row of a particular measurement type looks like.
 For the details see the ``gen_measurement`` function in `story_generators.py <https://github.com/alan-turing-institute/sqlsynthgen/blob/main/examples/cchic_omop/>`_.
