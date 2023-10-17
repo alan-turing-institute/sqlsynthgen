@@ -17,7 +17,7 @@ After migration, the database has the following structure:
   :width: 400
   :alt: The AirBnb database diagram.
 
-Default behavior
+Default Behavior
 ----------------
 
 SSG contains tools for replicating the schema of a source database.
@@ -99,7 +99,7 @@ Foreign key relations are respected by picking random rows from the table refere
 Even this synthetic data, nearly the crudest imaginable, can be useful for instance for testing software pipelines.
 Note that this data has no privacy implications, since it is only based on the schema.
 
-Vocabulary tables
+Vocabulary Tables
 -----------------
 
 The simplest configuration option available to increase fidelity is to mark some of the tables in the schema to be “vocabulary” tables.
@@ -166,7 +166,7 @@ To recap, “vocabularies” are tables that don’t need synthesising.
 By itself this adds only limited utility, since the interesting parts of the data are typically in the non-vocabulary tables, but it saves great amounts of work by fixing some tables with no privacy concerns to have perfect fidelity from the get-go.
 Note that one has to be careful in making sure that the tables marked as vocabulary tables truly do not hold privacy sensitive data, otherwise catastrophic privacy leaks are possible, where the original data is exposed raw and in full.
 
-Specifying row-based custom generators
+Specifying Row-based Custom Generators
 --------------------------------------
 
 As we’ve seen above, ``ssg.py`` is overwritten whenever you re-run ``make-generators``.
@@ -300,7 +300,7 @@ Still there are no privacy implications, but data can be generated that e.g. pas
 
 .. _source_statistics:
 
-Using aggregate statistics from the source data
+Using Aggregate Statistics from the Source Data
 -----------------------------------------------
 
 Beyond copying vocabulary tables, SSG allows for the original data to affect the synthetic data generation process only through a particular mechanism we call source statistics.
@@ -439,7 +439,7 @@ One final aspect of source statistics bears mentioning:
 At the top level of ``config.yaml`` one can also set ``use-asyncio: true``.
 With this, if there are multiple source stats queries to be run, they will be run in parallel, which may speed up ``make-stats`` significantly if some of the queries are slow.
 
-"Stories" within the data
+"Stories" Within the Data
 -------------------------
 
 The final configuration option available to users of SSG is what we call "story generators".

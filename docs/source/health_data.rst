@@ -20,7 +20,7 @@ Before getting into the config itself, we need to discuss a few peculiarities of
    However, some of these vocabulary tables may be too large to practically be writable to ``.yaml`` files, and will need to be dealt with manually.
    You should also check the license agreement of each standardized vocabulary before sharing any of the ``.yaml`` files.
 
-Dealing with circular foreign keys
+Dealing with Circular Foreign Keys
 ++++++++++++++++++++++++++++++++++
 
 SSG is currently unable to handle schemas with circular foreign keys properly.
@@ -51,7 +51,7 @@ One can then proceed with ``sqlsynthgen create-vocab`` to copy over the vocabula
 If the problematic foreign key constraints would be between non-vocabulary tables, one would need to keep them disabled for the whole duration of creating synthetic data, while putting in a manual mechanism that guarantees that the synthetic data created does respect the constraint, and then reenable the constraint at the end.
 Fortunately with OMOP this is not necessary.
 
-Vocabulary tables
+Vocabulary Tables
 +++++++++++++++++++++
 
 The OMOP schema has many vocabulary tables. Here's an excerpt from the CCHIC OMOP config file we've written:
