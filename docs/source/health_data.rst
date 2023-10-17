@@ -33,13 +33,13 @@ For instance, to remove the circular relation between ``concept``, ``vocabulary`
 
 .. code-block:: sql
 
-  alter table concept drop constraint concept.concept_vocabulary_id_fkey
+  ALTER TABLE concept DROP CONSTRAINT concept.concept_vocabulary_id_fkey
 
 and between ``concept`` and ``domain`` with, for example:
 
 .. code-block:: sql
 
-  alter table concept drop constraint concept.concept_domain_id_fkey
+  ALTER TABLE concept DROP CONSTRAINT concept.concept_domain_id_fkey
 
 One can then proceed with ``sqlsynthgen create-vocab`` to copy over the vocabulary tables, and restore the constraints with
 
@@ -122,8 +122,8 @@ Configuration for OMOP
 ++++++++++++++++++++++
 
 With the above speed bumps cleared we can focus on the usual work of using SSG:
-Writing generators and source statistics queries to increase fidelity of the synthetic data.
-The complete CC HIC config we've written is available `here <https://github.com/alan-turing-institute/sqlsynthgen/blob/main/examples/cchic_omop/>`__.
+writing generators and source statistics queries to increase fidelity of the synthetic data.
+The complete CCHIC config we've written is available `here <https://github.com/alan-turing-institute/sqlsynthgen/blob/main/examples/cchic_omop/>`__.
 It consists of a ``config.yaml``, ``row_generators.py``, and ``story_generators.py``.
 
 The row generators do little, most of the work is in the one big story generator, ``patient_story``, and the ``src-stats`` queries that it uses.
@@ -137,8 +137,8 @@ For instance, diastolic and systolic blood pressure readings are taken at times 
 This is the level of fidelity we found to be the best balance between the needs of our use case, the effort of implementing the generators, and the privacy guarantees our src-stats queries have.
 All the source stats queries use differential privacy.
 
-There are some aspects of the configuration that are bespoke to how the CC HIC data set uses the OMOP CDM.
-For instance, some columns that are all ``null`` in the CC HIC data are made ``null`` here, and some tables that were empty are left empty in the synthetic data as well.
+There are some aspects of the configuration that are bespoke to how the CCHIC data set uses the OMOP CDM.
+For instance, some columns that are all ``null`` in the CCHIC data are made ``null`` here, and some tables that were empty are left empty in the synthetic data as well.
 One thus shouldn't take this as a generic OMOP SSG configuration.
 It is, however, an excellent starting point to develop other OMOP configs for particular datasets.
 
