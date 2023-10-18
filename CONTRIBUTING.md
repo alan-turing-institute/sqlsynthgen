@@ -25,15 +25,6 @@ Please install the following software on your workstation:
     poetry install --all-extras
     ```
 
-   If Poetry errors when installing PyYaml, you will need to manually specify the Cython version and manually install PyYaml (this is a temporary workaround for a PyYaml v5 conflict with Cython v3, see [here](https://github.com/yaml/pyyaml/issues/601) for full details):
-
-    ```bash
-    poetry run pip install "cython<3"
-    poetry run pip install wheel
-    poetry run pip install --no-build-isolation "pyyaml==5.4.1"
-    poetry install --all-extras
-    ```
-
     *If you don't need to [build the project documentation](#building-documentation-locally), the `--all-extras` option can be omitted.*
 
 1. Install the git hook scripts. They will run whenever you perform a commit:
