@@ -1,0 +1,2668 @@
+row_generators_module: row_generators
+
+src-stats:
+
+  # # # # # # # # # # # # # # # # # # # # # # #
+  # Queries for the person and death tables
+
+  - name: count_alive_by_birth_year
+    query: >
+      SELECT person_id, year_of_birth, (person_id NOT IN (SELECT person_id FROM DEATH)) AS alive
+      FROM person
+      LIMIT 100000
+
+    dp-query: >
+      SELECT COUNT(person_id) AS num, alive, year_of_birth
+      FROM query_result
+      GROUP BY alive, year_of_birth
+
+    epsilon: 0.5
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 1
+      person_id:
+        type: int
+        private_id: true
+      alive:
+        type: boolean
+      year_of_birth:
+        type: int
+
+  - name: avg_age_at_death
+    query: >
+      SELECT d.person_id, EXTRACT(EPOCH FROM (d.death_datetime - p.birth_datetime))::float / (3600.0*24.0) as age_days
+      FROM death d
+      JOIN person p ON d.person_id = p.person_id
+      LIMIT 100000
+
+    dp-query: >
+      SELECT AVG(age_days) as avg_age_days
+      FROM query_result
+
+    epsilon: 0.5
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 1
+      person_id:
+        type: int
+        private_id: true
+      age_days:
+        type: float
+        lower: 0
+        upper: 45000
+
+  - name: count_gender
+    query: >
+      SELECT person_id, gender_concept_id, gender_source_value, gender_source_concept_id
+      FROM person
+      LIMIT 100000
+
+    dp-query: >
+      SELECT COUNT(*) AS num, gender_concept_id, gender_source_value, gender_source_concept_id
+      FROM query_result
+      GROUP BY gender_concept_id, gender_source_value, gender_source_concept_id
+
+    epsilon: 0.5
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 1
+      person_id:
+        type: int
+        private_id: true
+      gender_concept_id:
+        type: int
+      gender_source_value:
+        type: string
+      gender_source_concept_id:
+        type: int
+
+  - name: count_ethnicity_race
+    query: >
+      SELECT
+        person_id,
+        race_concept_id,
+        race_source_value,
+        race_source_concept_id,
+        ethnicity_concept_id,
+        ethnicity_source_value,
+        ethnicity_source_concept_id
+      FROM person
+      LIMIT 100000
+
+    dp-query: >
+      SELECT
+        COUNT(*) AS num,
+        race_concept_id,
+        race_source_value,
+        race_source_concept_id,
+        ethnicity_concept_id,
+        ethnicity_source_value,
+        ethnicity_source_concept_id
+      FROM query_result
+      GROUP BY
+        race_concept_id,
+        race_source_value,
+        race_source_concept_id,
+        ethnicity_concept_id,
+        ethnicity_source_value,
+        ethnicity_source_concept_id
+
+    epsilon: 0.5
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 1
+      person_id:
+        type: int
+        private_id: true
+      race_concept_id:
+        type: int
+      race_source_value:
+        type: string
+      race_source_concept_id:
+        type: int
+      ethnicity_concept_id:
+        type: int
+      ethnicity_source_value:
+        type: string
+      ethnicity_source_concept_id:
+        type: int
+
+  # # # # # # # # # # # # # # # # # # # # # # #
+  # Queries for the visit_occurrence table
+
+  - name: avg_age_at_visit_start
+    query: >
+      SELECT vo.person_id, EXTRACT(EPOCH FROM (vo.visit_start_datetime - p.birth_datetime))::float / (3600.0*24.0) as age_days
+      FROM visit_occurrence vo
+      JOIN person p ON vo.person_id = p.person_id
+      LIMIT 100000
+
+    dp-query: >
+      SELECT AVG(age_days) as avg_age_days
+      FROM query_result
+
+    epsilon: 0.5
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 1
+      person_id:
+        type: int
+        private_id: true
+      age_days:
+        type: float
+        lower: 0
+        upper: 45000
+
+  - name: avg_visit_length
+    query: >
+      SELECT
+        person_id,
+        EXTRACT(EPOCH FROM (vo.visit_end_datetime - vo.visit_start_datetime))::float / 3600.0 AS visit_length_hours
+      FROM visit_occurrence vo
+      LIMIT 100000
+
+    dp-query: >
+      SELECT
+        AVG(visit_length_hours) AS avg_visit_length_hours
+      FROM query_result
+
+    epsilon: 0.5
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 1
+      person_id:
+        type: int
+        private_id: true
+      visit_length_hours:
+        type: float
+        lower: 0
+        upper: 500
+
+  - name: count_discharge
+    query: >
+      SELECT person_id, discharge_to_source_value, discharge_to_concept_id
+      FROM visit_occurrence
+      LIMIT 100000
+
+    dp-query: >
+      SELECT COUNT(*) AS num, discharge_to_source_value, discharge_to_concept_id
+      FROM query_result
+      GROUP BY discharge_to_source_value, discharge_to_concept_id
+
+    epsilon: 0.5
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 1
+      person_id:
+        type: int
+        private_id: true
+      discharge_to_source_value:
+        type: string
+      discharge_to_concept_id:
+        type: int
+
+  - name: count_admission_source
+    query: >
+      SELECT person_id, admitting_source_value, admitting_source_concept_id
+      FROM visit_occurrence
+      LIMIT 100000
+
+    dp-query: >
+      SELECT COUNT(*) AS num, admitting_source_value, admitting_source_concept_id
+      FROM query_result
+      GROUP BY admitting_source_value, admitting_source_concept_id
+
+    epsilon: 0.5
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 1
+      person_id:
+        type: int
+        private_id: true
+      admitting_source_value:
+        type: string
+      admitting_source_concept_id:
+        type: int
+
+
+  - name: count_visit_type
+    query: >
+      SELECT person_id, visit_concept_id, visit_type_concept_id
+      FROM visit_occurrence
+      LIMIT 100000
+
+    dp-query: >
+      SELECT COUNT(*) AS num, visit_concept_id, visit_type_concept_id
+      FROM query_result
+      GROUP BY visit_concept_id, visit_type_concept_id
+
+    epsilon: 0.5
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 1
+      person_id:
+        type: int
+        private_id: true
+      visit_concept_id:
+        type: int
+      visit_type_concept_id:
+        type: int
+
+  # # # # # # # # # # # # # # # # # # # # # # #
+  # Queries for the observation_period table
+
+  - name: observation_period_date_diffs
+    query: >
+      select
+        diff_start,
+        diff_end,
+        case when diff_start = 0 then '0' when diff_start > 0 then '>0' else '<0' end as diff_start_sign,
+        case when diff_end = 0 then '0' when diff_end > 0 then '>0' else '<0' end as diff_end_sign,
+        person_id
+      from (
+        select
+          (op.observation_period_start_date - vo.visit_start_date) as diff_start,
+          (op.observation_period_end_date - vo.visit_end_date) as diff_end,
+          vo.person_id
+        from visit_occurrence vo
+        join observation_period op on op.person_id = vo.person_id
+      ) sub
+      group by diff_start, diff_end, diff_start_sign, diff_end_sign, person_id
+
+    dp-query: >
+      select
+        count(*) as num,
+        avg(diff_start) as avg_diff_start,
+        avg(diff_end) as avg_diff_end,
+        diff_start_sign,
+        diff_end_sign
+      from query_result
+      group by diff_start_sign, diff_end_sign
+
+    epsilon: 0.2
+    delta: 0.0001
+    snsql-metadata:
+      max_ids: 1
+      person_id:
+        type: int
+        private_id: true
+      diff_start:
+        type: int
+        lower: -1000
+        upper: 1000
+      diff_end:
+        type: int
+        lower: -1000
+        upper: 1000
+      diff_start_sign:
+        type: string
+      diff_end_sign:
+        type: string
+
+  - name: count_observation_period_types
+    query: >
+      select op.period_type_concept_id, op.person_id
+      from observation_period op
+
+    dp-query: >
+      select count(*) as num, period_type_concept_id
+      from query_result
+      group by period_type_concept_id
+
+    epsilon: 0.2
+    delta: 0.0001
+    snsql-metadata:
+      max_ids: 1
+      person_id:
+        type: int
+        private_id: true
+      period_type_concept_id:
+        type: int
+
+  # # # # # # # # # # # # # # # # # # # # # # #
+  # Queries for the measurement table
+
+  - name: avg_measurements_per_hour
+    query: >
+      select num / (extract(epoch from los) / 3600) :: float as num_per_hour, person_id
+      from (
+        select
+          count(*) as num,
+          (vo.visit_end_datetime - vo.visit_start_datetime) as los,
+          m.visit_occurrence_id,
+          m.person_id
+        from measurement m
+        join visit_occurrence vo on vo.visit_occurrence_id = m.visit_occurrence_id
+        group by m.person_id, m.visit_occurrence_id, los
+        limit 100000
+      ) sub
+
+    dp-query: >
+      select avg(num_per_hour) as avg_per_hour
+      from query_result
+
+    epsilon: 0.5
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 1
+      person_id:
+        type: int
+        private_id: true
+      num_per_hour:
+        type: float
+        lower: 0
+        upper: 100
+
+  - name: count_measurements
+    query: >
+      with
+        m as (
+          select measurement.*
+          from measurement as measurement
+          join concept concept on concept.concept_id = measurement.measurement_concept_id
+          where
+            -- This is a manually curated list of measurements we are interested in.
+            concept_name in (
+              'Pulse rate',
+              'Arterial oxygen saturation',
+              'Respiratory rate',
+              'Systolic blood pressure',
+              'Diastolic blood pressure',
+              'Urine output 1 hour',
+              'Body temperature',
+              'Inspired oxygen concentration',
+              'SOFA (Sequential Organ Failure Assessment) score',
+              'Oral fluid input',
+              'Tidal volume',
+              'Ventilator delivered minute volume',
+              'End tidal carbon dioxide concentration',
+              'Total breath rate',
+              'Peak inspiratory pressure',
+              'pH of Blood',
+              'Carbon dioxide [Partial pressure] in Blood',
+              'Oxygen [Partial pressure] in Blood]',
+              'Base excess in Blood by calculation',
+              'Chloride [Moles/volume] in Blood',
+              'Leukocytes [#/volume] in Blood by Automated count'
+            )
+          limit 10000000
+        )
+      select count(*) as num, m.measurement_concept_id, m.person_id
+      from m
+      group by m.measurement_concept_id, m.person_id
+      limit 1000000
+
+    dp-query: >
+      select sum(num) as num, measurement_concept_id
+      from query_result
+      group by measurement_concept_id
+      limit 100
+
+    epsilon: 1.0
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 20
+      person_id:
+        type: int
+        private_id: true
+      measurement_concept_id:
+        type: int
+      num:
+        type: int
+        lower: 0
+        upper: 200
+
+  - name: measurement_categoricals
+    query: >
+      with
+        m as (
+          select measurement.*
+          from measurement as measurement
+          join concept concept on concept.concept_id = measurement.measurement_concept_id
+          where
+            -- This is a manually curated list of measurements we are interested in.
+            concept_name in (
+              'Pulse rate',
+              'Arterial oxygen saturation',
+              'Respiratory rate',
+              'Systolic blood pressure',
+              'Diastolic blood pressure',
+              'Urine output 1 hour',
+              'Body temperature',
+              'Inspired oxygen concentration',
+              'SOFA (Sequential Organ Failure Assessment) score',
+              'Oral fluid input',
+              'Tidal volume',
+              'Ventilator delivered minute volume',
+              'End tidal carbon dioxide concentration',
+              'Total breath rate',
+              'Peak inspiratory pressure',
+              'pH of Blood',
+              'Carbon dioxide [Partial pressure] in Blood',
+              'Oxygen [Partial pressure] in Blood]',
+              'Base excess in Blood by calculation',
+              'Chloride [Moles/volume] in Blood',
+              'Leukocytes [#/volume] in Blood by Automated count'
+            )
+          limit 10000000
+        )
+      select
+        count(*) as num,
+        measurement_concept_id,
+        measurement_type_concept_id,
+        operator_concept_id,
+        value_as_concept_id,
+        unit_concept_id,
+        CASE
+            WHEN value_as_number IS NULL THEN 'NULL'
+            WHEN value_as_number < 0 THEN '<0'
+            WHEN value_as_number >= 0 THEN '>=0'
+        END AS value_as_number_sign,
+        CASE
+            WHEN range_low IS NULL THEN 'NULL'
+            WHEN range_low < 0 THEN '<0'
+            WHEN range_low >= 0 THEN '>=0'
+        END AS range_low_sign,
+        CASE
+            WHEN range_high IS NULL THEN 'NULL'
+            WHEN range_high < 0 THEN '<0'
+            WHEN range_high >= 0 THEN '>=0'
+        END AS range_high_sign,
+        provider_id,
+        visit_detail_id,
+        measurement_source_value,
+        measurement_source_concept_id,
+        unit_source_value,
+        person_id
+      from m
+      group by
+        measurement_concept_id,
+        measurement_type_concept_id,
+        operator_concept_id,
+        value_as_concept_id,
+        unit_concept_id,
+        value_as_number_sign,
+        range_low_sign,
+        range_high_sign,
+        provider_id,
+        visit_detail_id,
+        measurement_source_value,
+        measurement_source_concept_id,
+        unit_source_value,
+        person_id
+      limit 100000
+
+    dp-query: >
+      select
+        sum(num) as num,
+        measurement_concept_id,
+        measurement_type_concept_id,
+        operator_concept_id,
+        value_as_concept_id,
+        unit_concept_id,
+        value_as_number_sign,
+        range_low_sign,
+        range_high_sign,
+        provider_id,
+        visit_detail_id,
+        measurement_source_value,
+        measurement_source_concept_id,
+        unit_source_value
+      from query_result
+      group by
+        measurement_concept_id,
+        measurement_type_concept_id,
+        operator_concept_id,
+        value_as_concept_id,
+        unit_concept_id,
+        value_as_number_sign,
+        range_low_sign,
+        range_high_sign,
+        provider_id,
+        visit_detail_id,
+        measurement_source_value,
+        measurement_source_concept_id,
+        unit_source_value
+
+    epsilon: 1.0
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 20
+      person_id:
+        type: int
+        private_id: true
+      num:
+        type: int
+        lower: 0
+        upper: 200
+      measurement_concept_id:
+        type: int
+      measurement_type_concept_id:
+        type: int
+      operator_concept_id:
+        type: int
+      value_as_concept_id:
+        type: int
+      unit_concept_id:
+        type: int
+      value_as_number_sign:
+        type: string
+      range_low_sign:
+        type: string
+      range_high_sign:
+        type: string
+      provider_id:
+        type: int
+      visit_detail_id:
+        type: int
+      measurement_source_value:
+        type: string
+      measurement_source_concept_id:
+        type: int
+      unit_source_value:
+        type: string
+
+  - name: avg_measurement_value_as_number
+    query: >
+      with
+        m as (
+          select measurement.*
+          from measurement as measurement
+          join concept concept on concept.concept_id = measurement.measurement_concept_id
+          where
+            concept_name in (
+              'Pulse rate',
+              'Arterial oxygen saturation',
+              'Respiratory rate',
+              'Systolic blood pressure',
+              'Diastolic blood pressure',
+              'Urine output 1 hour',
+              'Body temperature',
+              'Inspired oxygen concentration',
+              'SOFA (Sequential Organ Failure Assessment) score',
+              'Oral fluid input',
+              'Tidal volume',
+              'Ventilator delivered minute volume',
+              'End tidal carbon dioxide concentration',
+              'Total breath rate',
+              'Peak inspiratory pressure',
+              'pH of Blood',
+              'Carbon dioxide [Partial pressure] in Blood',
+              'Oxygen [Partial pressure] in Blood]',
+              'Base excess in Blood by calculation',
+              'Chloride [Moles/volume] in Blood',
+              'Leukocytes [#/volume] in Blood by Automated count'
+            )
+          limit 10000000
+          )
+      select
+        avg(value_as_number)::float as avg_value,
+        avg(range_low)::float as avg_low,
+        avg(range_high)::float as avg_high,
+        measurement_concept_id,
+        person_id
+      from m
+      group by
+        measurement_concept_id,
+        person_id
+      limit 1000000
+
+    dp-query: >
+      select
+        avg(avg_value) as avg_value,
+        avg(avg_low) as avg_low,
+        avg(avg_high) as avg_high,
+        measurement_concept_id
+      from query_result
+      group by
+        measurement_concept_id
+
+    epsilon: 1.0
+    delta: 0.00001
+    snsql-metadata:
+      max_ids: 20
+      person_id:
+        type: int
+        private_id: true
+      measurement_concept_id:
+        type: int
+      avg_value:
+        type: float
+        lower: -1000
+        upper: 1000
+      avg_low:
+        type: float
+        lower: -1000
+        upper: 1000
+      avg_high:
+        type: float
+        lower: -1000
+        upper: 1000
+
+  # # # # # # # # # # # # # # # # # # # # # # #
+  # Queries for the device_exposure table
+
+  - name: device_exposure_categoricals
+    query: >
+      with
+        de as (
+          select device_exposure.*
+          from device_exposure as device_exposure
+          join concept concept on concept.concept_id = device_exposure.device_concept_id
+          where
+            concept_name in (
+              'Endotracheal tube',
+              'Intensive-care ventilator',
+              'Tracheostomy tube',
+              'High flow oxygen nasal cannula',
+              'Sodium chloride 7% inhalation solution 4ml vials',
+              'Tracheostomy mask, oxygen',
+              'Water for irrigation 2litre Flowfusor bottles',
+              'Continuous positive airway pressure/Bilevel positive airway pressure mask',
+              'Oxygen mask',
+              'Ensure Compact liquid',
+              'Ensure TwoCal liquid',
+              'Ensure Plus milkshake style liquid'
+            )
+          limit 1000000
+        )
+      select
+        count(*) as num,
+        device_concept_id,
+        CASE
+            WHEN device_exposure_end_datetime IS NULL THEN 'NULL'
+            WHEN device_exposure_end_datetime = device_exposure_start_datetime THEN '= start_datetime'
+            ELSE 'other'
+        END AS end_datetime_category,
+        device_type_concept_id,
+        unique_device_id,
+        quantity,
+        provider_id,
+        visit_detail_id,
+        device_source_value,
+        device_source_concept_id,
+        person_id
+      from de
+      group by
+        device_concept_id,
+        end_datetime_category,
+        device_type_concept_id,
+        unique_device_id,
+        quantity,
+        provider_id,
+        visit_detail_id,
+        device_source_value,
+        device_source_concept_id,
+        person_id
+      limit 100000
+
+    dp-query: >
+      select
+        sum(num) as num,
+        device_concept_id,
+        end_datetime_category,
+        device_type_concept_id,
+        unique_device_id,
+        quantity,
+        provider_id,
+        visit_detail_id,
+        device_source_value,
+        device_source_concept_id
+      from query_result
+      group by
+        device_concept_id,
+        end_datetime_category,
+        device_type_concept_id,
+        unique_device_id,
+        quantity,
+        provider_id,
+        visit_detail_id,
+        device_source_value,
+        device_source_concept_id
+
+    epsilon: 1.0
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 9
+      person_id:
+        type: int
+        private_id: true
+      num:
+        type: int
+        lower: 0
+        upper: 2000
+      device_concept_id:
+        type: int
+      end_datetime_category:
+        type: string
+      device_type_concept_id:
+        type: string
+      unique_device_id:
+        type: int
+      quantity:
+        type: int
+      provider_id:
+        type: int
+      visit_detail_id:
+        type: int
+      device_source_value:
+        type: string
+      device_source_concept_id:
+        type: int
+
+  - name: count_device_exposures
+    query: >
+      with
+        de as (
+          select device_exposure.*
+          from device_exposure as device_exposure
+          join concept concept on concept.concept_id = device_exposure.device_concept_id
+          where
+            concept_name in (
+              'Endotracheal tube',
+              'Intensive-care ventilator',
+              'Tracheostomy tube',
+              'High flow oxygen nasal cannula',
+              'Sodium chloride 7% inhalation solution 4ml vials',
+              'Tracheostomy mask, oxygen',
+              'Water for irrigation 2litre Flowfusor bottles',
+              'Continuous positive airway pressure/Bilevel positive airway pressure mask',
+              'Oxygen mask',
+              'Ensure Compact liquid',
+              'Ensure TwoCal liquid',
+              'Ensure Plus milkshake style liquid'
+            )
+          limit 100000000
+        )
+      select count(*) as num, device_concept_id, person_id
+      from de
+      group by device_concept_id, person_id
+      limit 1000000
+
+    dp-query: >
+      select sum(num) as num, device_concept_id
+      from query_result
+      group by device_concept_id
+      limit 100
+
+    epsilon: 1.0
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 9
+      person_id:
+        type: int
+        private_id: true
+      device_concept_id:
+        type: int
+      num:
+        type: int
+        lower: 0
+        upper: 1000
+
+  - name: avg_device_exposures_per_hour
+    query: >
+      select num / (extract(epoch from los) / 3600) :: float as num_per_hour, person_id
+      from (
+        select
+          count(*) as num,
+          (vo.visit_end_datetime - vo.visit_start_datetime) as los,
+          de.visit_occurrence_id,
+          de.person_id
+        from device_exposure de
+        join visit_occurrence vo on vo.visit_occurrence_id = de.visit_occurrence_id
+        group by de.person_id, de.visit_occurrence_id, los
+        limit 100000
+      ) sub
+
+    dp-query: >
+      select avg(num_per_hour) as avg_per_hour
+      from query_result
+
+    epsilon: 0.5
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 1
+      person_id:
+        type: int
+        private_id: true
+      num_per_hour:
+        type: float
+        lower: 0
+        upper: 10
+
+  # # # # # # # # # # # # # # # # # # # # # # #
+  # Queries for the observation table
+
+  - name: avg_observations_per_hour
+    query: >
+      select num / (extract(epoch from los) / 3600) :: float as num_per_hour, person_id
+      from (
+        select
+          count(*) as num,
+          (vo.visit_end_datetime - vo.visit_start_datetime) as los,
+          o.visit_occurrence_id,
+          o.person_id
+        from observation o
+        join visit_occurrence vo on vo.visit_occurrence_id = o.visit_occurrence_id
+        group by o.person_id, o.visit_occurrence_id, los
+        limit 100000
+      ) sub
+
+    dp-query: >
+      select avg(num_per_hour) as avg_per_hour
+      from query_result
+
+    epsilon: 0.5
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 1
+      person_id:
+        type: int
+        private_id: true
+      num_per_hour:
+        type: float
+        lower: 0
+        upper: 100
+
+  - name: count_observations
+    query: >
+      with
+        o as (
+          select observation.*
+          from observation as observation
+          join concept concept on concept.concept_id = observation.observation_concept_id
+          where
+            -- This is a manually curated list of observations we are interested in.
+            concept_name in (
+              'Pulse',
+              'Pain score',
+              'Feature of heart rhythm',
+              'Respiratory function',
+              'SOFA (Sequential Organ Failure Assessment) score',
+              'Glasgow Coma Score eye opening subscore',
+              'Glasgow Coma Scale verbal response subscore',
+              'Glasgow Coma Scale motor response subscore',
+              'Ventilator generated pressure',
+              'Oral fluid input',
+              'Ventilator delivered minute volume',
+              'Positive end expiratory pressure setting',
+              'Mandatory breath rate',
+              'Airway patency status',
+              'Tidal volume setting',
+              'Haemodialysis ultrafiltration rate',
+              'Intracranial pressure',
+              'Neurological status',
+              'Ideal body weight'
+            )
+          limit 10000000
+        )
+      select count(*) as num, o.observation_concept_id, o.person_id
+      from o
+      group by o.observation_concept_id, o.person_id
+      limit 1000000
+
+    dp-query: >
+      select sum(num) as num, observation_concept_id
+      from query_result
+      group by observation_concept_id
+      limit 100
+
+    epsilon: 1.0
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 20
+      person_id:
+        type: int
+        private_id: true
+      observation_concept_id:
+        type: int
+      num:
+        type: int
+        lower: 0
+        upper: 200
+
+  - name: observation_categoricals
+    query: >
+      with
+        o as (
+          select observation.*
+          from observation as observation
+          join concept concept on concept.concept_id = observation.observation_concept_id
+          where
+            -- This is a manually curated list of observations we are interested in.
+            concept_name in (
+              'Pulse',
+              'Pain score',
+              'Feature of heart rhythm',
+              'Respiratory function',
+              'SOFA (Sequential Organ Failure Assessment) score',
+              'Glasgow Coma Score eye opening subscore',
+              'Glasgow Coma Scale verbal response subscore',
+              'Glasgow Coma Scale motor response subscore',
+              'Ventilator generated pressure',
+              'Oral fluid input',
+              'Ventilator delivered minute volume',
+              'Positive end expiratory pressure setting',
+              'Mandatory breath rate',
+              'Airway patency status',
+              'Tidal volume setting',
+              'Haemodialysis ultrafiltration rate',
+              'Intracranial pressure',
+              'Neurological status',
+              'Ideal body weight'
+            )
+          limit 10000000
+        )
+      select
+        count(*) as num,
+        observation_concept_id,
+        observation_type_concept_id,
+        value_as_concept_id,
+        value_as_string,
+        CASE
+            WHEN value_as_number IS NULL THEN 'NULL'
+            WHEN value_as_number < 0 THEN '<0'
+            WHEN value_as_number >= 0 THEN '>=0'
+        END AS value_as_number_sign,
+        qualifier_concept_id,
+        unit_concept_id,
+        provider_id,
+        visit_detail_id,
+        observation_source_value,
+        observation_source_concept_id,
+        unit_source_value,
+        qualifier_source_value,
+        person_id
+      from o
+      group by
+        observation_concept_id,
+        observation_type_concept_id,
+        value_as_concept_id,
+        value_as_string,
+        value_as_number_sign,
+        qualifier_concept_id,
+        unit_concept_id,
+        provider_id,
+        visit_detail_id,
+        observation_source_value,
+        observation_source_concept_id,
+        unit_source_value,
+        qualifier_source_value,
+        person_id
+      limit 100000
+
+    dp-query: >
+      select
+        sum(num) as num,
+        observation_concept_id,
+        observation_type_concept_id,
+        value_as_concept_id,
+        value_as_string,
+        value_as_number_sign,
+        qualifier_concept_id,
+        unit_concept_id,
+        provider_id,
+        visit_detail_id,
+        observation_source_value,
+        observation_source_concept_id,
+        unit_source_value,
+        qualifier_source_value
+      from query_result
+      group by
+        observation_concept_id,
+        observation_type_concept_id,
+        value_as_concept_id,
+        value_as_string,
+        value_as_number_sign,
+        qualifier_concept_id,
+        unit_concept_id,
+        provider_id,
+        visit_detail_id,
+        observation_source_value,
+        observation_source_concept_id,
+        unit_source_value,
+        qualifier_source_value
+
+    epsilon: 1.0
+    delta: 0.000001
+    snsql-metadata:
+      # In principle we should have max_ids at least 20, to allow every kind of
+      # observation for every person. In practice > 15 is very rare.
+      max_ids: 15
+      person_id:
+        type: int
+        private_id: true
+      num:
+        type: int
+        lower: 0
+        upper: 100
+      observation_concept_id:
+        type: int
+      observation_type_concept_id:
+        type: int
+      value_as_concept_id:
+        type: int
+      value_as_string:
+        type: string
+      value_as_number_sign:
+        type: string
+      qualifier_concept_id:
+        type: int
+      unit_concept_id:
+        type: int
+      provider_id:
+        type: int
+      visit_detail_id:
+        type: int
+      observation_source_value:
+        type: string
+      observation_source_concept_id:
+        type: int
+      unit_source_value:
+        type: string
+      qualifier_source_value:
+        type: string
+
+  - name: avg_observation_value_as_number
+    query: >
+      with
+        o as (
+          select observation.*
+          from observation as observation
+          join concept concept on concept.concept_id = observation.observation_concept_id
+          where
+            concept_name in (
+              'Pulse',
+              'Pain score',
+              'Feature of heart rhythm',
+              'Respiratory function',
+              'SOFA (Sequential Organ Failure Assessment) score',
+              'Glasgow Coma Score eye opening subscore',
+              'Glasgow Coma Scale verbal response subscore',
+              'Glasgow Coma Scale motor response subscore',
+              'Ventilator generated pressure',
+              'Oral fluid input',
+              'Ventilator delivered minute volume',
+              'Positive end expiratory pressure setting',
+              'Mandatory breath rate',
+              'Airway patency status',
+              'Tidal volume setting',
+              'Haemodialysis ultrafiltration rate',
+              'Intracranial pressure',
+              'Neurological status',
+              'Ideal body weight'
+            )
+          limit 10000000
+          )
+      select
+        avg(value_as_number)::float as avg_value,
+        observation_concept_id,
+        person_id
+      from o
+      group by
+        observation_concept_id,
+        person_id
+      limit 1000000
+
+    dp-query: >
+      select
+        avg(avg_value) as avg_value,
+        observation_concept_id
+      from query_result
+      group by
+        observation_concept_id
+
+    epsilon: 1.0
+    delta: 0.00001
+    snsql-metadata:
+      max_ids: 20
+      person_id:
+        type: int
+        private_id: true
+      observation_concept_id:
+        type: int
+      avg_value:
+        type: float
+        lower: -1000
+        upper: 1000
+
+  # # # # # # # # # # # # # # # # # # # # # # #
+  # Queries for the procedure_occurrence table
+
+  - name: avg_procedure_occurrences_per_hour
+    query: >
+      select num / (extract(epoch from los) / 3600) :: float as num_per_hour, person_id
+      from (
+        select
+          count(*) as num,
+          (vo.visit_end_datetime - vo.visit_start_datetime) as los,
+          po.visit_occurrence_id,
+          po.person_id
+        from procedure_occurrence po
+        join visit_occurrence vo on vo.visit_occurrence_id = po.visit_occurrence_id
+        group by po.person_id, po.visit_occurrence_id, los
+        limit 100000
+      ) sub
+
+    dp-query: >
+      select avg(num_per_hour) as avg_per_hour
+      from query_result
+
+    epsilon: 0.5
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 1
+      person_id:
+        type: int
+        private_id: true
+      num_per_hour:
+        type: float
+        lower: 0
+        upper: 100
+
+  - name: count_procedure_occurrences
+    query: >
+      with
+        po as (
+          select procedure_occurrence.*
+          from procedure_occurrence as procedure_occurrence
+          join concept c on c.concept_id = procedure_occurrence.procedure_concept_id
+          where
+            -- This is a manually curated list of procedure occurrences we are interested in.
+            concept_name in (
+              'Assessment of skin integrity',
+              'Artificial respiration',
+              'Continuous renal replacement therapy',
+              'Removal of peripheral intravenous cannula',
+              'Peripheral venous cannula insertion',
+              'Closure of skin wound',
+              'Incision',
+              'Removal of urethral catheter',
+              'Urethral catheterization',
+              'Plain chest X-ray',
+              'Removal of arterial cannula',
+              'Insertion of catheter into artery',
+              'Removal of orogastric tube',
+              'Insertion of orogastric tube',
+              'Removal of drain',
+              'Removal of central venous line',
+              'Central venous cannula insertion',
+              'No matching concept',
+              'Suction drainage',
+              'Wound assessment',
+              'Checking position of nasogastric tube using X-ray',
+              'Removal of endotracheal tube',
+              'Nasogastric tube removal',
+              'Insertion of endotracheal tube',
+              'Insertion of nasogastric tube',
+              'Closure of tracheostomy',
+              'Intercostal drain removal',
+              'Insertion of pleural tube drain'
+            )
+          limit 10000000
+        )
+      select count(*) as num, po.procedure_concept_id, po.person_id
+      from po
+      group by po.procedure_concept_id, po.person_id
+      limit 1000000
+
+    dp-query: >
+      select sum(num) as num, procedure_concept_id
+      from query_result
+      group by procedure_concept_id
+      limit 100
+
+    epsilon: 1.0
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 20
+      person_id:
+        type: int
+        private_id: true
+      procedure_concept_id:
+        type: int
+      num:
+        type: int
+        lower: 0
+        upper: 200
+
+  - name: procedure_occurrence_categoricals
+    query: >
+      with
+        po as (
+          select procedure_occurrence.*
+          from procedure_occurrence as procedure_occurrence
+          join concept c on c.concept_id = procedure_occurrence.procedure_concept_id
+          where
+            -- This is a manually curated list of procedure occurrences we are interested in.
+            concept_name in (
+              'Assessment of skin integrity',
+              'Artificial respiration',
+              'Continuous renal replacement therapy',
+              'Removal of peripheral intravenous cannula',
+              'Peripheral venous cannula insertion',
+              'Closure of skin wound',
+              'Incision',
+              'Removal of urethral catheter',
+              'Urethral catheterization',
+              'Plain chest X-ray',
+              'Removal of arterial cannula',
+              'Insertion of catheter into artery',
+              'Removal of orogastric tube',
+              'Insertion of orogastric tube',
+              'Removal of drain',
+              'Removal of central venous line',
+              'Central venous cannula insertion',
+              'No matching concept',
+              'Suction drainage',
+              'Wound assessment',
+              'Checking position of nasogastric tube using X-ray',
+              'Removal of endotracheal tube',
+              'Nasogastric tube removal',
+              'Insertion of endotracheal tube',
+              'Insertion of nasogastric tube',
+              'Closure of tracheostomy',
+              'Intercostal drain removal',
+              'Insertion of pleural tube drain'
+            )
+          limit 10000000
+        )
+      select
+        count(*) as num,
+        procedure_concept_id,
+        procedure_type_concept_id,
+        modifier_concept_id,
+        quantity,
+        provider_id,
+        visit_detail_id,
+        procedure_source_value,
+        procedure_source_concept_id,
+        modifier_source_value,
+        person_id
+      from po
+      group by
+        procedure_concept_id,
+        procedure_type_concept_id,
+        modifier_concept_id,
+        quantity,
+        provider_id,
+        visit_detail_id,
+        procedure_source_value,
+        procedure_source_concept_id,
+        modifier_source_value,
+        person_id
+      limit 100000
+
+    dp-query: >
+      select
+        sum(num) as num,
+        procedure_concept_id,
+        procedure_type_concept_id,
+        modifier_concept_id,
+        quantity,
+        provider_id,
+        visit_detail_id,
+        procedure_source_value,
+        procedure_source_concept_id,
+        modifier_source_value
+      from query_result
+      group by
+        procedure_concept_id,
+        procedure_type_concept_id,
+        modifier_concept_id,
+        quantity,
+        provider_id,
+        visit_detail_id,
+        procedure_source_value,
+        procedure_source_concept_id,
+        modifier_source_value
+
+    epsilon: 1.0
+    delta: 0.000001
+    snsql-metadata:
+      # In principle we should have max_ids at least 30, to allow every kind of
+      # observation for every person. In practice > 25 is very rare.
+      max_ids: 25
+      person_id:
+        type: int
+        private_id: true
+      num:
+        type: int
+        lower: 0
+        upper: 50
+      procedure_concept_id:
+        type: int
+      procedure_type_concept_id:
+        type: int
+      modifier_concept_id:
+        type: int
+      quantity:
+        type: int
+      provider_id:
+        type: int
+      visit_detail_id:
+        type: int
+      procedure_source_value:
+        type: string
+      procedure_source_concept_id:
+        type: int
+      modifier_source_value:
+        type: string
+
+  # # # # # # # # # # # # # # # # # # # # # # #
+  # Queries for the specimen table
+
+  - name: avg_specimens_per_hour
+    query: >
+      select num / (extract(epoch from los) / 3600) :: float as num_per_hour, person_id
+      from (
+        select
+          count(*) as num,
+          (vo.visit_end_datetime - vo.visit_start_datetime) as los,
+          vo.visit_occurrence_id,
+          s.person_id
+        from visit_occurrence vo
+        join specimen s
+            on vo.person_id = s.person_id
+            and s.specimen_datetime < vo.visit_end_datetime
+            and s.specimen_datetime > vo.visit_start_datetime
+        group by s.person_id, vo.visit_occurrence_id, los
+        limit 100000
+      ) sub
+
+    dp-query: >
+      select avg(num_per_hour) as avg_per_hour
+      from query_result
+
+    epsilon: 0.5
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 1
+      person_id:
+        type: int
+        private_id: true
+      num_per_hour:
+        type: float
+        lower: 0
+        upper: 100
+
+  - name: count_specimens
+    query: >
+      with
+        s as (
+          select specimen.*
+          from specimen as specimen
+          join concept concept on concept.concept_id = specimen.specimen_concept_id
+          where
+            -- This is a manually curated list of specimens we are interested in.
+            concept_name in (
+              'Blood specimen',
+              'Specimen from patient',
+              'Arterial blood specimen',
+              'Combined oropharyngeal and nasopharyngeal swab',
+              'Venous blood specimen',
+              'Capillary blood specimen',
+              'Mid-stream urine sample',
+              'Stool specimen',
+              'Urine specimen',
+              'Swab',
+              'Urinary catheter specimen',
+              'Sputum specimen',
+              'Rectal swab'
+            )
+          limit 10000000
+        )
+      select count(*) as num, s.specimen_concept_id, s.person_id
+      from s
+      group by s.specimen_concept_id, s.person_id
+      limit 1000000
+
+    dp-query: >
+      select sum(num) as num, specimen_concept_id
+      from query_result
+      group by specimen_concept_id
+      limit 100
+
+    epsilon: 1.0
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 13
+      person_id:
+        type: int
+        private_id: true
+      specimen_concept_id:
+        type: int
+      num:
+        type: int
+        lower: 0
+        upper: 200
+
+  - name: specimen_categoricals
+    query: >
+      with
+        s as (
+          select specimen.*
+          from specimen as specimen
+          join concept concept on concept.concept_id = specimen.specimen_concept_id
+          where
+            -- This is a manually curated list of specimens we are interested in.
+            concept_name in (
+              'Blood specimen',
+              'Specimen from patient',
+              'Arterial blood specimen',
+              'Combined oropharyngeal and nasopharyngeal swab',
+              'Venous blood specimen',
+              'Capillary blood specimen',
+              'Mid-stream urine sample',
+              'Stool specimen',
+              'Urine specimen',
+              'Swab',
+              'Urinary catheter specimen',
+              'Sputum specimen',
+              'Rectal swab'
+            )
+          limit 10000000
+        )
+      select
+        count(*) as num,
+        specimen_concept_id,
+        specimen_type_concept_id,
+        quantity,
+        unit_concept_id,
+        anatomic_site_concept_id,
+        disease_status_concept_id,
+        specimen_source_id,
+        specimen_source_value,
+        unit_source_value,
+        anatomic_site_source_value,
+        disease_status_source_value,
+        person_id
+      from s
+      group by
+        specimen_concept_id,
+        specimen_type_concept_id,
+        quantity,
+        unit_concept_id,
+        anatomic_site_concept_id,
+        disease_status_concept_id,
+        specimen_source_id,
+        specimen_source_value,
+        unit_source_value,
+        anatomic_site_source_value,
+        disease_status_source_value,
+        person_id
+      limit 100000
+
+    dp-query: >
+      select
+        sum(num) as num,
+        specimen_concept_id,
+        specimen_type_concept_id,
+        quantity,
+        unit_concept_id,
+        anatomic_site_concept_id,
+        disease_status_concept_id,
+        specimen_source_id,
+        specimen_source_value,
+        unit_source_value,
+        anatomic_site_source_value,
+        disease_status_source_value
+      from query_result
+      group by
+        specimen_concept_id,
+        specimen_type_concept_id,
+        quantity,
+        unit_concept_id,
+        anatomic_site_concept_id,
+        disease_status_concept_id,
+        specimen_source_id,
+        specimen_source_value,
+        unit_source_value,
+        anatomic_site_source_value,
+        disease_status_source_value
+
+    epsilon: 1.0
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 13
+      person_id:
+        type: int
+        private_id: true
+      num:
+        type: int
+        lower: 0
+        upper: 200
+      specimen_concept_id:
+        type: int
+      specimen_type_concept_id:
+        type: int
+      quantity:
+        type: int
+      unit_concept_id:
+        type: int
+      anatomic_site_concept_id:
+        type: int
+      disease_status_concept_id:
+        type: int
+      specimen_source_id:
+        type: string
+      specimen_source_value:
+        type: string
+      unit_source_value:
+        type: string
+      anatomic_site_source_value:
+        type: string
+      disease_status_source_value:
+        type: string
+
+  # # # # # # # # # # # # # # # # # # # # # # #
+  # Queries for the condition_occurrence table
+
+  - name: avg_condition_occurrences_per_hour
+    query: >
+      select num / (extract(epoch from los) / 3600) :: float as num_per_hour, person_id
+      from (
+        select
+          count(*) as num,
+          (vo.visit_end_datetime - vo.visit_start_datetime) as los,
+          co.visit_occurrence_id,
+          co.person_id
+        from condition_occurrence co
+        join visit_occurrence vo on vo.visit_occurrence_id = co.visit_occurrence_id
+        group by co.person_id, co.visit_occurrence_id, los
+        limit 100000
+      ) sub
+
+    dp-query: >
+      select avg(num_per_hour) as avg_per_hour
+      from query_result
+
+    epsilon: 0.5
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 1
+      person_id:
+        type: int
+        private_id: true
+      num_per_hour:
+        type: float
+        lower: 0
+        upper: 100
+
+  - name: count_condition_occurrences
+    query: >
+      with
+        co as (
+          select condition_occurrence.*
+          from condition_occurrence as condition_occurrence
+          join concept concept on concept.concept_id = condition_occurrence.condition_concept_id
+          where
+            -- This is a manually curated list of condition_occurrences we are interested in.
+            concept_name in (
+              'Essential (primary) hypertension',
+              'Pure hypercholesterolaemia',
+              'Acute renal failure, unspecified',
+              'Type 2 diabetes mellitus, without complications',
+              'Obesity, unspecified',
+              'Constipation',
+              'Mental and behavioural disorders due to use of tobacco, harmful use',
+              'Hypotension, unspecified',
+              'Pleural effusion, not elsewhere classified',
+              'Pulmonary collapse',
+              'Atrial fibrillation and atrial flutter, unspecified',
+              'Gastro-oesophageal reflux disease without oesophagitis',
+              'Lobar pneumonia, unspecified',
+              'Anaemia, unspecified',
+              'Emergency use of U07.1 | COVID-19, virus identified',
+              'Nosocomial condition',
+              'Depressive episode, unspecified',
+              'Hypo-osmolality and hyponatraemia',
+              'Acidosis',
+              'Urinary tract infection, site not specified',
+              'Other specified cerebrovascular diseases',
+              'Asthma, unspecified',
+              'Anxiety disorder, unspecified',
+              'Tachycardia, unspecified',
+              'Hypothyroidism, unspecified',
+              'Nausea and vomiting',
+              'Fever, unspecified',
+              'Chronic ischaemic heart disease, unspecified',
+              'Hypokalaemia',
+              'Hypertensive disorder'
+            )
+          limit 10000000
+        )
+      select count(*) as num, co.condition_concept_id, co.person_id
+      from co
+      group by co.condition_concept_id, co.person_id
+      limit 1000000
+
+    dp-query: >
+      select sum(num) as num, condition_concept_id
+      from query_result
+      group by condition_concept_id
+      limit 100
+
+    epsilon: 1.0
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 30
+      person_id:
+        type: int
+        private_id: true
+      condition_concept_id:
+        type: int
+      num:
+        type: int
+        lower: 0
+        upper: 5
+
+  - name: condition_occurrence_categoricals
+    query: >
+      with
+        co as (
+          select condition_occurrence.*
+          from condition_occurrence as condition_occurrence
+          join concept concept on concept.concept_id = condition_occurrence.condition_concept_id
+          where
+            -- This is a manually curated list of condition_occurrences we are interested in.
+            concept_name in (
+              'Essential (primary) hypertension',
+              'Pure hypercholesterolaemia',
+              'Acute renal failure, unspecified',
+              'Type 2 diabetes mellitus, without complications',
+              'Obesity, unspecified',
+              'Constipation',
+              'Mental and behavioural disorders due to use of tobacco, harmful use',
+              'Hypotension, unspecified',
+              'Pleural effusion, not elsewhere classified',
+              'Pulmonary collapse',
+              'Atrial fibrillation and atrial flutter, unspecified',
+              'Gastro-oesophageal reflux disease without oesophagitis',
+              'Lobar pneumonia, unspecified',
+              'Anaemia, unspecified',
+              'Emergency use of U07.1 | COVID-19, virus identified',
+              'Nosocomial condition',
+              'Depressive episode, unspecified',
+              'Hypo-osmolality and hyponatraemia',
+              'Acidosis',
+              'Urinary tract infection, site not specified',
+              'Other specified cerebrovascular diseases',
+              'Asthma, unspecified',
+              'Anxiety disorder, unspecified',
+              'Tachycardia, unspecified',
+              'Hypothyroidism, unspecified',
+              'Nausea and vomiting',
+              'Fever, unspecified',
+              'Chronic ischaemic heart disease, unspecified',
+              'Hypokalaemia',
+              'Hypertensive disorder'
+            )
+          limit 10000000
+        )
+      select
+        count(*) as num,
+        condition_concept_id,
+        condition_type_concept_id,
+        condition_status_concept_id,
+        stop_reason,
+        provider_id,
+        condition_source_value,
+        condition_source_concept_id,
+        condition_status_source_value,
+        person_id
+      from co
+      group by
+        condition_concept_id,
+        condition_type_concept_id,
+        condition_status_concept_id,
+        stop_reason,
+        provider_id,
+        condition_source_value,
+        condition_source_concept_id,
+        condition_status_source_value,
+        person_id
+      limit 100000
+
+    dp-query: >
+      select
+        sum(num) as num,
+        condition_concept_id,
+        condition_type_concept_id,
+        condition_status_concept_id,
+        stop_reason,
+        provider_id,
+        condition_source_value,
+        condition_source_concept_id,
+        condition_status_source_value
+      from query_result
+      group by
+        condition_concept_id,
+        condition_type_concept_id,
+        condition_status_concept_id,
+        stop_reason,
+        provider_id,
+        condition_source_value,
+        condition_source_concept_id,
+        condition_status_source_value
+
+    epsilon: 1.0
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 30
+      person_id:
+        type: int
+        private_id: true
+      num:
+        type: int
+        lower: 0
+        upper: 5
+      condition_concept_id:
+        type: int
+      condition_type_concept_id:
+        type: int
+      condition_status_concept_id:
+        type: int
+      stop_reason:
+        type: string
+      provider_id:
+        type: int
+      condition_source_value:
+        type: string
+      condition_source_concept_id:
+        type: int
+      condition_status_source_value:
+        type: string
+
+  - name: condition_occurrence_duration
+    query: >
+     with
+        co as (
+          select condition_occurrence.*
+          from condition_occurrence as condition_occurrence
+          join concept concept on concept.concept_id = condition_occurrence.condition_concept_id
+          where
+            -- This is a manually curated list of condition_occurrences we are interested in.
+            concept_name in (
+              'Essential (primary) hypertension',
+              'Pure hypercholesterolaemia',
+              'Acute renal failure, unspecified',
+              'Type 2 diabetes mellitus, without complications',
+              'Obesity, unspecified',
+              'Constipation',
+              'Mental and behavioural disorders due to use of tobacco, harmful use',
+              'Hypotension, unspecified',
+              'Pleural effusion, not elsewhere classified',
+              'Pulmonary collapse',
+              'Atrial fibrillation and atrial flutter, unspecified',
+              'Gastro-oesophageal reflux disease without oesophagitis',
+              'Lobar pneumonia, unspecified',
+              'Anaemia, unspecified',
+              'Emergency use of U07.1 | COVID-19, virus identified',
+              'Nosocomial condition',
+              'Depressive episode, unspecified',
+              'Hypo-osmolality and hyponatraemia',
+              'Acidosis',
+              'Urinary tract infection, site not specified',
+              'Other specified cerebrovascular diseases',
+              'Asthma, unspecified',
+              'Anxiety disorder, unspecified',
+              'Tachycardia, unspecified',
+              'Hypothyroidism, unspecified',
+              'Nausea and vomiting',
+              'Fever, unspecified',
+              'Chronic ischaemic heart disease, unspecified',
+              'Hypokalaemia',
+              'Hypertensive disorder'
+            )
+          limit 10000000
+        ),
+        sub as (
+          select
+            case
+              when condition_end_datetime is null then 'NULL'
+              when condition_end_datetime = condition_start_datetime then 'start'
+              else 'other'
+            end as duration_category,
+            (extract(epoch from (condition_end_datetime - condition_start_datetime))::float / 3600.0) as duration_hours,
+            condition_concept_id,
+            person_id
+          from co
+        )
+      select
+        count(*) as num,
+        avg(duration_hours) as avg_duration_hours,
+        duration_category,
+        condition_concept_id,
+        person_id
+      from sub
+      group by
+        duration_category,
+        condition_concept_id,
+        person_id
+      limit 1000000
+
+    dp-query: >
+      select
+        sum(num) as num,
+        avg(avg_duration_hours) as avg_duration_hours,
+        duration_category,
+        condition_concept_id
+      from query_result
+      group by
+        duration_category,
+        condition_concept_id
+
+    epsilon: 0.5
+    delta: 0.00001
+    snsql-metadata:
+      max_ids: 30
+      person_id:
+        type: int
+        private_id: true
+      num:
+        type: int
+        lower: 0
+        upper: 5
+      duration_category:
+        type: string
+      condition_concept_id:
+        type: int
+      avg_duration_hours:
+        type: float
+        lower: 0
+        upper: 2000
+
+  # # # # # # # # # # # # # # # # # # # # # # #
+  # Queries for the drug_exposure table
+
+  - name: avg_drug_exposures_per_hour
+    query: >
+      select num / (extract(epoch from los) / 3600) :: float as num_per_hour, person_id
+      from (
+        select
+          count(*) as num,
+          (vo.visit_end_datetime - vo.visit_start_datetime) as los,
+          de.visit_occurrence_id,
+          de.person_id
+        from drug_exposure de
+        join visit_occurrence vo on vo.visit_occurrence_id = de.visit_occurrence_id
+        group by de.person_id, de.visit_occurrence_id, los
+        limit 100000
+      ) sub
+
+    dp-query: >
+      select avg(num_per_hour) as avg_per_hour
+      from query_result
+
+    epsilon: 0.5
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 1
+      person_id:
+        type: int
+        private_id: true
+      num_per_hour:
+        type: float
+        lower: 0
+        upper: 100
+
+  - name: count_drug_exposures
+    query: >
+      with
+        de as (
+          select drug_exposure.*
+          from drug_exposure as drug_exposure
+          join concept concept on concept.concept_id = drug_exposure.drug_concept_id
+          where
+            -- This is a manually curated list of drug_exposures we are interested in.
+            concept_name in (
+              '1000 ML Sodium Chloride 9 MG/ML Injectable Solution',
+              'acetaminophen 500 MG Oral Tablet',
+              '50 ML Propofol 20 MG/ML Injectable Suspension',
+              '2 ML Fentanyl 0.05 MG/ML Injectable Solution',
+              '1000 ML Calcium Chloride 0.268 MG/ML / Lactate 3.1 MG/ML / Potassium Chloride 0.4 MG/ML / Sodium Chloride 6 MG/ML Injectable Solution',
+              '10 ML Sodium Chloride 9 MG/ML Injectable Solution',
+              '100 ML Glucose 50 MG/ML Injectable Solution',
+              '10 ML Regular Insulin, Human 100 UNT/ML Injectable Solution',
+              '10 ML Fentanyl 0.05 MG/ML Injectable Solution',
+              '100 ML Acetaminophen 10 MG/ML Injectable Solution',
+              '0.4 ML Enoxaparin 100 MG/ML Injectable Solution',
+              '4 ML Norepinephrine 1 MG/ML Injectable Solution',
+              '1 ML Clonidine 0.15 MG/ML Injectable Solution',
+              'potassium bicarbonate 384 MG / Potassium Chloride 600 MG Disintegrating Oral Tablet',
+              'carbocysteine 50 MG/ML Oral Solution',
+              'morphine sulfate 2 MG/ML Oral Solution',
+              '1000 ML bicarbonate ion 0.017 MMOL/ML / POLYETHYLENE GLYCOL 3350 105 MG/ML / Potassium 0.0054 MMOL/ML / Sodium 0.065 MMOL/ML Oral Powder',
+              'Piperacillin 4000 MG / tazobactam 500 MG Injectable Solution',
+              '1 ML Metaraminol 10 MG/ML Injectable Solution',
+              '2.5 ML Albuterol 1 MG/ML Inhalation Solution',
+              'Acyclovir 200 MG Disintegrating Oral Tablet',
+              'amlodipine 5 MG Oral Tablet',
+              'lansoprazole 30 MG Delayed Release Oral Capsule',
+              '20 ML Magnesium sulfate heptahydrate 500 MG/ML Injectable Solution',
+              'nimodipine 30 MG Oral Tablet',
+              'Water 10000 MG Injectable Solution',
+              'pantoprazole 40 MG Injectable Solution',
+              '20 ML Propofol 10 MG/ML Injectable Suspension',
+              'bisoprolol fumarate 2.5 MG Oral Tablet',
+              'gabapentin 300 MG Oral Capsule'
+            )
+          limit 10000000
+        )
+      select count(*) as num, de.drug_concept_id, de.person_id
+      from de
+      group by de.drug_concept_id, de.person_id
+      limit 1000000
+
+    dp-query: >
+      select sum(num) as num, drug_concept_id
+      from query_result
+      group by drug_concept_id
+      limit 100
+
+    epsilon: 1.0
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 30
+      person_id:
+        type: int
+        private_id: true
+      drug_concept_id:
+        type: int
+      num:
+        type: int
+        lower: 0
+        upper: 200
+
+  - name: drug_exposure_categoricals
+    query: >
+      with
+        de as (
+          select drug_exposure.*
+          from drug_exposure as drug_exposure
+          join concept concept on concept.concept_id = drug_exposure.drug_concept_id
+          where
+            -- This is a manually curated list of drug_exposures we are interested in.
+            concept_name in (
+              '1000 ML Sodium Chloride 9 MG/ML Injectable Solution',
+              'acetaminophen 500 MG Oral Tablet',
+              '50 ML Propofol 20 MG/ML Injectable Suspension',
+              '2 ML Fentanyl 0.05 MG/ML Injectable Solution',
+              '1000 ML Calcium Chloride 0.268 MG/ML / Lactate 3.1 MG/ML / Potassium Chloride 0.4 MG/ML / Sodium Chloride 6 MG/ML Injectable Solution',
+              '10 ML Sodium Chloride 9 MG/ML Injectable Solution',
+              '100 ML Glucose 50 MG/ML Injectable Solution',
+              '10 ML Regular Insulin, Human 100 UNT/ML Injectable Solution',
+              '10 ML Fentanyl 0.05 MG/ML Injectable Solution',
+              '100 ML Acetaminophen 10 MG/ML Injectable Solution',
+              '0.4 ML Enoxaparin 100 MG/ML Injectable Solution',
+              '4 ML Norepinephrine 1 MG/ML Injectable Solution',
+              '1 ML Clonidine 0.15 MG/ML Injectable Solution',
+              'potassium bicarbonate 384 MG / Potassium Chloride 600 MG Disintegrating Oral Tablet',
+              'carbocysteine 50 MG/ML Oral Solution',
+              'morphine sulfate 2 MG/ML Oral Solution',
+              '1000 ML bicarbonate ion 0.017 MMOL/ML / POLYETHYLENE GLYCOL 3350 105 MG/ML / Potassium 0.0054 MMOL/ML / Sodium 0.065 MMOL/ML Oral Powder',
+              'Piperacillin 4000 MG / tazobactam 500 MG Injectable Solution',
+              '1 ML Metaraminol 10 MG/ML Injectable Solution',
+              '2.5 ML Albuterol 1 MG/ML Inhalation Solution',
+              'Acyclovir 200 MG Disintegrating Oral Tablet',
+              'amlodipine 5 MG Oral Tablet',
+              'lansoprazole 30 MG Delayed Release Oral Capsule',
+              '20 ML Magnesium sulfate heptahydrate 500 MG/ML Injectable Solution',
+              'nimodipine 30 MG Oral Tablet',
+              'Water 10000 MG Injectable Solution',
+              'pantoprazole 40 MG Injectable Solution',
+              '20 ML Propofol 10 MG/ML Injectable Suspension',
+              'bisoprolol fumarate 2.5 MG Oral Tablet',
+              'gabapentin 300 MG Oral Capsule'
+            )
+          limit 10000000
+        )
+      select
+        count(*) as num,
+        drug_concept_id,
+        CASE
+            WHEN drug_exposure_end_datetime IS NULL THEN 'NULL'
+            ELSE 'NOT NULL'
+        END AS end_datetime_is_null,
+        verbatim_end_date,
+        drug_type_concept_id,
+        stop_reason,
+        refills,
+        days_supply,
+        sig,
+        route_concept_id,
+        lot_number,
+        provider_id,
+        drug_source_value,
+        drug_source_concept_id,
+        route_source_value,
+        dose_unit_source_value,
+        person_id
+      from de
+      group by
+        drug_concept_id,
+        end_datetime_is_null,
+        verbatim_end_date,
+        drug_type_concept_id,
+        stop_reason,
+        refills,
+        days_supply,
+        sig,
+        route_concept_id,
+        lot_number,
+        provider_id,
+        drug_source_value,
+        drug_source_concept_id,
+        route_source_value,
+        dose_unit_source_value,
+        person_id
+      limit 100000
+
+    dp-query: >
+      select
+        sum(num) as num,
+        drug_concept_id,
+        end_datetime_is_null,
+        verbatim_end_date,
+        drug_type_concept_id,
+        stop_reason,
+        refills,
+        days_supply,
+        sig,
+        route_concept_id,
+        lot_number,
+        provider_id,
+        drug_source_value,
+        drug_source_concept_id,
+        route_source_value,
+        dose_unit_source_value
+      from query_result
+      group by
+        drug_concept_id,
+        end_datetime_is_null,
+        verbatim_end_date,
+        drug_type_concept_id,
+        stop_reason,
+        refills,
+        days_supply,
+        sig,
+        route_concept_id,
+        lot_number,
+        provider_id,
+        drug_source_value,
+        drug_source_concept_id,
+        route_source_value,
+        dose_unit_source_value
+
+    epsilon: 1.0
+    delta: 0.000001
+    snsql-metadata:
+      max_ids: 30
+      person_id:
+        type: int
+        private_id: true
+      num:
+        type: int
+        lower: 0
+        upper: 200
+      drug_concept_id:
+        type: int
+      end_datetime_is_null:
+        type: string
+      verbatim_end_date:
+        type: int
+      drug_type_concept_id:
+        type: int
+      stop_reason:
+        type: string
+      refills:
+        type: int
+      days_supply:
+        type: int
+      sig:
+        type: string
+      route_concept_id:
+        type: int
+      lot_number:
+        type: string
+      provider_id:
+        type: int
+      drug_source_value:
+        type: string
+      drug_source_concept_id:
+        type: int
+      route_source_value:
+        type: string
+      dose_unit_source_value:
+        type: string
+
+  - name: drug_exposure_duration
+    query: >
+     with
+        de as (
+          select drug_exposure.*
+          from drug_exposure as drug_exposure
+          join concept concept on concept.concept_id = drug_exposure.drug_concept_id
+          where
+            -- This is a manually curated list of drug_exposures we are interested in.
+            concept_name in (
+              '1000 ML Sodium Chloride 9 MG/ML Injectable Solution',
+              'acetaminophen 500 MG Oral Tablet',
+              '50 ML Propofol 20 MG/ML Injectable Suspension',
+              '2 ML Fentanyl 0.05 MG/ML Injectable Solution',
+              '1000 ML Calcium Chloride 0.268 MG/ML / Lactate 3.1 MG/ML / Potassium Chloride 0.4 MG/ML / Sodium Chloride 6 MG/ML Injectable Solution',
+              '10 ML Sodium Chloride 9 MG/ML Injectable Solution',
+              '100 ML Glucose 50 MG/ML Injectable Solution',
+              '10 ML Regular Insulin, Human 100 UNT/ML Injectable Solution',
+              '10 ML Fentanyl 0.05 MG/ML Injectable Solution',
+              '100 ML Acetaminophen 10 MG/ML Injectable Solution',
+              '0.4 ML Enoxaparin 100 MG/ML Injectable Solution',
+              '4 ML Norepinephrine 1 MG/ML Injectable Solution',
+              '1 ML Clonidine 0.15 MG/ML Injectable Solution',
+              'potassium bicarbonate 384 MG / Potassium Chloride 600 MG Disintegrating Oral Tablet',
+              'carbocysteine 50 MG/ML Oral Solution',
+              'morphine sulfate 2 MG/ML Oral Solution',
+              '1000 ML bicarbonate ion 0.017 MMOL/ML / POLYETHYLENE GLYCOL 3350 105 MG/ML / Potassium 0.0054 MMOL/ML / Sodium 0.065 MMOL/ML Oral Powder',
+              'Piperacillin 4000 MG / tazobactam 500 MG Injectable Solution',
+              '1 ML Metaraminol 10 MG/ML Injectable Solution',
+              '2.5 ML Albuterol 1 MG/ML Inhalation Solution',
+              'Acyclovir 200 MG Disintegrating Oral Tablet',
+              'amlodipine 5 MG Oral Tablet',
+              'lansoprazole 30 MG Delayed Release Oral Capsule',
+              '20 ML Magnesium sulfate heptahydrate 500 MG/ML Injectable Solution',
+              'nimodipine 30 MG Oral Tablet',
+              'Water 10000 MG Injectable Solution',
+              'pantoprazole 40 MG Injectable Solution',
+              '20 ML Propofol 10 MG/ML Injectable Suspension',
+              'bisoprolol fumarate 2.5 MG Oral Tablet',
+              'gabapentin 300 MG Oral Capsule'
+            )
+          limit 10000000
+        ),
+        sub as (
+          select
+            (extract(epoch from (drug_exposure_end_datetime - drug_exposure_start_datetime))::float / 3600.0) as duration_hours,
+            drug_concept_id,
+            person_id
+          from de
+        )
+      select
+        count(*) as num,
+        avg(duration_hours) as avg_duration_hours,
+        CASE
+          WHEN duration_hours = 0 THEN '0'
+          ELSE '>0'
+        END as duration_category,
+        drug_concept_id,
+        person_id
+      from sub
+      group by
+        duration_category,
+        drug_concept_id,
+        person_id
+      limit 1000000
+
+    dp-query: >
+      select
+        sum(num) as num,
+        avg(avg_duration_hours) as avg_duration_hours,
+        duration_category,
+        drug_concept_id
+      from query_result
+      group by
+        duration_category,
+        drug_concept_id
+
+    epsilon: 0.5
+    delta: 0.00001
+    snsql-metadata:
+      max_ids: 30
+      person_id:
+        type: int
+        private_id: true
+      num:
+        type: int
+        lower: 0
+        upper: 100
+      duration_category:
+        type: string
+      drug_concept_id:
+        type: int
+      avg_duration_hours:
+        type: float
+        lower: 0
+        upper: 24
+
+  - name: drug_exposure_quantity
+    query: >
+     with
+        de as (
+          select drug_exposure.*
+          from drug_exposure as drug_exposure
+          join concept concept on concept.concept_id = drug_exposure.drug_concept_id
+          where
+            -- This is a manually curated list of drug_exposures we are interested in.
+            concept_name in (
+              '1000 ML Sodium Chloride 9 MG/ML Injectable Solution',
+              'acetaminophen 500 MG Oral Tablet',
+              '50 ML Propofol 20 MG/ML Injectable Suspension',
+              '2 ML Fentanyl 0.05 MG/ML Injectable Solution',
+              '1000 ML Calcium Chloride 0.268 MG/ML / Lactate 3.1 MG/ML / Potassium Chloride 0.4 MG/ML / Sodium Chloride 6 MG/ML Injectable Solution',
+              '10 ML Sodium Chloride 9 MG/ML Injectable Solution',
+              '100 ML Glucose 50 MG/ML Injectable Solution',
+              '10 ML Regular Insulin, Human 100 UNT/ML Injectable Solution',
+              '10 ML Fentanyl 0.05 MG/ML Injectable Solution',
+              '100 ML Acetaminophen 10 MG/ML Injectable Solution',
+              '0.4 ML Enoxaparin 100 MG/ML Injectable Solution',
+              '4 ML Norepinephrine 1 MG/ML Injectable Solution',
+              '1 ML Clonidine 0.15 MG/ML Injectable Solution',
+              'potassium bicarbonate 384 MG / Potassium Chloride 600 MG Disintegrating Oral Tablet',
+              'carbocysteine 50 MG/ML Oral Solution',
+              'morphine sulfate 2 MG/ML Oral Solution',
+              '1000 ML bicarbonate ion 0.017 MMOL/ML / POLYETHYLENE GLYCOL 3350 105 MG/ML / Potassium 0.0054 MMOL/ML / Sodium 0.065 MMOL/ML Oral Powder',
+              'Piperacillin 4000 MG / tazobactam 500 MG Injectable Solution',
+              '1 ML Metaraminol 10 MG/ML Injectable Solution',
+              '2.5 ML Albuterol 1 MG/ML Inhalation Solution',
+              'Acyclovir 200 MG Disintegrating Oral Tablet',
+              'amlodipine 5 MG Oral Tablet',
+              'lansoprazole 30 MG Delayed Release Oral Capsule',
+              '20 ML Magnesium sulfate heptahydrate 500 MG/ML Injectable Solution',
+              'nimodipine 30 MG Oral Tablet',
+              'Water 10000 MG Injectable Solution',
+              'pantoprazole 40 MG Injectable Solution',
+              '20 ML Propofol 10 MG/ML Injectable Suspension',
+              'bisoprolol fumarate 2.5 MG Oral Tablet',
+              'gabapentin 300 MG Oral Capsule'
+            )
+          limit 10000000
+        )
+      select
+        count(*) as num,
+        avg(quantity)::float as avg_quantity,
+        CASE
+          when quantity is null then 'NULL'
+          when quantity = 1 then '1'
+          else 'NOT NULL'
+        END as quantity_category,
+        drug_concept_id,
+        person_id
+      from de
+      group by
+        quantity_category,
+        drug_concept_id,
+        person_id
+      limit 1000000
+
+    dp-query: >
+      select
+        sum(num) as num,
+        avg(avg_quantity) as avg_quantity,
+        quantity_category,
+        drug_concept_id
+      from query_result
+      group by
+        quantity_category, drug_concept_id
+
+    epsilon: 1.0
+    delta: 0.00001
+    snsql-metadata:
+      max_ids: 60
+      person_id:
+        type: int
+        private_id: true
+      num:
+        type: int
+        lower: 0
+        upper: 100
+      drug_concept_id:
+        type: int
+      quantity_category:
+        type: string
+      avg_quantity:
+        type: float
+        lower: 0
+        upper: 32
+
+tables:
+  # Unnecessary tables
+  _measurement_links:
+    ignore: true
+  _observation_links:
+    ignore: true
+  _person_links:
+    ignore: true
+  _procedure_occurrence_links:
+    ignore: true
+  _visit_occurrence_links:
+    ignore: true
+
+  # Vocab tables
+  concept:
+    # This one is a vocab, but its too big to handle the usual way
+    ignore: true
+    # vocabulary_table: true
+  concept_ancestor:
+    # This one is a vocab, but its too big to handle the usual way
+    ignore: true
+    # vocabulary_table: true
+  vocabulary:
+    vocabulary_table: true
+  domain:
+    vocabulary_table: true
+  concept_class:
+    vocabulary_table: true
+  concept_synonym:
+    # This one is a vocab, but its too big to handle the usual way
+    ignore: true
+    # vocabulary_table: true
+  concept_relationship:
+    # This one is a vocab, but its too big to handle the usual way
+    ignore: true
+    # vocabulary_table: true
+  drug_strength:
+    # This one is a vocab, but its too big to handle the usual way
+    ignore: true
+    # vocabulary_table: true
+  relationship:
+    vocabulary_table: true
+  source_to_concept_map:
+    vocabulary_table: true
+  location:
+    vocabulary_table: true
+  care_site:
+    vocabulary_table: true
+  provider:
+    vocabulary_table: true
+  cdm_source:
+    vocabulary_table: true
+
+  attribute_definition:
+    num_rows_per_pass: 0
+
+  cohort_definition:
+    num_rows_per_pass: 0
+
+  condition_era:
+    num_rows_per_pass: 0
+
+  cost:
+    num_rows_per_pass: 0
+
+  device_exposure:
+    num_rows_per_pass: 0
+    row_generators:
+      - name: row_generators.make_null
+        columns_assigned: person_id
+      - name: row_generators.make_null
+        columns_assigned: device_concept_id
+      - name: row_generators.make_null
+        columns_assigned: device_type_concept_id
+      - name: row_generators.make_null
+        columns_assigned: provider_id
+      - name: row_generators.make_null
+        columns_assigned: visit_occurrence_id
+      - name: row_generators.make_null
+        columns_assigned: visit_detail_id
+      - name: row_generators.make_null
+        columns_assigned: device_source_concept_id
+
+  dose_era:
+    num_rows_per_pass: 0
+
+  drug_era:
+    num_rows_per_pass: 0
+
+  drug_exposure:
+    num_rows_per_pass: 0
+    row_generators:
+    - name: row_generators.make_null
+      columns_assigned: drug_concept_id
+    - name: row_generators.make_null
+      columns_assigned: drug_source_concept_id
+    - name: row_generators.make_null
+      columns_assigned: drug_type_concept_id
+    - name: row_generators.make_null
+      columns_assigned: person_id
+    - name: row_generators.make_null
+      columns_assigned: provider_id
+    - name: row_generators.make_null
+      columns_assigned: route_concept_id
+    - name: row_generators.make_null
+      columns_assigned: visit_detail_id
+    - name: row_generators.make_null
+      columns_assigned: visit_occurrence_id
+
+  fact_relationship:
+    num_rows_per_pass: 0
+
+  measurement:
+    num_rows_per_pass: 0
+    row_generators:
+      # These will rather be filled in by the story generator.
+      # Setting them to null here makes running the story generator faster.
+      - name: row_generators.make_null
+        columns_assigned: measurement_time
+      - name: row_generators.make_null
+        columns_assigned: value_source_value
+      - name: row_generators.make_null
+        columns_assigned: measurement_type_concept_id
+      - name: row_generators.make_null
+        columns_assigned: measurement_source_concept_id
+      - name: row_generators.make_null
+        columns_assigned: operator_concept_id
+      - name: row_generators.make_null
+        columns_assigned: measurement_concept_id
+      - name: row_generators.make_null
+        columns_assigned: person_id
+      - name: row_generators.make_null
+        columns_assigned: provider_id
+      - name: row_generators.make_null
+        columns_assigned: unit_concept_id
+      - name: row_generators.make_null
+        columns_assigned: visit_occurrence_id
+
+  metadata:
+    num_rows_per_pass: 0
+
+  note:
+    num_rows_per_pass: 0
+
+  note_nlp:
+    num_rows_per_pass: 0
+
+  observation:
+    num_rows_per_pass: 0
+    row_generators:
+      # These will rather be filled in by the story generator.
+      # Setting them to null here makes running the story generator faster.
+      - name: row_generators.make_null
+        columns_assigned: observation_concept_id
+      - name: row_generators.make_null
+        columns_assigned: observation_source_concept_id
+      - name: row_generators.make_null
+        columns_assigned: observation_type_concept_id
+      - name: row_generators.make_null
+        columns_assigned: person_id
+      - name: row_generators.make_null
+        columns_assigned: provider_id
+      - name: row_generators.make_null
+        columns_assigned: qualifier_concept_id
+      - name: row_generators.make_null
+        columns_assigned: unit_concept_id
+      - name: row_generators.make_null
+        columns_assigned: value_as_concept_id
+      - name: row_generators.make_null
+        columns_assigned: visit_detail_id
+      - name: row_generators.make_null
+        columns_assigned: visit_occurrence_id
+
+  observation_period:
+    num_rows_per_pass: 0
+    row_generators:
+      - name: row_generators.make_null
+        columns_assigned: period_type_concept_id
+      - name: row_generators.make_null
+        columns_assigned: person_id
+
+  payer_plan_period:
+    num_rows_per_pass: 0
+
+  procedure_occurrence:
+    num_rows_per_pass: 0
+    row_generators:
+      - name: row_generators.make_null
+        columns_assigned: modifier_concept_id
+      - name: row_generators.make_null
+        columns_assigned: person_id
+      - name: row_generators.make_null
+        columns_assigned: procedure_concept_id
+      - name: row_generators.make_null
+        columns_assigned: procedure_type_concept_id
+
+  specimen:
+    num_rows_per_pass: 0
+    row_generators:
+      - name: row_generators.make_null
+        columns_assigned: anatomic_site_concept_id
+      - name: row_generators.make_null
+        columns_assigned: disease_status_concept_id
+      - name: row_generators.make_null
+        columns_assigned: person_id
+      - name: row_generators.make_null
+        columns_assigned: specimen_concept_id
+      - name: row_generators.make_null
+        columns_assigned: specimen_type_concept_id
+      - name: row_generators.make_null
+        columns_assigned: unit_concept_id
+
+  visit_detail:
+    num_rows_per_pass: 0
+
+  visit_occurrence:
+    num_rows_per_pass: 0
+    row_generators:
+      - name: row_generators.make_null
+        columns_assigned: provider_id
+      - name: row_generators.make_null
+        columns_assigned: care_site_id
+      - name: row_generators.make_null
+        columns_assigned: visit_source_value
+      - name: row_generators.make_null
+        columns_assigned: visit_source_concept_id
+      - name: row_generators.make_null
+        columns_assigned: preceding_visit_occurrence_id
+
+      - name: row_generators.sample_from_sql_group_by
+        kwargs:
+          group_by_result: SRC_STATS["count_discharge"]
+          weights_column: '"num"'
+          value_columns: ["discharge_to_source_value", "discharge_to_concept_id"]
+        columns_assigned: [discharge_to_source_value, discharge_to_concept_id]
+
+      - name: row_generators.sample_from_sql_group_by
+        kwargs:
+          group_by_result: SRC_STATS["count_admission_source"]
+          weights_column: '"num"'
+          value_columns: ["admitting_source_value", "admitting_source_concept_id"]
+        columns_assigned: [admitting_source_value, admitting_source_concept_id]
+
+      - name: row_generators.sample_from_sql_group_by
+        kwargs:
+          group_by_result: SRC_STATS["count_visit_type"]
+          weights_column: '"num"'
+          value_columns: ["visit_type_concept_id", "visit_concept_id"]
+        columns_assigned: [visit_type_concept_id, visit_concept_id]
+
+  person:
+    num_rows_per_pass: 0
+    row_generators:
+      - name: row_generators.birth_datetime
+        args: [generic, SRC_STATS]
+        columns_assigned:
+          [
+            "year_of_birth",
+            "month_of_birth",
+            "day_of_birth",
+            "birth_datetime",
+          ]
+
+      - name: row_generators.gender
+        args: [SRC_STATS]
+        columns_assigned:
+          [
+            "gender_concept_id",
+            "gender_source_value",
+            "gender_source_concept_id",
+          ]
+
+      - name: row_generators.ethnicity_race
+        args: [SRC_STATS]
+        columns_assigned:
+          [
+            "race_concept_id",
+            "race_source_value",
+            "race_source_concept_id",
+            "ethnicity_concept_id",
+            "ethnicity_source_value",
+            "ethnicity_source_concept_id",
+          ]
+
+      - name: row_generators.make_null
+        columns_assigned: person_source_value
+      - name: row_generators.make_null
+        columns_assigned: provider_id
+      - name: row_generators.make_null
+        columns_assigned: care_site_id
+
+  death:
+    num_rows_per_pass: 0
+    row_generators:
+      - name: row_generators.make_null
+        columns_assigned: death_type_concept_id
+      - name: row_generators.make_null
+        columns_assigned: cause_concept_id
+      - name: row_generators.make_null
+        columns_assigned: cause_source_value
+      - name: row_generators.make_null
+        columns_assigned: cause_source_concept_id
+
+  condition_occurrence:
+    num_rows_per_pass: 0
+    row_generators:
+      - name: row_generators.make_null
+        columns_assigned: stop_reason
+
+      - name: row_generators.make_null
+        columns_assigned: visit_detail_id
+
+      - name: row_generators.make_null
+        columns_assigned: condition_status_source_value
+
+      - name: row_generators.make_null
+        columns_assigned: condition_source_concept_id
+
+      - name: row_generators.make_null
+        columns_assigned: visit_occurrence_id
+
+      - name: row_generators.make_null
+        columns_assigned: provider_id
+
+      - name: row_generators.make_null
+        columns_assigned: condition_concept_id
+
+      - name: row_generators.make_null
+        columns_assigned: person_id
+
+      - name: row_generators.make_null
+        columns_assigned: condition_type_concept_id
+
+      - name: row_generators.make_null
+        columns_assigned: condition_status_concept_id
+
+story_generators_module: story_generators
+story_generators:
+  - name: story_generators.patient_story
+    kwargs:
+      src_stats: SRC_STATS
+    num_stories_per_pass: 1

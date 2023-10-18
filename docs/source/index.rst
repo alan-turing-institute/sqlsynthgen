@@ -1,12 +1,14 @@
-.. sqlsynthgen documentation master file, created by
-   sphinx-quickstart on Fri Jan 13 15:18:50 2023.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. _page-index:
 
-sqlsynthgen's documentation
-=======================================
+sqlsynthgen's Documentation
+---------------------------
 
 **sqlsynthgen** is a package for making copies of relational databases and populating them with random data.
+
+If you are new to sqlsynthgen (SSG for short), we recommend going through the pages of this documentation roughly in order:
+After :ref:`installing <page-installation>` SSG and learning the basic commands that it uses from the :ref:`quick start guide <page-quickstart>`, the :ref:`introductory tutorial <page-introduction>` will walk you through a relatively simple use case in detail.
+You can then look at one of our other two example use cases, one for :ref:`financial data <page-example-loan-data>` and one for :ref:`health data <page-example-health-data>`.
+The latter also goes through some more advanced features of SSG and how to use them, that are relevant beyond health data use cases.
 
 .. note::
 
@@ -28,17 +30,17 @@ Contents:
 
    installation
    quickstart
-   tutorials/*
+   introduction
+   loan_data
+   health_data
    configuration
-   sqlsynthgen
+   api
    faq
-   changelog
    glossary
 
 
-Indices and tables
+Indices and Tables
 ------------------
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`

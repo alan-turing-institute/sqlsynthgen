@@ -25,9 +25,13 @@ class RstTests(TestCase):
             'No directive entry for "toctree"',
             'No directive entry for "automodule"',
             'No directive entry for "literalinclude"',
-            'Hyperlink target "enduser" is not referenced',
-            'Hyperlink target "introduction" is not referenced',
+            'Hyperlink target "page-introduction" is not referenced',
             'Hyperlink target "source-statistics" is not referenced',
+            'Hyperlink target "page-example-loan-data" is not referenced',
+            'Hyperlink target "page-index" is not referenced.',
+            'Hyperlink target "page-example-health-data" is not referenced.',
+            'Hyperlink target "page-quickstart" is not referenced.',
+            'Hyperlink target "page-installation" is not referenced.',
         ]
         filtered_errors = []
         for file_errors in all_errors:

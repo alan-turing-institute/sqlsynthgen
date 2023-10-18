@@ -1,4 +1,6 @@
-Tutorial: Loan Data
+.. _page-example-loan-data:
+
+Example: Loan Data
 ===================
 
 Intro
@@ -13,7 +15,7 @@ Setup
 +++++
 
 The PKDD'99 dataset is stored on a MariaDB database, which means that we need a local MariaDB database to store the synthetic data.
-MariaDB installation instructions can be found `here <https://mariadb.org/download/?t=mariadb&p=mariadb&r=11.2.0#entry-header>`_.
+MariaDB installation instructions can be found `here <https://mariadb.org/download/?t=mariadb&p=mariadb&r=11.2.0#entry-header>`__.
 We presume that you have a local server running on port 3306, with a user called ``myuser``, a password ``mypassword`` and a database called ``financial``.
 
 .. code-block:: console
@@ -24,7 +26,7 @@ We presume that you have a local server running on port 3306, with a user called
     MariaDB > grant all privileges on financial.* to 'myuser'@'localhost';
     MariaDB > \q
 
-After :ref:`installing SqlSynthGen <enduser>`, we create a `.env` file to set some environment variables to define the source database as the one linked at the bottom of the PKDD'99 page, and the destination database as the local one:
+After :ref:`installing SqlSynthGen <page-installation>`, we create a `.env` file to set some environment variables to define the source database as the one linked at the bottom of the PKDD'99 page, and the destination database as the local one:
 
 **.env**
 
@@ -66,7 +68,7 @@ we see that they are always 0 or 1 so we will pick randomly from 0 and 1 for our
 
 **config.yaml**
 
-.. literalinclude:: ../../../tests/examples/loans/config1.yaml
+.. literalinclude:: ../../tests/examples/loans/config1.yaml
    :language: yaml
 
 We run SqlSynthGen's ``make-generators`` command to create ``ssg.py``, which contains a generator class for each table in the source database:
@@ -99,7 +101,7 @@ We notice that the ``districts`` table doesn't contain any sensitive data so we 
 
 **config.yaml**
 
-.. literalinclude:: ../../../tests/examples/loans/config2.yaml
+.. literalinclude:: ../../tests/examples/loans/config2.yaml
    :language: yaml
 
 We can export the vocabularies to `.yaml` files, delete the old synthetic data, import the vocabularies and create new synthetic data with:
@@ -200,14 +202,14 @@ We can take the real values in the right proportions, and even add noise to make
 
 **config.yaml**
 
-.. literalinclude:: ../../../tests/examples/loans/config3.yaml
+.. literalinclude:: ../../tests/examples/loans/config3.yaml
    :language: yaml
 
 We define a custom row-generator to use the source statistics and Python's ``random.choices()`` function to choose a value:
 
 **my_row_generators.py**
 
-.. literalinclude:: ../../../tests/examples/loans/my_row_generators.py
+.. literalinclude:: ../../tests/examples/loans/my_row_generators.py
    :language: python
 
 As before, we will need to re-create ``ssg.py`` and the data.
@@ -221,4 +223,4 @@ As before, we will need to re-create ``ssg.py`` and the data.
     $ sqlsynthgen create-data --num-passes 100
 
 For further refinement, you can use "story generators" to create inter-table correlations so that, for example, the number of loan applications depends on the number of cards they have or the average amount of a bank transfer depends on the home city of a client.
-See the :ref:`introduction <introduction>` for more.
+See the :ref:`introduction <page-introduction>` for more.
