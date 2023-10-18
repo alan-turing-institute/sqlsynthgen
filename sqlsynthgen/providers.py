@@ -124,20 +124,24 @@ class SQLGroupByProvider(BaseProvider):
         make-stats outputs.
 
         For example, if one executes the following src-stats query
-        ```
-        SELECT COUNT(*) AS num, nationality, gender, age
-        FROM person
-        GROUP BY nationality, gender, age
-        ```
+
+        .. code-block:: sql
+
+          SELECT COUNT(*) AS num, nationality, gender, age
+          FROM person
+          GROUP BY nationality, gender, age
+
         and calls it the `count_demographics` query, one can then use
-        ```
-        generic.sql_group_by_provider.sample(
-            SRC_STATS["count_demographics"],
-            weights_column="num",
-            value_columns=["gender", "nationality"],
-            filter_dict={"age": 23},
-        )
-        ```
+
+        .. code-block:: python
+
+          generic.sql_group_by_provider.sample(
+              SRC_STATS["count_demographics"],
+              weights_column="num",
+              value_columns=["gender", "nationality"],
+              filter_dict={"age": 23},
+          )
+
         to restrict the results of the query to only people aged 23, and random sample a
         pair of `gender` and `nationality` values (returned as a tuple in that order),
         with the weights of the sampling given by the counts `num`.
