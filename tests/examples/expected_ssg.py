@@ -12,6 +12,12 @@ generic.add_provider(BytesProvider)
 from sqlsynthgen.providers import ColumnValueProvider
 
 generic.add_provider(ColumnValueProvider)
+from sqlsynthgen.providers import NullProvider
+
+generic.add_provider(NullProvider)
+from sqlsynthgen.providers import SQLGroupByProvider
+
+generic.add_provider(SQLGroupByProvider)
 from sqlsynthgen.providers import TimedeltaProvider
 
 generic.add_provider(TimedeltaProvider)
@@ -76,8 +82,10 @@ class personGenerator(TableGenerator):
         result = {}
         result["name"] = generic.person.full_name()
         result["stored_from"] = generic.datetime.datetime(2022, 2022)
-        result["research_opt_out"] = row_generators.opt_out(
-            generic=generic, count_opt_outs=SRC_STATS["count_opt_outs"]
+        result["research_opt_out"] = generic.sql_group_by_provider.sample(
+            group_by_result=SRC_STATS["count_opt_outs"],
+            weights_column="num",
+            value_columns="research_opt_out",
         )
         return result
 

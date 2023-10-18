@@ -16,16 +16,6 @@ def timespan_generator(
     return start, end, delta.total_seconds()
 
 
-def opt_out(generic, count_opt_outs):
-    num_false = int(
-        next(row["num"] for row in count_opt_outs if row["research_opt_out"] is False)
-    )
-    num_true = int(
-        next(row["num"] for row in count_opt_outs if row["research_opt_out"] is True)
-    )
-    return generic.weighted_boolean_provider.bool(num_true / num_false)
-
-
 def boolean_pair(generic):
     return tuple(generic.random.choice([True, False]) for _ in range(2))
 

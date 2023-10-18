@@ -58,10 +58,11 @@ tables:
           - 2022
           - 2022
         columns_assigned: stored_from
-      - name: row_generators.opt_out
+      - name: generic.sql_group_by_provider.sample
         kwargs:
-          generic: generic
-          count_opt_outs: SRC_STATS["count_opt_outs"]
+          group_by_result: SRC_STATS["count_opt_outs"]
+          weights_column: '"num"'
+          value_columns: '"research_opt_out"'
         columns_assigned: research_opt_out
 
   hospital_visit:

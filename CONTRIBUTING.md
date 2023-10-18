@@ -86,6 +86,7 @@ Functional tests require a PostgreSQL service running. Perform the following ste
 
     ```bash
     createdb dst
+    PGPASSWORD=password psql --host=localhost --username=postgres --file=tests/examples/dst.dump
     ```
 
 1. Finally, run the functional tests. You will need the environment variable `REQUIRES_DB` with a value of `1`.

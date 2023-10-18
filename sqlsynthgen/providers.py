@@ -1,7 +1,7 @@
 """This module contains Mimesis Provider sub-classes."""
 import datetime as dt
 import random
-from typing import Any
+from typing import Any, Optional, Union, cast
 
 from mimesis import Datetime, Text
 from mimesis.providers.base import BaseDataProvider, BaseProvider
@@ -101,3 +101,95 @@ class WeightedBooleanProvider(BaseProvider):
     def bool(self, probability: float) -> bool:
         """Return True with given `probability`, otherwise False."""
         return self.random.uniform(0, 1) < probability
+
+
+class SQLGroupByProvider(BaseProvider):
+    """A Mimesis provider that samples from the results of a SQL `GROUP BY` query."""
+
+    class Meta:
+        """Meta-class for SQLGroupByProvider settings."""
+
+        name = "sql_group_by_provider"
+
+    def sample(
+        self,
+        group_by_result: list[dict[str, Any]],
+        weights_column: str,
+        value_columns: Optional[Union[str, list[str]]] = None,
+        filter_dict: Optional[dict[str, Any]] = None,
+    ) -> Union[Any, dict[str, Any], tuple[Any, ...]]:
+        """Random sample a row from the result of a SQL `GROUP BY` query.
+
+        The result of the query is assumed to be in the format that sqlsynthgen's
+        make-stats outputs.
+
+        For example, if one executes the following src-stats query
+        ```
+        SELECT COUNT(*) AS num, nationality, gender, age
+        FROM person
+        GROUP BY nationality, gender, age
+        ```
+        and calls it the `count_demographics` query, one can then use
+        ```
+        generic.sql_group_by_provider.sample(
+            SRC_STATS["count_demographics"],
+            weights_column="num",
+            value_columns=["gender", "nationality"],
+            filter_dict={"age": 23},
+        )
+        ```
+        to restrict the results of the query to only people aged 23, and random sample a
+        pair of `gender` and `nationality` values (returned as a tuple in that order),
+        with the weights of the sampling given by the counts `num`.
+
+        Arguments:
+            group_by_result: Result of the query. A list of rows, with each row being a
+                dictionary with names of columns as keys.
+            weights_column: Name of the column which holds the weights based on which to
+                sample. Typically the result of a `COUNT(*)`.
+            value_columns: Name(s) of the column(s) to include in the result. Either a
+                string for a single column, an iterable of strings for multiple
+                columns, or `None` for all columns (default).
+            filter_dict: Dictionary of `{name_of_column: value_it_must_have}`, to
+                restrict the sampling to a subset of `group_by_result`. Optional.
+
+        Returns:
+            * a single value if `value_columns` is a single column name,
+            * a tuple of values in the same order as `value_columns` if `value_columns`
+              is an iterable of strings.
+            * a dictionary of {name_of_column: value} if `value_columns` is `None`
+        """
+        if filter_dict is not None:
+
+            def filter_func(row: dict) -> bool:
+                for key, value in filter_dict.items():
+                    if row[key] != value:
+                        return False
+                return True
+
+            group_by_result = [row for row in group_by_result if filter_func(row)]
+            if not group_by_result:
+                raise ValueError("No group_by_result left after filter")
+
+        weights = [cast(int, row[weights_column]) for row in group_by_result]
+        weights = [w if w >= 0 else 1 for w in weights]
+        random_choice = random.choices(group_by_result, weights)[0]
+        if isinstance(value_columns, str):
+            return random_choice[value_columns]
+        if value_columns is not None:
+            values = tuple(random_choice[col] for col in value_columns)
+            return values
+        return random_choice
+
+
+class NullProvider(BaseProvider):
+    """A Mimesis provider that always returns `None`."""
+
+    class Meta:
+        """Meta-class for NullProvider settings."""
+
+        name = "null_provider"
+
+    def null(self) -> None:
+        """Return `None`."""
+        return None

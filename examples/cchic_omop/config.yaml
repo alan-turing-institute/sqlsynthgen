@@ -2392,19 +2392,19 @@ tables:
   device_exposure:
     num_rows_per_pass: 0
     row_generators:
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: person_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: device_concept_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: device_type_concept_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: provider_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: visit_occurrence_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: visit_detail_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: device_source_concept_id
 
   dose_era:
@@ -2416,21 +2416,21 @@ tables:
   drug_exposure:
     num_rows_per_pass: 0
     row_generators:
-    - name: row_generators.make_null
+    - name: generic.null_provider.null
       columns_assigned: drug_concept_id
-    - name: row_generators.make_null
+    - name: generic.null_provider.null
       columns_assigned: drug_source_concept_id
-    - name: row_generators.make_null
+    - name: generic.null_provider.null
       columns_assigned: drug_type_concept_id
-    - name: row_generators.make_null
+    - name: generic.null_provider.null
       columns_assigned: person_id
-    - name: row_generators.make_null
+    - name: generic.null_provider.null
       columns_assigned: provider_id
-    - name: row_generators.make_null
+    - name: generic.null_provider.null
       columns_assigned: route_concept_id
-    - name: row_generators.make_null
+    - name: generic.null_provider.null
       columns_assigned: visit_detail_id
-    - name: row_generators.make_null
+    - name: generic.null_provider.null
       columns_assigned: visit_occurrence_id
 
   fact_relationship:
@@ -2441,25 +2441,25 @@ tables:
     row_generators:
       # These will rather be filled in by the story generator.
       # Setting them to null here makes running the story generator faster.
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: measurement_time
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: value_source_value
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: measurement_type_concept_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: measurement_source_concept_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: operator_concept_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: measurement_concept_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: person_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: provider_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: unit_concept_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: visit_occurrence_id
 
   metadata:
@@ -2476,33 +2476,33 @@ tables:
     row_generators:
       # These will rather be filled in by the story generator.
       # Setting them to null here makes running the story generator faster.
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: observation_concept_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: observation_source_concept_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: observation_type_concept_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: person_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: provider_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: qualifier_concept_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: unit_concept_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: value_as_concept_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: visit_detail_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: visit_occurrence_id
 
   observation_period:
     num_rows_per_pass: 0
     row_generators:
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: period_type_concept_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: person_id
 
   payer_plan_period:
@@ -2511,29 +2511,29 @@ tables:
   procedure_occurrence:
     num_rows_per_pass: 0
     row_generators:
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: modifier_concept_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: person_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: procedure_concept_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: procedure_type_concept_id
 
   specimen:
     num_rows_per_pass: 0
     row_generators:
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: anatomic_site_concept_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: disease_status_concept_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: person_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: specimen_concept_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: specimen_type_concept_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: unit_concept_id
 
   visit_detail:
@@ -2542,32 +2542,32 @@ tables:
   visit_occurrence:
     num_rows_per_pass: 0
     row_generators:
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: provider_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: care_site_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: visit_source_value
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: visit_source_concept_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: preceding_visit_occurrence_id
 
-      - name: row_generators.sample_from_sql_group_by
+      - name: generic.sql_group_by_provider.sample
         kwargs:
           group_by_result: SRC_STATS["count_discharge"]
           weights_column: '"num"'
           value_columns: ["discharge_to_source_value", "discharge_to_concept_id"]
         columns_assigned: [discharge_to_source_value, discharge_to_concept_id]
 
-      - name: row_generators.sample_from_sql_group_by
+      - name: generic.sql_group_by_provider.sample
         kwargs:
           group_by_result: SRC_STATS["count_admission_source"]
           weights_column: '"num"'
           value_columns: ["admitting_source_value", "admitting_source_concept_id"]
         columns_assigned: [admitting_source_value, admitting_source_concept_id]
 
-      - name: row_generators.sample_from_sql_group_by
+      - name: generic.sql_group_by_provider.sample
         kwargs:
           group_by_result: SRC_STATS["count_visit_type"]
           weights_column: '"num"'
@@ -2588,7 +2588,7 @@ tables:
           ]
 
       - name: row_generators.gender
-        args: [SRC_STATS]
+        args: [generic, SRC_STATS]
         columns_assigned:
           [
             "gender_concept_id",
@@ -2597,7 +2597,7 @@ tables:
           ]
 
       - name: row_generators.ethnicity_race
-        args: [SRC_STATS]
+        args: [generic, SRC_STATS]
         columns_assigned:
           [
             "race_concept_id",
@@ -2608,61 +2608,61 @@ tables:
             "ethnicity_source_concept_id",
           ]
 
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: person_source_value
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: provider_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: care_site_id
 
   death:
     num_rows_per_pass: 0
     row_generators:
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: death_type_concept_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: cause_concept_id
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: cause_source_value
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: cause_source_concept_id
 
   condition_occurrence:
     num_rows_per_pass: 0
     row_generators:
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: stop_reason
 
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: visit_detail_id
 
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: condition_status_source_value
 
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: condition_source_concept_id
 
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: visit_occurrence_id
 
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: provider_id
 
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: condition_concept_id
 
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: person_id
 
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: condition_type_concept_id
 
-      - name: row_generators.make_null
+      - name: generic.null_provider.null
         columns_assigned: condition_status_concept_id
 
 story_generators_module: story_generators
 story_generators:
   - name: story_generators.patient_story
     kwargs:
-      src_stats: SRC_STATS
+      src_stats: [generic, SRC_STATS]
     num_stories_per_pass: 1
