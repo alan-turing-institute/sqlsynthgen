@@ -98,10 +98,6 @@ def always_insert(object: Any, db_session: Session) -> bool:
     return True
 
 
-def insert_if_user_present(user_session: UserSession, db_session: Session) -> bool:
-    return db_session.query(User).get(user_session.user_id) is not None
-
-
 def upload_csv_to_database(
     filename: str,
     mapped_class: Type,
@@ -114,13 +110,14 @@ def upload_csv_to_database(
     dataframe: pd.DataFrame = dataframe_function(filename)
     dataframe = dataframe.replace({np.nan: None})
 
-    for _, data_as_series in tqdm(dataframe.iterrows()):
+    num_rows = len(dataframe)
+    for _, data_as_series in tqdm(dataframe.iterrows(), total=num_rows):
         model_instance = mapped_class(**data_as_series)
         if filter_function(model_instance, session):
             session.add(model_instance)
-            session.commit()
         else:
             print(f"Skipping: {model_instance=}")
+    session.commit()
 
 
 def main():
@@ -140,6 +137,12 @@ def main():
         upload_csv_to_database(countries_data_file, Country, session)
         upload_csv_to_database(buckets_data_file, AgeGenderBucket, session)
         upload_csv_to_database(users_data_file, User, session, user_csv_to_dataframe)
+
+        all_user_ids = {t[0] for t in session.query(User.id).all()}
+
+        def insert_if_user_present(user_session: UserSession, _: Session) -> bool:
+            return user_session.user_id in all_user_ids
+
         upload_csv_to_database(
             sessions_data_file,
             UserSession,
