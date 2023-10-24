@@ -111,12 +111,14 @@ def upload_csv_to_database(
     dataframe = dataframe.replace({np.nan: None})
 
     num_rows = len(dataframe)
-    for _, data_as_series in tqdm(dataframe.iterrows(), total=num_rows):
+    commit_frequency = 100000
+    for idx, row in tqdm(enumerate(dataframe.iterrows()), total=num_rows):
+        data_as_series = row[1]
         model_instance = mapped_class(**data_as_series)
         if filter_function(model_instance, session):
             session.add(model_instance)
-        else:
-            print(f"Skipping: {model_instance=}")
+        if idx % commit_frequency == 0:
+            session.commit()
     session.commit()
 
 
