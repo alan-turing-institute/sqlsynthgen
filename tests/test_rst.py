@@ -32,6 +32,7 @@ class RstTests(TestCase):
             'Hyperlink target "page-example-health-data" is not referenced.',
             'Hyperlink target "page-quickstart" is not referenced.',
             'Hyperlink target "page-installation" is not referenced.',
+            'Hyperlink target "story-generators" is not referenced.',
         ]
         filtered_errors = []
         for file_errors in all_errors:

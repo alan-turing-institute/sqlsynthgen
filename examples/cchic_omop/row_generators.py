@@ -1,7 +1,8 @@
 """Row generators for the CC HIC OMOP schema."""
 import datetime as dt
-import random
-from typing import Any, Optional, Union, cast
+from typing import Optional, Union, cast
+
+from mimesis import Generic
 
 SqlValue = Union[float, int, str, bool, dt.datetime, dt.date, None]
 SqlRow = dict[str, SqlValue]
@@ -9,55 +10,8 @@ SrcStatsResult = list[SqlRow]
 SrcStats = dict[str, SrcStatsResult]
 
 
-def sample_from_sql_group_by(
-    group_by_result: SrcStatsResult,
-    weights_column: str,
-    value_columns: Optional[Union[str, list[str]]] = None,
-    filter_dict: Optional[dict[str, Any]] = None,
-) -> Union[SqlValue, SqlRow, tuple[SqlValue, ...]]:
-    """Sample a row from the result of a SQL `GROUP BY` query.
-
-    Arguments:
-        group_by_result: Result of the query. A list of rows, with each row being a
-            dictionary with names of columns as keys.
-        weights_column: Name of the column which holds the weights based on which to
-            sample. Typically the result of a `COUNT(*)`.
-        value_columns: Name(s) of the column(s) to include in the result. Either a
-            string, for a single column, an iterable of strings, or `None` for all
-            columns.
-        filter_dict: Dictionary of `{name_of_column: value_it_must_have}`, to restrict
-            the sampling to a subset of group_by_result.
-
-    Returns:
-        * a single value, if `value_columns` is a single column name,
-        * a tuple of values, in the same order as `value_columns`, if one is provided
-        * a dictionary of {name_of_column: value} if `value_columns` is `None`
-    """
-    if filter_dict is not None:
-
-        def filter_func(row: dict) -> bool:
-            for key, value in filter_dict.items():
-                if row[key] != value:
-                    return False
-            return True
-
-        group_by_result = [row for row in group_by_result if filter_func(row)]
-        if not group_by_result:
-            raise ValueError("No group_by_result left after filter")
-
-    weights = [cast(int, row[weights_column]) for row in group_by_result]
-    weights = [w if w >= 0 else 1 for w in weights]
-    random_choice = random.choices(group_by_result, weights)[0]
-    if isinstance(value_columns, str):
-        return random_choice[value_columns]
-    if value_columns is not None:
-        values = tuple(random_choice[col] for col in value_columns)
-        return values
-    return random_choice
-
-
 def birth_datetime(
-    generic: Any, src_stats: SrcStats
+    generic: Generic, src_stats: SrcStats
 ) -> tuple[Optional[int], Optional[int], Optional[int], Optional[dt.datetime]]:
     """Generate values for the four birth datetime columns of the OMOP schema.
 
@@ -65,7 +19,7 @@ def birth_datetime(
     """
     year_of_birth = cast(
         int,
-        sample_from_sql_group_by(
+        generic.sql_group_by_provider.sample(
             src_stats["count_alive_by_birth_year"], "num", value_columns="year_of_birth"
         ),
     )
@@ -92,14 +46,14 @@ def birth_datetime(
 GenderRows = tuple[Optional[int], Optional[str], Optional[int]]
 
 
-def gender(src_stats: SrcStats) -> GenderRows:
+def gender(generic: Generic, src_stats: SrcStats) -> GenderRows:
     """Generate values for the four gender columns of the OMOP schema.
 
     Samples from the src_stats["count_gender"] result.
     """
     return cast(
         GenderRows,
-        sample_from_sql_group_by(
+        generic.sql_group_by_provider.sample(
             src_stats["count_gender"],
             "num",
             value_columns=[
@@ -121,14 +75,14 @@ EthnicityRaceRows = tuple[
 ]
 
 
-def ethnicity_race(src_stats: SrcStats) -> EthnicityRaceRows:
+def ethnicity_race(generic: Generic, src_stats: SrcStats) -> EthnicityRaceRows:
     """Generate values for the six race and gender columns of the OMOP schema.
 
     Samples from the src_stats["count_ethnicity_race"] result.
     """
     return cast(
         EthnicityRaceRows,
-        sample_from_sql_group_by(
+        generic.sql_group_by_provider.sample(
             src_stats["count_ethnicity_race"],
             "num",
             value_columns=[
@@ -141,8 +95,3 @@ def ethnicity_race(src_stats: SrcStats) -> EthnicityRaceRows:
             ],
         ),
     )
-
-
-def make_null() -> None:
-    """Return `None`."""
-    return None

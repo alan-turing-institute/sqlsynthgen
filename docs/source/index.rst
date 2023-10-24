@@ -1,6 +1,6 @@
 .. _page-index:
 
-sqlsynthgen's Documentation
+sqlsynthgen
 ---------------------------
 
 **sqlsynthgen** is a package for making copies of relational databases and populating them with random data.

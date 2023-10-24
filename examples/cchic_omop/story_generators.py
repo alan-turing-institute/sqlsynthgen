@@ -3,7 +3,12 @@ import datetime as dt
 from typing import Callable, Generator, Optional, Union, cast
 
 import numpy as np
-import row_generators as rg
+from mimesis import Generic
+
+SqlValue = Union[float, int, str, bool, dt.datetime, dt.date, None]
+SqlRow = dict[str, SqlValue]
+SrcStatsResult = list[SqlRow]
+SrcStats = dict[str, SrcStatsResult]
 
 
 def random_normal(mean: float, std_dev: Optional[float] = None) -> float:
@@ -18,10 +23,10 @@ def random_normal(mean: float, std_dev: Optional[float] = None) -> float:
 
 
 def gen_death(
-    person: rg.SqlRow, src_stats: rg.SrcStats
-) -> Optional[tuple[str, rg.SqlRow]]:
+    generic: Generic, person: SqlRow, src_stats: SrcStats
+) -> Optional[tuple[str, SqlRow]]:
     """Generate a row for the death table."""
-    alive = rg.sample_from_sql_group_by(
+    alive = generic.sql_group_by_provider.sample(
         src_stats["count_alive_by_birth_year"],
         weights_column="num",
         value_columns="alive",
@@ -44,12 +49,15 @@ def gen_death(
 
 
 def gen_observation_period(
-    person: rg.SqlRow, visit_occurrence: rg.SqlRow, src_stats: rg.SrcStats
-) -> tuple[str, rg.SqlRow]:
+    generic: Generic,
+    person: SqlRow,
+    visit_occurrence: SqlRow,
+    src_stats: SrcStats,
+) -> tuple[str, SqlRow]:
     """Generate a row for the observation_period table."""
     period_type_concept_id = cast(
         int,
-        rg.sample_from_sql_group_by(
+        generic.sql_group_by_provider.sample(
             src_stats["count_observation_period_types"],
             weights_column="num",
             value_columns="period_type_concept_id",
@@ -62,7 +70,7 @@ def gen_observation_period(
         avg_diff_end,
     ) = cast(
         tuple[str, str, float, float],
-        rg.sample_from_sql_group_by(
+        generic.sql_group_by_provider.sample(
             src_stats["observation_period_date_diffs"],
             weights_column="num",
             value_columns=[
@@ -103,8 +111,8 @@ def gen_observation_period(
 
 
 def gen_visit_occurrence(
-    person: rg.SqlRow, death: Optional[rg.SqlRow], src_stats: rg.SrcStats
-) -> tuple[str, rg.SqlRow]:
+    person: SqlRow, death: Optional[SqlRow], src_stats: SrcStats
+) -> tuple[str, SqlRow]:
     """Generate a row for the visit_occurrence table."""
     age_days_at_visit_start = abs(
         random_normal(
@@ -139,9 +147,7 @@ def gen_visit_occurrence(
     )
 
 
-def random_event_times(
-    avg_rate: float, visit_occurrence: rg.SqlRow
-) -> list[dt.datetime]:
+def random_event_times(avg_rate: float, visit_occurrence: SqlRow) -> list[dt.datetime]:
     """Return random times during a visit, occurring roughly at the given rate."""
     start = cast(dt.datetime, visit_occurrence["visit_start_datetime"])
     end = cast(dt.datetime, visit_occurrence["visit_end_datetime"])
@@ -157,24 +163,26 @@ def random_event_times(
 
 
 def gen_events(  # pylint: disable=too-many-arguments
+    generic: Generic,
     avg_rate: float,
-    visit_occurrence: rg.SqlRow,
-    person: rg.SqlRow,
+    visit_occurrence: SqlRow,
+    person: SqlRow,
     generator_function: Callable[
-        [int, int, dt.datetime, rg.SrcStats], Optional[rg.SqlRow]
+        [Generic, int, int, dt.datetime, SrcStats], Optional[SqlRow]
     ],
     table_name: str,
-    src_stats: rg.SrcStats,
-) -> list[tuple[str, rg.SqlRow]]:
+    src_stats: SrcStats,
+) -> list[tuple[str, SqlRow]]:
     """Generate events for a visit occurrence, at a given rate with a given generator.
 
     This is a utility function for generating multiple rows for one of the "event"
     tables (measurements, observation, etc.).
     """
     event_datetimes = random_event_times(avg_rate, visit_occurrence)
-    events: list[tuple[str, rg.SqlRow]] = []
+    events: list[tuple[str, SqlRow]] = []
     for event_datetime in sorted(event_datetimes):
         event = generator_function(
+            generic,
             cast(int, person["person_id"]),
             cast(int, visit_occurrence["visit_occurrence_id"]),
             event_datetime,
@@ -186,19 +194,20 @@ def gen_events(  # pylint: disable=too-many-arguments
 
 
 def assign_categoricals(
-    row: rg.SqlRow,
-    categoricals_result: rg.SrcStatsResult,
+    generic: Generic,
+    row: SqlRow,
+    categoricals_result: SrcStatsResult,
     categorical_columns: list[str],
-    filter_dict: dict[str, rg.SqlValue],
-) -> rg.SqlRow:
+    filter_dict: dict[str, SqlValue],
+) -> SqlRow:
     """Add to a row categorical variables sampled from a query result.
 
     This is a utility function for sampling from a group by query and assigning the
     results to a row dictionary, used by the event generators.
     """
     result = cast(
-        tuple[rg.SqlValue, ...],
-        rg.sample_from_sql_group_by(
+        tuple[SqlValue, ...],
+        generic.sql_group_by_provider.sample(
             categoricals_result,
             weights_column="num",
             value_columns=categorical_columns,
@@ -211,22 +220,23 @@ def assign_categoricals(
 
 
 def gen_condition_occurrence(
+    generic: Generic,
     person_id: int,
     visit_occurrence_id: int,
     event_datetime: dt.datetime,
-    src_stats: rg.SrcStats,
-) -> Optional[rg.SqlRow]:
+    src_stats: SrcStats,
+) -> Optional[SqlRow]:
     """Generate a row for the condition_occurrence table."""
     concept_id = cast(
         int,
-        rg.sample_from_sql_group_by(
+        generic.sql_group_by_provider.sample(
             src_stats["count_condition_occurrences"],
             weights_column="num",
             value_columns="condition_concept_id",
         ),
     )
 
-    row: rg.SqlRow = {
+    row: SqlRow = {
         "condition_concept_id": concept_id,
         "person_id": person_id,
         "visit_occurrence_id": visit_occurrence_id,
@@ -246,6 +256,7 @@ def gen_condition_occurrence(
     ]
     try:
         assign_categoricals(
+            generic,
             row,
             src_stats["condition_occurrence_categoricals"],
             categorical_columns,
@@ -258,7 +269,7 @@ def gen_condition_occurrence(
     try:
         duration_category, avg_duration_hours = cast(
             tuple[str, float],
-            rg.sample_from_sql_group_by(
+            generic.sql_group_by_provider.sample(
                 src_stats["condition_occurrence_duration"],
                 weights_column="num",
                 value_columns=["duration_category", "avg_duration_hours"],
@@ -283,21 +294,22 @@ def gen_condition_occurrence(
 
 
 def gen_measurement(
+    generic: Generic,
     person_id: int,
     visit_occurrence_id: int,
     event_datetime: dt.datetime,
-    src_stats: rg.SrcStats,
-) -> Optional[rg.SqlRow]:
+    src_stats: SrcStats,
+) -> Optional[SqlRow]:
     """Generate a row for the measurement table."""
     concept_id = cast(
         int,
-        rg.sample_from_sql_group_by(
+        generic.sql_group_by_provider.sample(
             src_stats["count_measurements"],
             weights_column="num",
             value_columns="measurement_concept_id",
         ),
     )
-    row: rg.SqlRow = {
+    row: SqlRow = {
         "measurement_concept_id": concept_id,
         "person_id": person_id,
         "visit_occurrence_id": visit_occurrence_id,
@@ -321,6 +333,7 @@ def gen_measurement(
     ]
     try:
         assign_categoricals(
+            generic,
             row,
             src_stats["measurement_categoricals"],
             categorical_columns,
@@ -356,22 +369,23 @@ def gen_measurement(
 
 
 def gen_device_exposure(
+    generic: Generic,
     person_id: int,
     visit_occurrence_id: int,
     event_datetime: dt.datetime,
-    src_stats: rg.SrcStats,
-) -> Optional[rg.SqlRow]:
+    src_stats: SrcStats,
+) -> Optional[SqlRow]:
     """Generate a row for the device_exposure table."""
     concept_id = cast(
         int,
-        rg.sample_from_sql_group_by(
+        generic.sql_group_by_provider.sample(
             src_stats["count_device_exposures"],
             weights_column="num",
             value_columns="device_concept_id",
         ),
     )
 
-    row: rg.SqlRow = {
+    row: SqlRow = {
         "device_concept_id": concept_id,
         "person_id": person_id,
         "visit_occurrence_id": visit_occurrence_id,
@@ -390,6 +404,7 @@ def gen_device_exposure(
     ]
     try:
         assign_categoricals(
+            generic,
             row,
             src_stats["device_exposure_categoricals"],
             categorical_columns,
@@ -419,22 +434,23 @@ def gen_device_exposure(
 
 
 def gen_observation(
+    generic: Generic,
     person_id: int,
     visit_occurrence_id: int,
     event_datetime: dt.datetime,
-    src_stats: rg.SrcStats,
-) -> Optional[rg.SqlRow]:
+    src_stats: SrcStats,
+) -> Optional[SqlRow]:
     """Generate a row for the observation table."""
     concept_id = cast(
         int,
-        rg.sample_from_sql_group_by(
+        generic.sql_group_by_provider.sample(
             src_stats["count_observations"],
             weights_column="num",
             value_columns="observation_concept_id",
         ),
     )
 
-    row: rg.SqlRow = {
+    row: SqlRow = {
         "observation_concept_id": concept_id,
         "person_id": person_id,
         "visit_occurrence_id": visit_occurrence_id,
@@ -458,6 +474,7 @@ def gen_observation(
     ]
     try:
         assign_categoricals(
+            generic,
             row,
             src_stats["observation_categoricals"],
             categorical_columns,
@@ -493,22 +510,23 @@ def gen_observation(
 
 
 def gen_procedure_occurrence(
+    generic: Generic,
     person_id: int,
     visit_occurrence_id: int,
     event_datetime: dt.datetime,
-    src_stats: rg.SrcStats,
-) -> Optional[rg.SqlRow]:
+    src_stats: SrcStats,
+) -> Optional[SqlRow]:
     """Generate a row for the procedure_occurrence table."""
     concept_id = cast(
         int,
-        rg.sample_from_sql_group_by(
+        generic.sql_group_by_provider.sample(
             src_stats["count_procedure_occurrences"],
             weights_column="num",
             value_columns="procedure_concept_id",
         ),
     )
 
-    row: rg.SqlRow = {
+    row: SqlRow = {
         "procedure_concept_id": concept_id,
         "person_id": person_id,
         "visit_occurrence_id": visit_occurrence_id,
@@ -528,6 +546,7 @@ def gen_procedure_occurrence(
     ]
     try:
         assign_categoricals(
+            generic,
             row,
             src_stats["procedure_occurrence_categoricals"],
             categorical_columns,
@@ -540,22 +559,23 @@ def gen_procedure_occurrence(
 
 
 def gen_specimen(
+    generic: Generic,
     person_id: int,
     _: int,
     event_datetime: dt.datetime,
-    src_stats: rg.SrcStats,
-) -> Optional[rg.SqlRow]:
+    src_stats: SrcStats,
+) -> Optional[SqlRow]:
     """Generate a row for the specimen table."""
     concept_id = cast(
         int,
-        rg.sample_from_sql_group_by(
+        generic.sql_group_by_provider.sample(
             src_stats["count_specimens"],
             weights_column="num",
             value_columns="specimen_concept_id",
         ),
     )
 
-    row: rg.SqlRow = {
+    row: SqlRow = {
         "specimen_concept_id": concept_id,
         "person_id": person_id,
         "specimen_datetime": event_datetime,
@@ -576,6 +596,7 @@ def gen_specimen(
     ]
     try:
         assign_categoricals(
+            generic,
             row,
             src_stats["specimen_categoricals"],
             categorical_columns,
@@ -588,22 +609,23 @@ def gen_specimen(
 
 
 def gen_drug_exposure(
+    generic: Generic,
     person_id: int,
     visit_occurrence_id: int,
     event_datetime: dt.datetime,
-    src_stats: rg.SrcStats,
-) -> Optional[rg.SqlRow]:
+    src_stats: SrcStats,
+) -> Optional[SqlRow]:
     """Generate a row for the drug_exposure table."""
     concept_id = cast(
         int,
-        rg.sample_from_sql_group_by(
+        generic.sql_group_by_provider.sample(
             src_stats["count_drug_exposures"],
             weights_column="num",
             value_columns="drug_concept_id",
         ),
     )
 
-    row: rg.SqlRow = {
+    row: SqlRow = {
         "drug_concept_id": concept_id,
         "person_id": person_id,
         "visit_occurrence_id": visit_occurrence_id,
@@ -629,6 +651,7 @@ def gen_drug_exposure(
     ]
     try:
         assign_categoricals(
+            generic,
             row,
             src_stats["drug_exposure_categoricals"],
             categorical_columns,
@@ -645,7 +668,7 @@ def gen_drug_exposure(
         try:
             duration_category, avg_duration_hours = cast(
                 tuple[str, float],
-                rg.sample_from_sql_group_by(
+                generic.sql_group_by_provider.sample(
                     src_stats["drug_exposure_duration"],
                     weights_column="num",
                     value_columns=["duration_category", "avg_duration_hours"],
@@ -667,7 +690,7 @@ def gen_drug_exposure(
     try:
         quantity_category, avg_quantity = cast(
             tuple[str, float],
-            rg.sample_from_sql_group_by(
+            generic.sql_group_by_provider.sample(
                 src_stats["drug_exposure_quantity"],
                 weights_column="num",
                 value_columns=["quantity_category", "avg_quantity"],
@@ -688,8 +711,9 @@ def gen_drug_exposure(
 
 
 def patient_story(
-    src_stats: rg.SrcStats,
-) -> Generator[tuple[str, rg.SqlRow], rg.SqlRow, None]:
+    generic: Generic,
+    src_stats: SrcStats,
+) -> Generator[tuple[str, SqlRow], SqlRow, None]:
     """Yield all the data related to a single patient.
 
     This includes, in order
@@ -706,77 +730,73 @@ def patient_story(
         * `drug_exposure`
     """
     person = yield "person", {}
-    death = gen_death(person, src_stats)
+    death = gen_death(generic, person, src_stats)
     death_row = (yield death) if death else None
     visit_occurrence = yield gen_visit_occurrence(person, death_row, src_stats)
-    yield gen_observation_period(person, visit_occurrence, src_stats)
+    yield gen_observation_period(generic, person, visit_occurrence, src_stats)
 
-    for event in gen_events(
-        cast(float, src_stats["avg_condition_occurrences_per_hour"][0]["avg_per_hour"]),
-        visit_occurrence,
-        person,
+    def gen_events_for_patient(
+        rate_query_name: str,
+        gen_func: Callable[
+            [Generic, int, int, dt.datetime, SrcStats], Optional[SqlRow]
+        ],
+        table_name: str,
+    ) -> list[tuple[str, SqlRow]]:
+        return gen_events(
+            generic,
+            cast(float, src_stats[rate_query_name][0]["avg_per_hour"]),
+            visit_occurrence,
+            person,
+            gen_func,
+            table_name,
+            src_stats,
+        )
+
+    for event in gen_events_for_patient(
+        "avg_condition_occurrences_per_hour",
         gen_condition_occurrence,
         "condition_occurrence",
-        src_stats,
     ):
         yield event
 
-    for event in gen_events(
-        cast(float, src_stats["avg_measurements_per_hour"][0]["avg_per_hour"]),
-        visit_occurrence,
-        person,
+    for event in gen_events_for_patient(
+        "avg_measurements_per_hour",
         gen_measurement,
         "measurement",
-        src_stats,
     ):
         yield event
 
-    for event in gen_events(
-        cast(float, src_stats["avg_device_exposures_per_hour"][0]["avg_per_hour"]),
-        visit_occurrence,
-        person,
+    for event in gen_events_for_patient(
+        "avg_device_exposures_per_hour",
         gen_device_exposure,
         "device_exposure",
-        src_stats,
     ):
         yield event
 
-    for event in gen_events(
-        cast(float, src_stats["avg_observations_per_hour"][0]["avg_per_hour"]),
-        visit_occurrence,
-        person,
+    for event in gen_events_for_patient(
+        "avg_observations_per_hour",
         gen_observation,
         "observation",
-        src_stats,
     ):
         yield event
 
-    for event in gen_events(
-        cast(float, src_stats["avg_procedure_occurrences_per_hour"][0]["avg_per_hour"]),
-        visit_occurrence,
-        person,
+    for event in gen_events_for_patient(
+        "avg_procedure_occurrences_per_hour",
         gen_procedure_occurrence,
         "procedure_occurrence",
-        src_stats,
     ):
         yield event
 
-    for event in gen_events(
-        cast(float, src_stats["avg_specimens_per_hour"][0]["avg_per_hour"]),
-        visit_occurrence,
-        person,
+    for event in gen_events_for_patient(
+        "avg_specimens_per_hour",
         gen_specimen,
         "specimen",
-        src_stats,
     ):
         yield event
 
-    for event in gen_events(
-        cast(float, src_stats["avg_drug_exposures_per_hour"][0]["avg_per_hour"]),
-        visit_occurrence,
-        person,
+    for event in gen_events_for_patient(
+        "avg_drug_exposures_per_hour",
         gen_drug_exposure,
         "drug_exposure",
-        src_stats,
     ):
         yield event

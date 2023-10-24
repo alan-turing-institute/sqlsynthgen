@@ -49,13 +49,17 @@ repos:
         types: ['python']
         exclude: (?x)(
           tests/examples|
-          tests/workspace
+          tests/workspace|
+          examples
           )
       - id: pylint
         name: Pylint
         entry: poetry run pylint
         language: system
         types: ['python']
+        exclude: (?x)(
+          examples/
+          )
       - id: pydocstyle
         name: pydocstyle
         entry: poetry run pydocstyle
@@ -63,7 +67,8 @@ repos:
         types: ['python']
         exclude: (?x)(
           docs/|
-          tests/
+          tests/|
+          examples/
           )
       - id: mypy
         name: mypy
@@ -71,6 +76,7 @@ repos:
         language: system
         exclude: (?x)(
           tests/examples|
-          tests/workspace
+          tests/workspace|
+          examples
           )
         types: ['python']

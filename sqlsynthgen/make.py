@@ -481,8 +481,7 @@ def make_tables_file(
     metadata = MetaData()
     metadata.reflect(
         engine,
-        # The type-ignore is due to an erroneous type annotation in SQLAlchemy.
-        only=reflect_if,  # type: ignore
+        only=reflect_if,
     )
 
     for table_name in metadata.tables.keys():

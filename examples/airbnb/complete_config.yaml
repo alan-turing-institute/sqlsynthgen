@@ -1,22 +1,8 @@
-
 row_generators_module: airbnb_generators
 
 tables:
   countries:
     vocabulary_table: true
-
-  sessions:
-    num_rows_per_pass: 0
-    row_generators:
-      - name: generic.numeric.integer_number
-        kwargs:
-          start: 0
-          end: 3600
-        columns_assigned: secs_elapsed
-      - name: generic.choice
-        kwargs:
-          items: ["show", "index", "personalize"]
-        columns_assigned: action
 
   age_gender_bkts:
     num_rows_per_pass: 1
@@ -32,21 +18,29 @@ tables:
   users:
     num_rows_per_pass: 0
     row_generators:
-      - name: generic.person.password
-        kwargs: null
-        columns_assigned: id
-      - name: generic.person.identifier
+      - name: airbnb_generators.user_age_provider
         kwargs:
-           mask: '"@@##@@@@"' # Using this provider, we generate alpha-numeric IDs.
+          query_results: SRC_STATS["age_stats"]
+        columns_assigned: age
+      - name: generic.person.password
         columns_assigned: id
       - name: airbnb_generators.user_dates_provider
         kwargs:
            generic: generic
         columns_assigned: ["date_account_created", "date_first_booking"]
-      - name: airbnb_generators.user_age_provider
+
+  sessions:
+    num_rows_per_pass: 0
+    row_generators:
+      - name: generic.numeric.integer_number
         kwargs:
-           query_results: SRC_STATS["age_stats"]
-        columns_assigned: age
+          start: 0
+          end: 3600
+        columns_assigned: secs_elapsed
+      - name: generic.choice
+        kwargs:
+          items: ["show", "index", "personalize"]
+        columns_assigned: action
 
 src-stats:
   - name: age_stats
@@ -55,9 +49,9 @@ src-stats:
       FROM users
       WHERE age <= 100
     dp-query: >
-      SELECT AVG(age), STDDEV(age)
+      SELECT AVG(age) AS mean, STDDEV(age) AS std_dev
       FROM query_result
-    epsilon: 0.1
+    epsilon: 0.5
     delta: 0.000001
     snsql-metadata:
       max_ids: 1
@@ -70,6 +64,7 @@ src-stats:
         upper: 100
 
 story_generators_module: airbnb_generators
+
 story_generators:
   - name: airbnb_generators.sessions_story
     num_stories_per_pass: 30

@@ -3,9 +3,6 @@
 Installation
 ============
 
-End User
---------
-
 To use SqlSynthGen, first install it:
 
 .. code-block:: console
