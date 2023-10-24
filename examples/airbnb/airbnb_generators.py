@@ -1,6 +1,6 @@
 import datetime
 import random
-from typing import Optional, Generator, Tuple
+from typing import Generator, Optional, Tuple
 
 
 def user_dates_provider(generic):

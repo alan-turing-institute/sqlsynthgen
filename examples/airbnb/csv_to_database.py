@@ -1,7 +1,7 @@
 from typing import Any, Callable, List, Type
+
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 from sqlalchemy import (
     Column,
     Date,
@@ -14,6 +14,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
+from tqdm import tqdm
 
 Base = declarative_base()
 
