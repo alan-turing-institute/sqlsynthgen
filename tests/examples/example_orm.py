@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from sqlalchemy import (
     BigInteger,
@@ -18,6 +18,7 @@ from sqlalchemy import (
     UniqueConstraint,
     Uuid,
 )
+from sqlalchemy.dialects.postgresql import CIDR
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 import datetime
 
@@ -69,6 +70,14 @@ class Person(Base):
     hospital_visit: Mapped[List["HospitalVisit"]] = relationship(
         "HospitalVisit", back_populates="person"
     )
+
+
+class StrangeTypeTable(Base):
+    __tablename__ = "strange_type_table"
+    __table_args__ = (PrimaryKeyConstraint("id", name="strange_type_table_pkey"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    column_with_unusual_type: Mapped[Optional[Any]] = mapped_column(CIDR)
 
 
 class UnignorableTable(Base):
