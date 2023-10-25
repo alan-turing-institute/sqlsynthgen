@@ -103,6 +103,11 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         # this could mean that we might accidentally violate the constraints. In
         # practice this won't happen because we only write one row to an empty table.
         self.assertEqual(
+            "Unsupported SQLAlchemy type "
+            "<class 'sqlalchemy.dialects.postgresql.types.CIDR'> "
+            "for column column_with_unusual_type. "
+            "Setting this column to NULL always, "
+            "you may want to configure a row generator for it instead.\n"
             "A unique constraint (ab_uniq) isn't fully covered by one "
             "row generator (['a']). Enforcement of the constraint may not work.\n"
             "A unique constraint (ab_uniq) isn't fully covered by one "
@@ -257,7 +262,14 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             capture_output=True,
             env=self.env,
         )
-        self.assertEqual("", completed_process.stderr.decode("utf-8"))
+        self.assertEqual(
+            "Unsupported SQLAlchemy type "
+            "<class 'sqlalchemy.dialects.postgresql.types.CIDR'> "
+            "for column column_with_unusual_type. "
+            "Setting this column to NULL always, "
+            "you may want to configure a row generator for it instead.\n",
+            completed_process.stderr.decode("utf-8"),
+        )
         self.assertSuccess(completed_process)
         self.assertEqual(
             f"Making {self.alt_ssg_file_path}.\n"
@@ -345,6 +357,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             "Generating data for table data_type_test\n"
             "Generating data for table no_pk_test\n"
             "Generating data for table person\n"
+            "Generating data for table strange_type_table\n"
             "Generating data for table unique_constraint_test\n"
             "Generating data for table unique_constraint_test2\n"
             "Generating data for table test_entity\n"
@@ -358,6 +371,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             "Generating data for table data_type_test\n"
             "Generating data for table no_pk_test\n"
             "Generating data for table person\n"
+            "Generating data for table strange_type_table\n"
             "Generating data for table unique_constraint_test\n"
             "Generating data for table unique_constraint_test2\n"
             "Generating data for table test_entity\n"
@@ -387,6 +401,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             "Truncating table test_entity\n"
             "Truncating table unique_constraint_test2\n"
             "Truncating table unique_constraint_test\n"
+            "Truncating table strange_type_table\n"
             "Truncating table person\n"
             "Truncating table no_pk_test\n"
             "Truncating table data_type_test\n"

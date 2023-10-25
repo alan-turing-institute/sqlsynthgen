@@ -219,6 +219,17 @@ CREATE TABLE public.table_to_be_ignored (
 ALTER TABLE public.table_to_be_ignored OWNER TO postgres;
 
 --
+-- Name: strange_type_table; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.strange_type_table (
+    id integer NOT NULL,
+    column_with_unusual_type cidr
+);
+
+ALTER TABLE public.strange_type_table OWNER TO postgres;
+
+--
 -- Data for Name: concept; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -1389,6 +1400,13 @@ ALTER TABLE ONLY public.ref_to_unignorable_table
 
 ALTER TABLE ONLY public.unignorable_table
     ADD CONSTRAINT unignorable_table_pkey PRIMARY KEY (id);
+
+--
+-- Name: strange_type_table strange_type_table_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.strange_type_table
+    ADD CONSTRAINT strange_type_table_pkey PRIMARY KEY (id);
 
 --
 -- Name: fki_concept_concept_type_id_fkey; Type: INDEX; Schema: public; Owner: postgres
