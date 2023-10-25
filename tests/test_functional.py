@@ -362,7 +362,14 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             "Generating data for table unique_constraint_test2\n"
             "Generating data for table test_entity\n"
             "Generating data for table hospital_visit\n"
-            "Data created in 2 passes.\n",
+            "Data created in 2 passes.\n"
+            f"person: {2*(3+1+2+2)} rows created\n"
+            f"hospital_visit: {2*(2*2+3)} rows created\n"
+            "data_type_test: 2 rows created\n"
+            "no_pk_test: 2 rows created\n"
+            "unique_constraint_test: 2 rows created\n"
+            "unique_constraint_test2: 2 rows created\n"
+            "test_entity: 2 rows created\n",
             completed_process.stdout.decode("utf-8"),
         )
 

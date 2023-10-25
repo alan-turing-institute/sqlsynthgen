@@ -96,13 +96,15 @@ def create_data(
     orm_metadata = get_orm_metadata(orm_module, tables_config)
     table_generator_dict = ssg_module.table_generator_dict
     story_generator_list = ssg_module.story_generator_list
-    create_db_data(
+    row_counts = create_db_data(
         orm_metadata.sorted_tables,
         table_generator_dict,
         story_generator_list,
         num_passes,
     )
     logger.debug("Data created in %s passes.", num_passes)
+    for table_name, row_count in row_counts.items():
+        logger.debug("%s: %s rows created", table_name, row_count)
 
 
 @app.command()
