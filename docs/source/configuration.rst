@@ -1,7 +1,7 @@
 Configuration Reference
 =======================
 
-SqlSynthGen is configured using a YAML file, which is passed to several commands with the ``--config`` option.
+SqlSynthGen is configured using a YAML file, which is passed to several commands with the ``--config-file`` option.
 Throughout the docs, we will refer to this file as ``config.yaml`` but it can be called anything (the exception being that there will be a naming conflict if you have a vocabulary table called ``config``).
 
 Below, we see the schema for the configuration file.
