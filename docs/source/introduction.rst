@@ -106,7 +106,7 @@ Now when we run ``create-data`` we get valid, if not very sensible, values in ea
      - 485
      - 534
 
-SSG’s default generators have minimal fidelity: All data is generated based purely on the datatype of the its column, e.g. random strings in string columns.
+SSG’s default generators have minimal fidelity: All data is generated based purely on the datatype of the column, e.g. random strings in string columns.
 Foreign key relations are respected by picking random rows from the table referenced.
 Even this synthetic data, nearly the crudest imaginable, can be useful for instance for testing software pipelines.
 Note that this data has no privacy implications, since it is only based on the schema.
@@ -121,7 +121,7 @@ This should of course only be done for tables that hold no privacy-sensitive dat
 For instance, in the AirBnB dataset, the ``users`` table has a foreign key reference to a table of world countries: ``users.country_destination`` references the ``countries.country_destination`` primary key column.
 Since the ``countries`` table doesn’t contain personal data, we can make it a vocabulary table.
 
-Besides manual edition, on SSG we can also customise the generation of ``ssg.py`` via a YAML file,
+Besides manually editing it, we can also customise the generation of ``ssg.py`` via a YAML file,
 typically named ``config.yaml``.
 We identify ``countries`` as a vocabulary table in our ``config.yaml`` file:
 
@@ -164,7 +164,7 @@ We need to truncate any tables in our destination database before importing the 
     $ sqlsynthgen remove-data --config-file config.yaml
     $ sqlsynthgen create-vocab
 
-Since ``make-generators`` rewrote ``ssg.py``, we must now re-edit it to add the primary key ``VARCHAR`` workaroundsfor the ``users`` and ``age_gender_bkts`` tables, as we did in section above.
+Since ``make-generators`` rewrote ``ssg.py``, we must now re-edit it to add the primary key ``VARCHAR`` workarounds for the ``users`` and ``age_gender_bkts`` tables, as we did in section above.
 Once this is done, we can generate random data for the other three tables with::
 
     $ sqlsynthgen create-data
@@ -293,7 +293,7 @@ Then, we tell SSG to import our custom ``airbnb_generators.py`` and assign the r
            columns_assigned: ["date_account_created", "date_first_booking"]
 
 Note how we pass the ``generic`` object as a keyword argument to ``user_dates_provider``.
-Row generators can have positional arguments specified as a list under the ``args`` list and keyword arguments as a dictionary under the ``kwargs`` entry.
+Row generators can have positional arguments specified as a list under the ``args`` entry and keyword arguments as a dictionary under the ``kwargs`` entry.
 
 Limitations to this approach to increasing fidelity are that rows can not be correlated with other rows in the same table, nor with any rows in other tables, except for trivially fulfilling foreign key constraints as in the default configuration.
 We will see how to address this later when we talk about :ref:`story generators <story-generators>`.
@@ -537,7 +537,7 @@ For instance, it may first yield a row specifying a person in the ``users`` tabl
 Three features make story generators more practical than simply manually writing code that creates the synthetic data bit-by-bit:
 
 1. When a story generator yields a row, it can choose to only specify values for some of the columns. The values for the other columns will be filled by custom row generators (as explained in a previous section) or, if none are specified, by SSG's default generators. Above, we have chosen to specify the value for ``first_device_type`` but the date columns will still be handled by our ``user_dates_provider`` and the age column will still be populated by the ``user_age_provider``.
-2. Any default values that are set when the rows yielded by the story generator are written into the database are available to the story generator when it resumes. In our example, the user's ``id`` is available so that we can respect the foreign key relationship between ``users`` and ``sessions``, even though we did not explicitly set the user's ``id`` when creating the user.
+2. Any default values that are set when the rows yielded by the story generator are written into the database are available to the story generator when it resumes. In our example, the user's ``id`` is available so that we can respect the foreign key relationship between ``users`` and ``sessions``, even though we did not explicitly set the user's ``id`` when creating the user on line 8.
 
 To use and get the most from story generators, we will need to make some changes to our configuration:
 

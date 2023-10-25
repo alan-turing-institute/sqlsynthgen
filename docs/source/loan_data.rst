@@ -104,7 +104,7 @@ We notice that the ``districts`` table doesn't contain any sensitive data so we 
 .. literalinclude:: ../../examples/loans/config2.yaml
    :language: yaml
 
-We can export the vocabularies to `.yaml` files, delete the old synthetic data, import the vocabularies and create new synthetic data with:
+We can export the vocabularies to ``.yaml`` files, delete the old synthetic data, import the vocabularies and create new synthetic data with:
 
 .. code-block:: console
 
