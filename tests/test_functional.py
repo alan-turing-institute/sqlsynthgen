@@ -108,6 +108,11 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             "for column column_with_unusual_type. "
             "Setting this column to NULL always, "
             "you may want to configure a row generator for it instead.\n"
+            "Unsupported SQLAlchemy type "
+            "<class 'sqlalchemy.dialects.postgresql.types.BIT'> "
+            "for column column_with_unusual_type_and_length. "
+            "Setting this column to NULL always, "
+            "you may want to configure a row generator for it instead.\n"
             "A unique constraint (ab_uniq) isn't fully covered by one "
             "row generator (['a']). Enforcement of the constraint may not work.\n"
             "A unique constraint (ab_uniq) isn't fully covered by one "
@@ -266,6 +271,11 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             "Unsupported SQLAlchemy type "
             "<class 'sqlalchemy.dialects.postgresql.types.CIDR'> "
             "for column column_with_unusual_type. "
+            "Setting this column to NULL always, "
+            "you may want to configure a row generator for it instead.\n"
+            "Unsupported SQLAlchemy type "
+            "<class 'sqlalchemy.dialects.postgresql.types.BIT'> "
+            "for column column_with_unusual_type_and_length. "
             "Setting this column to NULL always, "
             "you may want to configure a row generator for it instead.\n",
             completed_process.stderr.decode("utf-8"),
