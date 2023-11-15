@@ -255,7 +255,7 @@ def _get_provider_for_column(column: Column) -> Tuple[list[str], str, list[str]]
             column_type,
             column.name,
         )
-    if column_size:
+    elif column_size:
         generator_arguments.append(str(column_size))
 
     return variable_names, generator_function, generator_arguments

@@ -224,7 +224,8 @@ ALTER TABLE public.table_to_be_ignored OWNER TO postgres;
 
 CREATE TABLE public.strange_type_table (
     id integer NOT NULL,
-    column_with_unusual_type cidr
+    column_with_unusual_type cidr,
+    column_with_unusual_type_and_length bit(3)
 );
 
 ALTER TABLE public.strange_type_table OWNER TO postgres;

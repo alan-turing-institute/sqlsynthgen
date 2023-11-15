@@ -18,7 +18,7 @@ from sqlalchemy import (
     UniqueConstraint,
     Uuid,
 )
-from sqlalchemy.dialects.postgresql import CIDR
+from sqlalchemy.dialects.postgresql import BIT, CIDR
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 import datetime
 
@@ -78,6 +78,7 @@ class StrangeTypeTable(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     column_with_unusual_type: Mapped[Optional[Any]] = mapped_column(CIDR)
+    column_with_unusual_type_and_length: Mapped[Optional[Any]] = mapped_column(BIT(3))
 
 
 class UnignorableTable(Base):
