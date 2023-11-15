@@ -99,6 +99,7 @@ class strange_type_tableGenerator(TableGenerator):
     def __call__(self, dst_db_conn):
         result = {}
         result["column_with_unusual_type"] = generic.null_provider.null()
+        result["column_with_unusual_type_and_length"] = generic.null_provider.null()
         return result
 
 
