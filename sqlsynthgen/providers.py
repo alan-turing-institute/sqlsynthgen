@@ -17,8 +17,9 @@ class ColumnValueProvider(BaseProvider):
 
         name = "column_value_provider"
 
+    @staticmethod
     def column_value(
-        self, db_connection: Connection, orm_class: Any, column_name: str
+        db_connection: Connection, orm_class: Any, column_name: str
     ) -> Any:
         """Return a random value from the column specified."""
         query = select(orm_class).order_by(functions.random()).limit(1)
@@ -50,8 +51,8 @@ class TimedeltaProvider(BaseProvider):
 
         name = "timedelta_provider"
 
+    @staticmethod
     def timedelta(
-        self,
         min_dt: dt.timedelta = dt.timedelta(seconds=0),
         # ints bigger than this cause trouble
         max_dt: dt.timedelta = dt.timedelta(seconds=2**32),
@@ -75,8 +76,8 @@ class TimespanProvider(BaseProvider):
 
         name = "timespan_provider"
 
+    @staticmethod
     def timespan(
-        self,
         earliest_start_year: int,
         last_start_year: int,
         min_dt: dt.timedelta = dt.timedelta(seconds=0),
@@ -194,6 +195,7 @@ class NullProvider(BaseProvider):
 
         name = "null_provider"
 
-    def null(self) -> None:
+    @staticmethod
+    def null() -> None:
         """Return `None`."""
         return None
