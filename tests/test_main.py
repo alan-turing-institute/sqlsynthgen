@@ -188,7 +188,7 @@ class TestCLI(SSGTestCase):
             [
                 call("Creating data."),
                 call("Data created in %s %s.", 1, "pass"),
-                call("%s: %s %s created", "a", "row.", 1),
+                call("%s: %s %s created.", "a", 1, "row"),
             ]
         )
 
