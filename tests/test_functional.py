@@ -14,7 +14,6 @@ class FunctionalTestCase(RequiresDBTestCase):
 
     def test_version_command(self) -> None:
         """Check that the version command works."""
-
         completed_process = run(
             ["sqlsynthgen", "version"],
             capture_output=True,
@@ -40,10 +39,10 @@ class DBFunctionalTestCase(RequiresDBTestCase):
     alt_ssg_file_path = Path("my_ssg.py")
 
     vocabulary_file_paths = tuple(
-        map(Path, ("concept.yaml", "concept_type.yaml", "mitigation_type.yaml"))
+        map(Path, ("concept.yaml", "concept_type.yaml", "mitigation_type.yaml")),
     )
     generator_file_paths = tuple(
-        map(Path, ("story_generators.py", "row_generators.py"))
+        map(Path, ("story_generators.py", "row_generators.py")),
     )
     dump_file_path = Path("dst.dump")
     config_file_path = Path("example_config.yaml")
@@ -60,7 +59,6 @@ class DBFunctionalTestCase(RequiresDBTestCase):
 
     def setUp(self) -> None:
         """Pre-test setup."""
-
         # Create a mostly-blank destination database
         run_psql(self.examples_dir / self.dump_file_path)
 
@@ -198,7 +196,6 @@ class DBFunctionalTestCase(RequiresDBTestCase):
 
     def test_workflow_maximal_args(self) -> None:
         """Test the CLI workflow runs with optional arguments."""
-
         completed_process = run(
             [
                 "sqlsynthgen",
@@ -358,35 +355,43 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         self.assertSuccess(completed_process)
         self.assertEqual(
             "Creating data.\n"
-            "Generating data for story story_generators.short_story\n"
-            "Generating data for story story_generators.short_story\n"
-            "Generating data for story story_generators.short_story\n"
-            "Generating data for story story_generators.full_row_story\n"
-            "Generating data for story story_generators.long_story\n"
-            "Generating data for story story_generators.long_story\n"
-            "Generating data for table data_type_test\n"
-            "Generating data for table no_pk_test\n"
-            "Generating data for table person\n"
-            "Generating data for table strange_type_table\n"
-            "Generating data for table unique_constraint_test\n"
-            "Generating data for table unique_constraint_test2\n"
-            "Generating data for table test_entity\n"
-            "Generating data for table hospital_visit\n"
-            "Generating data for story story_generators.short_story\n"
-            "Generating data for story story_generators.short_story\n"
-            "Generating data for story story_generators.short_story\n"
-            "Generating data for story story_generators.full_row_story\n"
-            "Generating data for story story_generators.long_story\n"
-            "Generating data for story story_generators.long_story\n"
-            "Generating data for table data_type_test\n"
-            "Generating data for table no_pk_test\n"
-            "Generating data for table person\n"
-            "Generating data for table strange_type_table\n"
-            "Generating data for table unique_constraint_test\n"
-            "Generating data for table unique_constraint_test2\n"
-            "Generating data for table test_entity\n"
-            "Generating data for table hospital_visit\n"
-            "Data created in 2 passes.\n",
+            'Generating data for story "story_generators.short_story".\n'
+            'Generating data for story "story_generators.short_story".\n'
+            'Generating data for story "story_generators.short_story".\n'
+            'Generating data for story "story_generators.full_row_story".\n'
+            'Generating data for story "story_generators.long_story".\n'
+            'Generating data for story "story_generators.long_story".\n'
+            'Generating data for table "data_type_test".\n'
+            'Generating data for table "no_pk_test".\n'
+            'Generating data for table "person".\n'
+            'Generating data for table "strange_type_table".\n'
+            'Generating data for table "unique_constraint_test".\n'
+            'Generating data for table "unique_constraint_test2".\n'
+            'Generating data for table "test_entity".\n'
+            'Generating data for table "hospital_visit".\n'
+            'Generating data for story "story_generators.short_story".\n'
+            'Generating data for story "story_generators.short_story".\n'
+            'Generating data for story "story_generators.short_story".\n'
+            'Generating data for story "story_generators.full_row_story".\n'
+            'Generating data for story "story_generators.long_story".\n'
+            'Generating data for story "story_generators.long_story".\n'
+            'Generating data for table "data_type_test".\n'
+            'Generating data for table "no_pk_test".\n'
+            'Generating data for table "person".\n'
+            'Generating data for table "strange_type_table".\n'
+            'Generating data for table "unique_constraint_test".\n'
+            'Generating data for table "unique_constraint_test2".\n'
+            'Generating data for table "test_entity".\n'
+            'Generating data for table "hospital_visit".\n'
+            "Data created in 2 passes.\n"
+            f"person: {2*(3+1+2+2)} rows created.\n"
+            f"hospital_visit: {2*(2*2+3)} rows created.\n"
+            "data_type_test: 2 rows created.\n"
+            "no_pk_test: 2 rows created.\n"
+            "strange_type_table: 2 rows created.\n"
+            "unique_constraint_test: 2 rows created.\n"
+            "unique_constraint_test2: 2 rows created.\n"
+            "test_entity: 2 rows created.\n",
             completed_process.stdout.decode("utf-8"),
         )
 
@@ -407,14 +412,14 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         self.assertSuccess(completed_process)
         self.assertEqual(
             "Truncating non-vocabulary tables.\n"
-            "Truncating table hospital_visit\n"
-            "Truncating table test_entity\n"
-            "Truncating table unique_constraint_test2\n"
-            "Truncating table unique_constraint_test\n"
-            "Truncating table strange_type_table\n"
-            "Truncating table person\n"
-            "Truncating table no_pk_test\n"
-            "Truncating table data_type_test\n"
+            'Truncating table "hospital_visit".\n'
+            'Truncating table "test_entity".\n'
+            'Truncating table "unique_constraint_test2".\n'
+            'Truncating table "unique_constraint_test".\n'
+            'Truncating table "strange_type_table".\n'
+            'Truncating table "person".\n'
+            'Truncating table "no_pk_test".\n'
+            'Truncating table "data_type_test".\n'
             "Non-vocabulary tables truncated.\n",
             completed_process.stdout.decode("utf-8"),
         )
@@ -436,11 +441,11 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         self.assertSuccess(completed_process)
         self.assertEqual(
             "Truncating vocabulary tables.\n"
-            "Truncating vocabulary table concept\n"
-            "Truncating vocabulary table concept_type\n"
-            "Truncating vocabulary table ref_to_unignorable_table\n"
-            "Truncating vocabulary table mitigation_type\n"
-            "Truncating vocabulary table empty_vocabulary\n"
+            'Truncating vocabulary table "concept".\n'
+            'Truncating vocabulary table "concept_type".\n'
+            'Truncating vocabulary table "ref_to_unignorable_table".\n'
+            'Truncating vocabulary table "mitigation_type".\n'
+            'Truncating vocabulary table "empty_vocabulary".\n'
             "Vocabulary tables truncated.\n",
             completed_process.stdout.decode("utf-8"),
         )
@@ -477,7 +482,6 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         We also deliberately call create-data multiple times to make sure that the
         loading of existing keys from the database at start up works as expected.
         """
-
         # This is all exactly the same stuff we run in test_workflow_maximal_args.
         run(
             [

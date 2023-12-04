@@ -1,5 +1,6 @@
 """Tests for the create module."""
 import itertools as itt
+from collections import Counter
 from pathlib import Path
 from typing import Any, Generator, Tuple
 from unittest.mock import MagicMock, call, patch
@@ -34,11 +35,13 @@ class MyTestCase(SSGTestCase):
     ) -> None:
         """Test the generate function."""
         mock_get_settings.return_value = get_test_settings()
+        mock_populate.return_value = {}
 
         num_passes = 23
-        create_db_data([], {}, [], num_passes)
+        row_counts = create_db_data([], {}, [], num_passes)
 
         self.assertEqual(len(mock_populate.call_args_list), num_passes)
+        self.assertEqual(row_counts, {})
         mock_create_engine.assert_called()
 
     @patch("sqlsynthgen.create.get_settings")
@@ -62,13 +65,15 @@ class MyTestCase(SSGTestCase):
 
         def story() -> Generator[Tuple[str, dict], None, None]:
             """Mock story."""
-            yield "table_name", {}
+            yield table_name, {}
 
         def mock_story_gen(_: Any) -> Generator[Tuple[str, dict], None, None]:
             """A function that returns mock stories."""
             return story()
 
-        for num_stories_per_pass, num_rows_per_pass in itt.product([0, 2], [0, 3]):
+        for num_stories_per_pass, num_rows_per_pass, num_initial_rows in itt.product(
+            [0, 2], [0, 3], [0, 17]
+        ):
             with patch("sqlsynthgen.create.insert") as mock_insert:
                 mock_values = mock_insert.return_value.values
                 mock_dst_conn = MagicMock(spec=Connection)
@@ -78,9 +83,10 @@ class MyTestCase(SSGTestCase):
                 mock_gen = MagicMock(spec=TableGenerator)
                 mock_gen.num_rows_per_pass = num_rows_per_pass
                 mock_gen.return_value = {}
+                row_counts = Counter(
+                    {table_name: num_initial_rows} if num_initial_rows > 0 else {}
+                )
 
-                tables: list[Table] = [mock_table]
-                row_generators: dict[str, TableGenerator] = {table_name: mock_gen}
                 story_generators: list[dict[str, Any]] = (
                     [
                         {
@@ -92,13 +98,24 @@ class MyTestCase(SSGTestCase):
                     if num_stories_per_pass > 0
                     else []
                 )
-                populate(
+                row_counts += populate(
                     mock_dst_conn,
-                    tables,
-                    row_generators,
+                    [mock_table],
+                    {table_name: mock_gen},
                     story_generators,
                 )
 
+                expected_row_count = (
+                    num_stories_per_pass + num_rows_per_pass + num_initial_rows
+                )
+                self.assertEqual(
+                    Counter(
+                        {table_name: expected_row_count}
+                        if expected_row_count > 0
+                        else {}
+                    ),
+                    row_counts,
+                )
                 self.assertListEqual(
                     [call(mock_dst_conn)] * (num_stories_per_pass + num_rows_per_pass),
                     mock_gen.call_args_list,
@@ -135,7 +152,8 @@ class MyTestCase(SSGTestCase):
             "three": mock_gen_three,
         }
 
-        populate(mock_dst_conn, tables, row_generators, [])
+        row_counts = populate(mock_dst_conn, tables, row_generators, [])
+        self.assertEqual(row_counts, {"two": 1, "three": 1})
         self.assertListEqual(
             [call(mock_table_two), call(mock_table_three)], mock_insert.call_args_list
         )
