@@ -151,7 +151,7 @@ def populate(
     )
     for name, story in stories:
         # Run the inserts for each story within a transaction.
-        logger.debug("Generating data for story %s", name)
+        logger.debug('Generating data for story "%s".', name)
         with dst_conn.begin():
             row_counts = _populate_story(
                 story, table_dict, table_generator_dict, dst_conn, row_counts
@@ -166,7 +166,7 @@ def populate(
         table_generator = table_generator_dict[table.name]
         if table_generator.num_rows_per_pass == 0:
             continue
-        logger.debug("Generating data for table %s", table.name)
+        logger.debug('Generating data for table "%s".', table.name)
         # Run all the inserts for one table in a transaction
         with dst_conn.begin():
             for _ in range(table_generator.num_rows_per_pass):

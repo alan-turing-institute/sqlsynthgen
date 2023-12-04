@@ -152,11 +152,15 @@ class TestCLI(SSGTestCase):
         mock_create.assert_called_once_with(mock_import.return_value.Base.metadata)
         self.assertSuccess(result)
 
+    @patch("sqlsynthgen.main.logger")
     @patch("sqlsynthgen.main.import_file")
     @patch("sqlsynthgen.main.create_db_data")
-    def test_create_data(self, mock_create: MagicMock, mock_import: MagicMock) -> None:
+    def test_create_data(
+        self, mock_create: MagicMock, mock_import: MagicMock, mock_logger: MagicMock
+    ) -> None:
         """Test the create-data sub-command."""
 
+        mock_create.return_value = {"a": 1}
         result = runner.invoke(
             app,
             [
@@ -179,6 +183,14 @@ class TestCLI(SSGTestCase):
             1,
         )
         self.assertSuccess(result)
+
+        mock_logger.debug.assert_has_calls(
+            [
+                call("Creating data."),
+                call("Data created in %s %s.", 1, "pass"),
+                call("%s: %s %s created", "a", "row.", 1),
+            ]
+        )
 
     @patch("sqlsynthgen.main.Path")
     @patch("sqlsynthgen.main.make_tables_file")
