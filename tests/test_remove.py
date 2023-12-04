@@ -12,14 +12,14 @@ class RemoveTestCase(SSGTestCase):
 
     @patch("sqlsynthgen.remove.get_settings", side_effect=get_test_settings)
     @patch("sqlsynthgen.remove.create_db_engine")
-    @patch("sqlsynthgen.remove.delete", side_effect=range(1, 8))
+    @patch("sqlsynthgen.remove.delete", side_effect=range(1, 9))
     def test_remove_db_data(
         self, mock_delete: MagicMock, mock_engine: MagicMock, _: MagicMock
     ) -> None:
         """Test the remove_db_data function."""
         config = {"tables": {"unignorable_table": {"ignore": True}}}
         remove_db_data(example_orm, remove_ssg, config)
-        self.assertEqual(mock_delete.call_count, 7)
+        self.assertEqual(mock_delete.call_count, 8)
         mock_delete.assert_has_calls(
             [
                 call(example_orm.Base.metadata.tables[t])
@@ -29,6 +29,7 @@ class RemoveTestCase(SSGTestCase):
                     "unique_constraint_test2",
                     "unique_constraint_test",
                     "person",
+                    "strange_type_table",
                     "no_pk_test",
                     "data_type_test",
                 )

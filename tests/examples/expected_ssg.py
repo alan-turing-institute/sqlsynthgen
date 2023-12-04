@@ -90,6 +90,19 @@ class personGenerator(TableGenerator):
         return result
 
 
+class strange_type_tableGenerator(TableGenerator):
+    num_rows_per_pass = 1
+
+    def __init__(self):
+        pass
+
+    def __call__(self, dst_db_conn):
+        result = {}
+        result["column_with_unusual_type"] = generic.null_provider.null()
+        result["column_with_unusual_type_and_length"] = generic.null_provider.null()
+        return result
+
+
 class unique_constraint_testGenerator(TableGenerator):
     num_rows_per_pass = 1
 
@@ -188,6 +201,7 @@ table_generator_dict = {
     "data_type_test": data_type_testGenerator(),
     "no_pk_test": no_pk_testGenerator(),
     "person": personGenerator(),
+    "strange_type_table": strange_type_tableGenerator(),
     "unique_constraint_test": unique_constraint_testGenerator(),
     "unique_constraint_test2": unique_constraint_test2Generator(),
     "test_entity": test_entityGenerator(),

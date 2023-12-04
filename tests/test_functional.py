@@ -14,7 +14,6 @@ class FunctionalTestCase(RequiresDBTestCase):
 
     def test_version_command(self) -> None:
         """Check that the version command works."""
-
         completed_process = run(
             ["sqlsynthgen", "version"],
             capture_output=True,
@@ -40,10 +39,10 @@ class DBFunctionalTestCase(RequiresDBTestCase):
     alt_ssg_file_path = Path("my_ssg.py")
 
     vocabulary_file_paths = tuple(
-        map(Path, ("concept.yaml", "concept_type.yaml", "mitigation_type.yaml"))
+        map(Path, ("concept.yaml", "concept_type.yaml", "mitigation_type.yaml")),
     )
     generator_file_paths = tuple(
-        map(Path, ("story_generators.py", "row_generators.py"))
+        map(Path, ("story_generators.py", "row_generators.py")),
     )
     dump_file_path = Path("dst.dump")
     config_file_path = Path("example_config.yaml")
@@ -60,7 +59,6 @@ class DBFunctionalTestCase(RequiresDBTestCase):
 
     def setUp(self) -> None:
         """Pre-test setup."""
-
         # Create a mostly-blank destination database
         run_psql(self.examples_dir / self.dump_file_path)
 
@@ -103,6 +101,16 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         # this could mean that we might accidentally violate the constraints. In
         # practice this won't happen because we only write one row to an empty table.
         self.assertEqual(
+            "Unsupported SQLAlchemy type "
+            "<class 'sqlalchemy.dialects.postgresql.types.CIDR'> "
+            "for column column_with_unusual_type. "
+            "Setting this column to NULL always, "
+            "you may want to configure a row generator for it instead.\n"
+            "Unsupported SQLAlchemy type "
+            "<class 'sqlalchemy.dialects.postgresql.types.BIT'> "
+            "for column column_with_unusual_type_and_length. "
+            "Setting this column to NULL always, "
+            "you may want to configure a row generator for it instead.\n"
             "A unique constraint (ab_uniq) isn't fully covered by one "
             "row generator (['a']). Enforcement of the constraint may not work.\n"
             "A unique constraint (ab_uniq) isn't fully covered by one "
@@ -188,7 +196,6 @@ class DBFunctionalTestCase(RequiresDBTestCase):
 
     def test_workflow_maximal_args(self) -> None:
         """Test the CLI workflow runs with optional arguments."""
-
         completed_process = run(
             [
                 "sqlsynthgen",
@@ -257,7 +264,19 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             capture_output=True,
             env=self.env,
         )
-        self.assertEqual("", completed_process.stderr.decode("utf-8"))
+        self.assertEqual(
+            "Unsupported SQLAlchemy type "
+            "<class 'sqlalchemy.dialects.postgresql.types.CIDR'> "
+            "for column column_with_unusual_type. "
+            "Setting this column to NULL always, "
+            "you may want to configure a row generator for it instead.\n"
+            "Unsupported SQLAlchemy type "
+            "<class 'sqlalchemy.dialects.postgresql.types.BIT'> "
+            "for column column_with_unusual_type_and_length. "
+            "Setting this column to NULL always, "
+            "you may want to configure a row generator for it instead.\n",
+            completed_process.stderr.decode("utf-8"),
+        )
         self.assertSuccess(completed_process)
         self.assertEqual(
             f"Making {self.alt_ssg_file_path}.\n"
@@ -345,6 +364,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             'Generating data for table "data_type_test".\n'
             'Generating data for table "no_pk_test".\n'
             'Generating data for table "person".\n'
+            'Generating data for table "strange_type_table".\n'
             'Generating data for table "unique_constraint_test".\n'
             'Generating data for table "unique_constraint_test2".\n'
             'Generating data for table "test_entity".\n'
@@ -358,6 +378,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             'Generating data for table "data_type_test".\n'
             'Generating data for table "no_pk_test".\n'
             'Generating data for table "person".\n'
+            'Generating data for table "strange_type_table".\n'
             'Generating data for table "unique_constraint_test".\n'
             'Generating data for table "unique_constraint_test2".\n'
             'Generating data for table "test_entity".\n'
@@ -367,6 +388,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             f"hospital_visit: {2*(2*2+3)} rows created.\n"
             "data_type_test: 2 rows created.\n"
             "no_pk_test: 2 rows created.\n"
+            "strange_type_table: 2 rows created.\n"
             "unique_constraint_test: 2 rows created.\n"
             "unique_constraint_test2: 2 rows created.\n"
             "test_entity: 2 rows created.\n",
@@ -394,6 +416,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             'Truncating table "test_entity".\n'
             'Truncating table "unique_constraint_test2".\n'
             'Truncating table "unique_constraint_test".\n'
+            'Truncating table "strange_type_table".\n'
             'Truncating table "person".\n'
             'Truncating table "no_pk_test".\n'
             'Truncating table "data_type_test".\n'
@@ -459,7 +482,6 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         We also deliberately call create-data multiple times to make sure that the
         loading of existing keys from the database at start up works as expected.
         """
-
         # This is all exactly the same stuff we run in test_workflow_maximal_args.
         run(
             [

@@ -238,16 +238,24 @@ def _get_provider_for_column(column: Column) -> Tuple[list[str], str, list[str]]
 
     generator_function = mapping.get((column_type, column_size is not None), None)
 
+    # Try if we know how to generate for a superclass of this type.
     if not generator_function:
         for key, value in mapping.items():
             if issubclass(column_type, key[0]) and key[1] == (column_size is not None):
                 generator_function = value
                 break
 
+    # If we still don't have a generator, use null and warn.
     if not generator_function:
-        raise ValueError(f"Unsupported SQLAlchemy type: {column_type}")
-
-    if column_size:
+        generator_function = "generic.null_provider.null"
+        logger.warning(
+            "Unsupported SQLAlchemy type %s for column %s. "
+            "Setting this column to NULL always, "
+            "you may want to configure a row generator for it instead.",
+            column_type,
+            column.name,
+        )
+    elif column_size:
         generator_arguments.append(str(column_size))
 
     return variable_names, generator_function, generator_arguments
