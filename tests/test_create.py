@@ -1,5 +1,6 @@
 """Tests for the create module."""
 import itertools as itt
+from collections import Counter
 from pathlib import Path
 from typing import Any, Generator, Tuple
 from unittest.mock import MagicMock, call, patch
@@ -82,7 +83,7 @@ class MyTestCase(SSGTestCase):
                 mock_gen = MagicMock(spec=TableGenerator)
                 mock_gen.num_rows_per_pass = num_rows_per_pass
                 mock_gen.return_value = {}
-                row_counts = (
+                row_counts = Counter(
                     {table_name: num_initial_rows} if num_initial_rows > 0 else {}
                 )
 
@@ -97,20 +98,23 @@ class MyTestCase(SSGTestCase):
                     if num_stories_per_pass > 0
                     else []
                 )
-                row_counts = populate(
+                row_counts += populate(
                     mock_dst_conn,
                     [mock_table],
                     {table_name: mock_gen},
                     story_generators,
-                    row_counts,
                 )
 
                 expected_row_count = (
                     num_stories_per_pass + num_rows_per_pass + num_initial_rows
                 )
                 self.assertEqual(
+                    Counter(
+                        {table_name: expected_row_count}
+                        if expected_row_count > 0
+                        else {}
+                    ),
                     row_counts,
-                    {table_name: expected_row_count} if expected_row_count > 0 else {},
                 )
                 self.assertListEqual(
                     [call(mock_dst_conn)] * (num_stories_per_pass + num_rows_per_pass),
@@ -148,7 +152,7 @@ class MyTestCase(SSGTestCase):
             "three": mock_gen_three,
         }
 
-        row_counts = populate(mock_dst_conn, tables, row_generators, [], {})
+        row_counts = populate(mock_dst_conn, tables, row_generators, [])
         self.assertEqual(row_counts, {"two": 1, "three": 1})
         self.assertListEqual(
             [call(mock_table_two), call(mock_table_three)], mock_insert.call_args_list
@@ -221,4 +225,4 @@ class TestStoryDefaults(RequiresDBTestCase):
 
         with engine.connect() as conn:
             with conn.begin():
-                _populate_story(my_story(), dict(self.metadata.tables), {}, conn, {})
+                _populate_story(my_story(), dict(self.metadata.tables), {}, conn)

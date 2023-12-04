@@ -102,9 +102,16 @@ def create_data(
         story_generator_list,
         num_passes,
     )
-    logger.debug("Data created in %s passes.", num_passes)
+    logger.debug(
+        "Data created in %s %s.", num_passes, "pass" if num_passes == 1 else "passes"
+    )
     for table_name, row_count in row_counts.items():
-        logger.debug("%s: %s rows created", table_name, row_count)
+        logger.debug(
+            "%s: %s %s created.",
+            table_name,
+            row_count,
+            "row" if row_count == 1 else "rows",
+        )
 
 
 @app.command()
