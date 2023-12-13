@@ -26,8 +26,8 @@ def create_db_tables(metadata: MetaData) -> None:
     if settings.dst_schema:
         schema_name = settings.dst_schema
         with engine.connect() as connection:
-            if not engine.dialect.has_schema(connection, schema_name=schema_name):
-                connection.execute(CreateSchema(schema_name, if_not_exists=True))
+            connection.execute(CreateSchema(schema_name, if_not_exists=True))
+            connection.commit()
 
         # Recreate the engine, this time with a schema specified
         engine = get_sync_engine(create_db_engine(dst_dsn, schema_name=schema_name))

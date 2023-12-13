@@ -52,20 +52,22 @@ SET default_table_access_method = heap;
 -- rather have to handle the ignore at a later stage.
 
 --
--- Name: unignorable_table; Type: TABLE; Schema: public; Owner: postgres
+-- Name: unignorable_table; Type: TABLE; Schema: dstschema; Owner: postgres
 --
 
-CREATE TABLE public.unignorable_table (
+create schema dstschema;
+
+CREATE TABLE dstschema.unignorable_table (
     id integer NOT NULL
 );
 
-ALTER TABLE public.unignorable_table OWNER TO postgres;
+ALTER TABLE dstschema.unignorable_table OWNER TO postgres;
 
 --
--- Name: unignorable_table_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- Name: unignorable_table_id_seq; Type: SEQUENCE; Schema: dstschema; Owner: postgres
 --
 
-CREATE SEQUENCE public.unignorable_table_id_seq
+CREATE SEQUENCE dstschema.unignorable_table_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
@@ -74,35 +76,35 @@ CREATE SEQUENCE public.unignorable_table_id_seq
     CACHE 1;
 
 
-ALTER TABLE public.unignorable_table_id_seq OWNER TO postgres;
+ALTER TABLE dstschema.unignorable_table_id_seq OWNER TO postgres;
 
 --
--- Name: unignorable_table_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- Name: unignorable_table_id_seq; Type: SEQUENCE OWNED BY; Schema: dstschema; Owner: postgres
 --
 
-ALTER SEQUENCE public.unignorable_table_id_seq OWNED BY public.unignorable_table.id;
+ALTER SEQUENCE dstschema.unignorable_table_id_seq OWNED BY dstschema.unignorable_table.id;
 
 --
--- Name: unignorable_table unignorable_table_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: unignorable_table unignorable_table_pkey; Type: CONSTRAINT; Schema: dstschema; Owner: postgres
 --
 
-ALTER TABLE ONLY public.unignorable_table
+ALTER TABLE ONLY dstschema.unignorable_table
     ADD CONSTRAINT unignorable_table_pkey PRIMARY KEY (id);
 
 --
--- Name: unignorable_table unignorable_table_id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: unignorable_table unignorable_table_id; Type: DEFAULT; Schema: dstschema; Owner: postgres
 --
 
-ALTER TABLE ONLY public.unignorable_table ALTER COLUMN id SET DEFAULT nextval('public.unignorable_table_id_seq'::regclass);
+ALTER TABLE ONLY dstschema.unignorable_table ALTER COLUMN id SET DEFAULT nextval('dstschema.unignorable_table_id_seq'::regclass);
 
 --
--- Data for Name: unignorable_table; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: unignorable_table; Type: TABLE DATA; Schema: dstschema; Owner: postgres
 --
 
-INSERT INTO public.unignorable_table VALUES (1);
+INSERT INTO dstschema.unignorable_table VALUES (1);
 
 --
--- Name: unignorable_table_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+-- Name: unignorable_table_id_seq; Type: SEQUENCE SET; Schema: dstschema; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.unignorable_table_id_seq', 2, false);
+SELECT pg_catalog.setval('dstschema.unignorable_table_id_seq', 2, false);

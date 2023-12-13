@@ -4,6 +4,9 @@ import shutil
 from pathlib import Path
 from subprocess import run
 
+import sqlalchemy
+from sqlalchemy import inspect
+
 from tests.utils import RequiresDBTestCase, run_psql
 
 # pylint: disable=subprocess-run-check
@@ -55,6 +58,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         **env,
         "src_dsn": "postgresql://postgres:password@localhost/src",
         "dst_dsn": "postgresql://postgres:password@localhost/dst",
+        "dst_schema": "dstschema",
     }
 
     def setUp(self) -> None:
@@ -586,3 +590,26 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         )
         self.assertIn(expected_error, completed_process.stderr.decode("utf-8"))
         self.assertFailure(completed_process)
+
+    def test_create_schema(self) -> None:
+        """Check that we create a destination schema if it doesn't exist."""
+        env = self.env.copy()
+        env["dst_schema"] = "doesntexistyetschema"
+
+        engine = sqlalchemy.create_engine(env["dst_dsn"])
+        inspector = inspect(engine)
+        self.assertFalse(inspector.has_schema(env["dst_schema"]))
+
+        run(
+            [
+                "sqlsynthgen",
+                "create-tables",
+                f"--orm-file={self.alt_orm_file_path}",
+            ],
+            capture_output=True,
+            env=env,
+        )
+
+        engine = sqlalchemy.create_engine(env["dst_dsn"])
+        inspector = inspect(engine)
+        self.assertTrue(inspector.has_schema(env["dst_schema"]))
