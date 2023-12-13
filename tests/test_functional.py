@@ -4,8 +4,7 @@ import shutil
 from pathlib import Path
 from subprocess import run
 
-import sqlalchemy
-from sqlalchemy import inspect
+from sqlalchemy import create_engine, inspect
 
 from tests.utils import RequiresDBTestCase, run_psql
 
@@ -596,20 +595,32 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         env = self.env.copy()
         env["dst_schema"] = "doesntexistyetschema"
 
-        engine = sqlalchemy.create_engine(env["dst_dsn"])
+        engine = create_engine(env["dst_dsn"])
         inspector = inspect(engine)
         self.assertFalse(inspector.has_schema(env["dst_schema"]))
 
-        run(
+        completed_process = run(
             [
                 "sqlsynthgen",
-                "create-tables",
-                f"--orm-file={self.alt_orm_file_path}",
+                "make-tables",
+                "--force",
             ],
             capture_output=True,
             env=env,
         )
+        self.assertSuccess(completed_process)
 
-        engine = sqlalchemy.create_engine(env["dst_dsn"])
+        completed_process = run(
+            [
+                "sqlsynthgen",
+                "create-tables",
+            ],
+            capture_output=True,
+            env=env,
+        )
+        self.assertEqual("", completed_process.stderr.decode("utf-8"))
+        self.assertSuccess(completed_process)
+
+        engine = create_engine(env["dst_dsn"])
         inspector = inspect(engine)
         self.assertTrue(inspector.has_schema(env["dst_schema"]))
