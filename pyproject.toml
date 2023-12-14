@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sqlsynthgen"
-version = "0.4.1"
+version = "0.4.2"
 description = "Synthetic SQL data generator"
 authors = ["Iain <25081046+Iain-S@users.noreply.github.com>"]
 license = "MIT"
