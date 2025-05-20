@@ -16,7 +16,7 @@ Before getting into the config itself, we need to discuss a few peculiarities of
 1. Some versions of OMOP contain a circular foreign key, for instance between the ``vocabulary``, ``concept``, and ``domain`` tables.
 2. There are several standardized vocabulary tables (``concept``, ``concept_relationship``, etc).
    These should be marked as such in the sqlsynthgen config file.
-   The tables will be exported to ``.yaml`` files during the ``make-generators`` step.
+   The tables will be exported to ``.yaml`` files during the ``create-generators`` step.
    However, some of these vocabulary tables may be too large to practically be writable to ``.yaml`` files, and will need to be dealt with manually.
    You should also check the license agreement of each standardized vocabulary before sharing any of the ``.yaml`` files.
 
@@ -106,15 +106,15 @@ The usual way is to run
 
 .. code-block:: shell
 
-  sqlsynthgen make-generators --config-file=config.yaml
+  sqlsynthgen create-generators --config-file=config.yaml
   sqlsynthgen create-vocab --config-file=config.yaml
 
-``make-generators`` downloads all the vocabulary tables to your local machine as YAML files and ``create-vocab`` uploads them to the target database.
+``create-generators`` downloads all the vocabulary tables to your local machine as YAML files and ``create-vocab`` uploads them to the target database.
 In the CCHIC dataset we were looking at some of the vocabulary tables were several gigabytes, and downloading those as YAML files was a bad idea.
 Thus we rather set SSG to ignore those tables and copied them over from the source schema to the destination schema manually, which was easier to do (in our case the source and the destination were just different schemas within the same database).
 
 The ``ignore: true`` option can also be used to make SSG ignore tables that we are not interested in at all.
-Note though that if one of the ignored tables is foreign key referenced by one of the tables we are `not` ignoring, the ignored table is still included in the ``orm.py`` and created by ``create-tables``, although ignored by ``make-generators`` and ``create-data``.
+Note though that if one of the ignored tables is foreign key referenced by one of the tables we are `not` ignoring, the ignored table is still included in the ``orm.py`` and created by ``create-tables``, although ignored by ``create-generators`` and ``create-data``.
 This is necessary to not break the network of foreign key relations.
 It is also good, because it means that after we copy the big vocabulary tables over manually, all foreign key references and things like automatically generating default values for referencing columns work as usual.
 

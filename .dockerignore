@@ -1,0 +1,7 @@
+.*
+*.yaml.gz
+orm.yaml
+config.yaml
+src-stats.yaml
+ssg.py
+dist

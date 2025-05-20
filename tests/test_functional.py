@@ -6,7 +6,7 @@ from subprocess import run
 
 from sqlalchemy import create_engine, inspect
 
-from tests.utils import RequiresDBTestCase, run_psql
+from tests.utils import RequiresDBTestCase
 
 # pylint: disable=subprocess-run-check
 
@@ -62,8 +62,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
 
     def setUp(self) -> None:
         """Pre-test setup."""
-        # Create a mostly-blank destination database
-        run_psql(self.examples_dir / self.dump_file_path)
+        super().setUp()
 
         # Copy some of the example files over to the workspace.
         for file in self.generator_file_paths + (self.config_file_path,):
@@ -79,6 +78,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
 
     def tearDown(self) -> None:
         os.chdir(self.start_dir)
+        super().tearDown()
 
     def test_workflow_minimal_args(self) -> None:
         """Test the recommended CLI workflow runs without errors."""
@@ -95,7 +95,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         self.assertEqual("", completed_process.stdout.decode("utf-8"))
 
         completed_process = run(
-            ["sqlsynthgen", "make-generators", "--force"],
+            ["sqlsynthgen", "create-generators", "--force"],
             capture_output=True,
             env=self.env,
         )
@@ -256,7 +256,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         completed_process = run(
             [
                 "sqlsynthgen",
-                "make-generators",
+                "create-generators",
                 f"--orm-file={self.alt_orm_file_path}",
                 f"--ssg-file={self.alt_ssg_file_path}",
                 f"--config-file={self.config_file_path}",
@@ -510,7 +510,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         run(
             [
                 "sqlsynthgen",
-                "make-generators",
+                "create-generators",
                 f"--orm-file={self.alt_orm_file_path}",
                 f"--ssg-file={self.alt_ssg_file_path}",
                 f"--config-file={self.config_file_path}",

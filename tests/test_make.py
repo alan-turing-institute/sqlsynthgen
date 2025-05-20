@@ -43,6 +43,7 @@ class TestMakeGenerators(SSGTestCase):
         self,
         mock_download: MagicMock,
         mock_create: MagicMock,
+        #... and orm_file_name and config_file
         mock_get_settings: MagicMock,
         mock_path: MagicMock,
     ) -> None:
@@ -58,7 +59,7 @@ class TestMakeGenerators(SSGTestCase):
             config = yaml.safe_load(f)
         stats_path = "example_stats.yaml"
 
-        actual = make_table_generators(example_orm, config, stats_path)
+        actual = make_table_generators(example_orm, config, stats_path) #... and orm_file_name and config_file_name
         # 5 because there are 5 vocabulary tables in the example orm.
         self.assertEqual(mock_path.call_count, 5)
         self.assertEqual(mock_download.call_count, 5)
@@ -69,7 +70,7 @@ class TestMakeGenerators(SSGTestCase):
     @patch("sqlsynthgen.make.Path")
     @patch("sqlsynthgen.make.get_settings")
     @patch("sqlsynthgen.utils.create_engine")
-    def test_make_generators_do_not_overwrite(
+    def test_create_generators_do_not_overwrite(
         self,
         mock_create: MagicMock,
         mock_get_settings: MagicMock,
@@ -85,7 +86,7 @@ class TestMakeGenerators(SSGTestCase):
         stats_path = "example_stats.yaml"
 
         try:
-            make_table_generators(example_orm, configuration, stats_path)
+            make_table_generators(example_orm, configuration, stats_path) #... and orm_file_name and config_file_name
         except SystemExit:
             pass
 
@@ -98,7 +99,7 @@ class TestMakeGenerators(SSGTestCase):
     @patch("sqlsynthgen.utils.create_engine")
     @patch("sqlsynthgen.make.get_settings")
     @patch("sqlsynthgen.make.Path")
-    def test_make_generators_force_overwrite(
+    def test_create_generators_force_overwrite(
         self,
         mock_path: MagicMock,
         mock_get_settings: MagicMock,
@@ -117,7 +118,7 @@ class TestMakeGenerators(SSGTestCase):
         stats_path: str = "example_stats.yaml"
 
         actual: str = make_table_generators(
-            example_orm, config, stats_path, overwrite_files=True
+            example_orm, config, stats_path, overwrite_files=True #... and orm_file_name and config_file_name
         )
 
         mock_create.assert_called_once()
@@ -255,8 +256,8 @@ class TestMakeStats(RequiresDBTestCase):
 
     def setUp(self) -> None:
         """Pre-test setup."""
+        super().setUp()
         os.chdir(self.test_dir)
-        self.connection_string = "postgresql://postgres:password@localhost:5432/src"
         conf_path = Path("example_config.yaml")
         with open(conf_path, "r", encoding="utf8") as f:
             self.config = yaml.safe_load(f)
@@ -264,6 +265,7 @@ class TestMakeStats(RequiresDBTestCase):
     def tearDown(self) -> None:
         """Post-test cleanup."""
         os.chdir(self.start_dir)
+        super().tearDown()
 
     def check_make_stats_output(self, src_stats: dict) -> None:
         """Check that the output of make_src_stats is as expected."""
@@ -293,14 +295,14 @@ class TestMakeStats(RequiresDBTestCase):
     def test_make_stats_no_asyncio_schema(self) -> None:
         """Test that make_src_stats works when explicitly naming a schema."""
         src_stats = asyncio.get_event_loop().run_until_complete(
-            make_src_stats(self.connection_string, self.config, "public")
+            make_src_stats(self.dsn, self.config, "public")
         )
         self.check_make_stats_output(src_stats)
 
     def test_make_stats_no_asyncio(self) -> None:
         """Test that make_src_stats works using the example configuration."""
         src_stats = asyncio.get_event_loop().run_until_complete(
-            make_src_stats(self.connection_string, self.config)
+            make_src_stats(self.dsn, self.config)
         )
         self.check_make_stats_output(src_stats)
 
@@ -310,7 +312,7 @@ class TestMakeStats(RequiresDBTestCase):
         """
         config_asyncio = {**self.config, "use-asyncio": True}
         src_stats = asyncio.get_event_loop().run_until_complete(
-            make_src_stats(self.connection_string, config_asyncio)
+            make_src_stats(self.dsn, config_asyncio)
         )
         self.check_make_stats_output(src_stats)
 
@@ -341,7 +343,7 @@ class TestMakeStats(RequiresDBTestCase):
             ]
         }
         src_stats = asyncio.get_event_loop().run_until_complete(
-            make_src_stats(self.connection_string, config, "public")
+            make_src_stats(self.dsn, config, "public")
         )
         self.assertEqual(src_stats[query_name1], [])
         self.assertEqual(src_stats[query_name2], [])

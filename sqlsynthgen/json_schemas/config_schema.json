@@ -153,6 +153,10 @@
               "description": "Whether to export the table data.",
               "type": "boolean"
             },
+            "primary_private": {
+              "description": "Whether the table is a Primary Private table (perhaps a table of patients).",
+              "type": "boolean"
+            },
             "num_rows_per_pass": {
               "description": "The number of rows to generate per pass.",
               "type": "integer"
@@ -179,6 +183,31 @@
                   "columns_assigned": {
                     "description": "One or more columns to assign the return value to.",
                     "type": ["array", "string"],
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "missingness_generators": {
+              "description": "Function to generate a set of nullable columns that should not be null",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": {
+                    "description": "The name of a (built-in or custom) function (e.g. column_presence.sampled).",
+                    "type": "string"
+                  },
+                  "kwargs": {
+                    "description": "Keyword arguments to pass to the function.",
+                    "type": "object"
+                  },
+                  "columns_assigned": {
+                    "description": "Column names that might be returned.",
+                    "type": "array",
                     "items": {
                       "type": "string"
                     }

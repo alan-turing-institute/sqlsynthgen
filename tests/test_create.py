@@ -12,13 +12,13 @@ from sqlalchemy.schema import Table
 from sqlsynthgen.base import FileUploader, TableGenerator
 from sqlsynthgen.create import (
     Story,
-    _populate_story,
+    StoryIterator,
     create_db_data,
     create_db_tables,
     create_db_vocab,
     populate,
 )
-from tests.utils import RequiresDBTestCase, SSGTestCase, get_test_settings, run_psql
+from tests.utils import RequiresDBTestCase, SSGTestCase, get_test_settings
 
 
 class MyTestCase(SSGTestCase):
@@ -192,6 +192,7 @@ class MyTestCase(SSGTestCase):
 class TestStoryDefaults(RequiresDBTestCase):
     """Test that we can handle column defaults in stories."""
 
+    dump_file_path = "dst.dump"
     # pylint: disable=invalid-name
     Base = declarative_base()
     # pylint: enable=invalid-name
@@ -204,18 +205,9 @@ class TestStoryDefaults(RequiresDBTestCase):
         someval = Column(Integer, primary_key=True)
         otherval = Column(Integer, server_default="8")
 
-    def setUp(self) -> None:
-        """Ensure we have an empty DB to work with."""
-        dump_file_path = Path("dst.dump")
-        examples_dir = Path("tests/examples")
-        run_psql(examples_dir / dump_file_path)
-
     def test_populate(self) -> None:
         """Check that we can populate a table that has column defaults."""
-        engine = create_engine(
-            "postgresql://postgres:password@localhost:5432/dst",
-        )
-        self.metadata.create_all(engine)
+        self.metadata.create_all(self.engine)
 
         def my_story() -> Story:
             """A story generator."""
@@ -223,6 +215,9 @@ class TestStoryDefaults(RequiresDBTestCase):
             self.assertEqual(1, first_row["someval"])
             self.assertEqual(8, first_row["otherval"])
 
-        with engine.connect() as conn:
+        story_iterator = StoryIterator([my_story()], dict(self.metadata.tables), {}, conn)
+        with self.engine.connect() as conn:
             with conn.begin():
-                _populate_story(my_story(), dict(self.metadata.tables), {}, conn)
+                while not story_iterator.is_ended():
+                    story_iterator.insert()
+                    story_iterator.next()

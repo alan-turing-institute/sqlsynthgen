@@ -35,14 +35,14 @@ class TestCLI(SSGTestCase):
     @patch("sqlsynthgen.main.import_file")
     @patch("sqlsynthgen.main.Path")
     @patch("sqlsynthgen.main.make_table_generators")
-    def test_make_generators(
+    def test_create_generators(
         self,
         mock_make: MagicMock,
         mock_path: MagicMock,
         mock_import: MagicMock,
         mock_settings: MagicMock,
     ) -> None:
-        """Test the make-generators sub-command."""
+        """Test the create-generators sub-command."""
         mock_path.return_value.exists.return_value = False
         mock_make.return_value = "some text"
         mock_settings.return_value.src_postges_dsn = ""
@@ -50,7 +50,7 @@ class TestCLI(SSGTestCase):
         result = runner.invoke(
             app,
             [
-                "make-generators",
+                "create-generators",
             ],
             catch_exceptions=False,
         )
@@ -65,10 +65,10 @@ class TestCLI(SSGTestCase):
 
     @patch("sqlsynthgen.main.Path")
     @patch("sqlsynthgen.main.logger")
-    def test_make_generators_errors_if_file_exists(
+    def test_create_generators_errors_if_file_exists(
         self, mock_logger: MagicMock, mock_path: MagicMock
     ) -> None:
-        """Test the make-generators sub-command doesn't overwrite."""
+        """Test the create-generators sub-command doesn't overwrite."""
 
         mock_path.return_value.exists.return_value = True
         mock_path.return_value.__str__.return_value = "ssg.py"
@@ -76,7 +76,7 @@ class TestCLI(SSGTestCase):
         result = runner.invoke(
             app,
             [
-                "make-generators",
+                "create-generators",
             ],
             catch_exceptions=False,
         )
@@ -86,14 +86,14 @@ class TestCLI(SSGTestCase):
         self.assertEqual(1, result.exit_code)
 
     @patch("sqlsynthgen.main.logger")
-    def test_make_generators_errors_if_src_dsn_missing(
+    def test_create_generators_errors_if_src_dsn_missing(
         self, mock_logger: MagicMock
     ) -> None:
-        """Test the make-generators sub-command with missing db params."""
+        """Test the create-generators sub-command with missing db params."""
         result = runner.invoke(
             app,
             [
-                "make-generators",
+                "create-generators",
             ],
             catch_exceptions=False,
         )
@@ -106,14 +106,14 @@ class TestCLI(SSGTestCase):
     @patch("sqlsynthgen.main.Path")
     @patch("sqlsynthgen.main.import_file")
     @patch("sqlsynthgen.main.make_table_generators")
-    def test_make_generators_with_force_enabled(
+    def test_create_generators_with_force_enabled(
         self,
         mock_make: MagicMock,
         mock_import: MagicMock,
         mock_path: MagicMock,
         mock_settings: MagicMock,
     ) -> None:
-        """Tests the make-generators sub-commands overwrite files when instructed."""
+        """Tests the create-generators sub-commands overwrite files when instructed."""
 
         mock_path.return_value.exists.return_value = True
         mock_make.return_value = "make result"
@@ -121,7 +121,7 @@ class TestCLI(SSGTestCase):
 
         for force_option in ["--force", "-f"]:
             with self.subTest(f"Using option {force_option}"):
-                result: Result = runner.invoke(app, ["make-generators", force_option])
+                result: Result = runner.invoke(app, ["create-generators", force_option])
 
                 mock_make.assert_called_once_with(
                     mock_import.return_value, {}, None, overwrite_files=True

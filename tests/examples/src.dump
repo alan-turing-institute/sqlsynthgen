@@ -281,9 +281,9 @@ INSERT INTO public.person VALUES (7, 'Randy Random', false, '2023-03-01 00:00:00
 INSERT INTO public.person VALUES (8, 'Randy Random', false, '2023-03-01 00:00:00+00');
 INSERT INTO public.person VALUES (9, 'Randy Random', false, '2023-03-01 00:00:00+00');
 INSERT INTO public.person VALUES (10, 'Randy Random', true, '2023-03-01 00:00:00+00');
-INSERT INTO public.person VALUES (11, 'Randy Random', false, '2023-03-01 00:00:00+00');
-INSERT INTO public.person VALUES (12, 'Randy Random', false, '2023-03-01 00:00:00+00');
-INSERT INTO public.person VALUES (13, 'Randy Random', true, '2023-03-01 00:00:00+00');
+INSERT INTO public.person VALUES (11, 'Testfried Testermann', false, '2023-03-01 00:00:00+00');
+INSERT INTO public.person VALUES (12, 'Veronica Fyre', false, '2023-03-01 00:00:00+00');
+INSERT INTO public.person VALUES (13, 'Miranda Rando-Generata', true, '2023-03-01 00:00:00+00');
 INSERT INTO public.person VALUES (14, 'Randy Random', false, '2023-03-01 00:00:00+00');
 INSERT INTO public.person VALUES (15, 'Randy Random', true, '2023-03-01 00:00:00+00');
 INSERT INTO public.person VALUES (16, 'Randy Random', true, '2023-03-01 00:00:00+00');

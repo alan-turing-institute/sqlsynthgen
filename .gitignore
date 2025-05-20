@@ -143,6 +143,9 @@ docs/temp/*
 # vim swap files
 *.swp
 
+# tool outputs
 ssg.py
-orm.py
+orm.yaml
 src-stats.yaml
+config.yaml
+*.yaml.gz

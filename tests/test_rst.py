@@ -34,23 +34,17 @@ class RstTests(TestCase):
             'Hyperlink target "page-installation" is not referenced.',
             'Hyperlink target "story-generators" is not referenced.',
         ]
-        filtered_errors = []
-        for file_errors in all_errors:
-            for file_error in file_errors:
-                skip = False
+        filtered_errors = [
+            file_error
+            for file_errors in all_errors
+            for file_error in file_errors
+            # Only worry about ERRORs and WARNINGs
+            if file_error.level <= 2
+            if not any(filter(lambda m: m in file_error.full_message, allowed_errors))
+        ]
 
-                error_message = file_error.full_message
-
-                for allowed_error in allowed_errors:
-                    if allowed_error in error_message:
-                        skip = True
-                        break
-
-                if skip:
-                    continue
-
-                filtered_errors.append(file_error)
-
-        # Only worry about ERRORs and WARNINGs
-        level_one_errors = [x.full_message for x in filtered_errors if x.level <= 2]
-        self.assertListEqual([], level_one_errors)
+        if filtered_errors:
+            self.fail(msg="\n".join([
+                f"{err.source}({err.line}): {["Severe", "Error", "Warning"][err.level]}: {err.full_message}"
+                for err in filtered_errors
+            ]))
