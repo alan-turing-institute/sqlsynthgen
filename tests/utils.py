@@ -1,15 +1,24 @@
 """Utilities for testing."""
-import os
+import asyncio
 from functools import lru_cache
+import os
 from pathlib import Path
 import shutil
+from sqlalchemy.schema import MetaData
 from subprocess import run
 import testing.postgresql
 from typing import Any
 from unittest import TestCase, skipUnless
+import yaml
+
+from sqlalchemy import MetaData
+from tempfile import mkstemp
 
 from datafaker import settings
-from datafaker.utils import create_db_engine
+from datafaker.create import create_db_data_into
+from datafaker.make import make_tables_file, make_src_stats, make_table_generators
+from datafaker.remove import remove_db_data_from
+from datafaker.utils import import_file, sorted_non_vocabulary_tables, create_db_engine
 
 class SysExit(Exception):
     """To force the function to exit as sys.exit() would."""
@@ -83,6 +92,8 @@ class RequiresDBTestCase(DatafakerTestCase):
             schema_name=self.schema_name,
             use_asyncio=self.use_asyncio,
         )
+        self.metadata = MetaData()
+        self.metadata.reflect(self.engine)
 
     def tearDown(self) -> None:
         self.postgresql.stop()
@@ -117,3 +128,75 @@ class RequiresDBTestCase(DatafakerTestCase):
         )
         # psql doesn't always return != 0 if it fails
         assert completed_process.stderr == b"", completed_process.stderr
+
+
+class GeneratesDBTestCase(RequiresDBTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        # Generate the `orm.yaml` from the database
+        (self.orm_fd, self.orm_file_path) = mkstemp(".yaml", "orm_", text=True)
+        with os.fdopen(self.orm_fd, "w", encoding="utf-8") as orm_fh:
+            orm_fh.write(make_tables_file(self.dsn, self.schema_name, {}))
+
+    def set_configuration(self, config) -> None:
+        """
+        Accepts a configuration file, writes it out.
+        """
+        (self.config_fd, self.config_file_path) = mkstemp(".yaml", "config_", text=True)
+        with os.fdopen(self.config_fd, "w", encoding="utf-8") as config_fh:
+            config_fh.write(yaml.dump(config))
+
+    def get_src_stats(self, config) -> dict[str, any]:
+        """
+        Runs `make-stats` producing `src-stats.yaml`
+        :return: Python dictionary representation of the contents of the src-stats file
+        """
+        loop = asyncio.new_event_loop()
+        src_stats = loop.run_until_complete(
+            make_src_stats(self.dsn, config, self.metadata, self.schema_name)
+        )
+        loop.close()
+        (self.stats_fd, self.stats_file_path) = mkstemp(".yaml", "src_stats_", text=True)
+        with os.fdopen(self.stats_fd, "w", encoding="utf-8") as stats_fh:
+            stats_fh.write(yaml.dump(src_stats))
+
+    def create_generators(self, config) -> None:
+        """ ``create-generators`` with ``src-stats.yaml`` and the rest, producing ``datafaker.py`` """
+        datafaker_content = make_table_generators(
+            self.metadata,
+            config,
+            self.orm_file_path,
+            self.config_file_path,
+            self.stats_file_path,
+        )
+        (generators_fd, self.generators_file_path) = mkstemp(".py", "dfgen_", text=True)
+        with os.fdopen(generators_fd, "w", encoding="utf-8") as datafaker_fh:
+            datafaker_fh.write(datafaker_content)
+
+    def create_data(self, config, num_passes=1):
+        """ Remove source data from the DB and create fake data in its place. """
+        # `remove-data` so we don't have to use a separate database for the destination
+        remove_db_data_from(self.metadata, config, self.dsn, self.schema_name)
+        # `create-data` with all this stuff
+        datafaker_module = import_file(self.generators_file_path)
+        table_generator_dict = datafaker_module.table_generator_dict
+        story_generator_list = datafaker_module.story_generator_list
+        create_db_data_into(
+            sorted_non_vocabulary_tables(self.metadata, config),
+            table_generator_dict,
+            story_generator_list,
+            num_passes,
+            self.dsn,
+            self.schema_name,
+        )
+
+    def generate_data(self, config, num_passes=1):
+        """
+        Replaces the DB's source data with generated data.
+        :return: A Python dictionary representation of the src-stats.yaml file, for what it's worth.
+        """
+        self.set_configuration(config)
+        src_stats = self.get_src_stats(config)
+        self.create_generators(config)
+        self.create_data(config, num_passes)
+        return src_stats

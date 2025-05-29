@@ -1,22 +1,12 @@
-"""Tests for the base module."""
-import asyncio
+""" Tests for the base module. """
 import copy
-import os
 import random
 import re
-from sqlalchemy import MetaData, select
-from tempfile import mkstemp
-import yaml
+from sqlalchemy import select
 
-from pydantic import BaseSettings
-
-from datafaker.create import create_db_data_into
 from datafaker.interactive import DbCmd, TableCmd, GeneratorCmd, MissingnessCmd
-from datafaker.make import make_tables_file, make_src_stats, make_table_generators
-from datafaker.remove import remove_db_data_from
-from datafaker.utils import import_file, sorted_non_vocabulary_tables
 
-from tests.utils import RequiresDBTestCase
+from tests.utils import RequiresDBTestCase, GeneratesDBTestCase
 
 
 class TestDbCmdMixin(DbCmd):
@@ -48,17 +38,21 @@ class TestTableCmd(TableCmd, TestDbCmdMixin):
 
 class ConfigureTablesTests(RequiresDBTestCase):
     """Testing configure-tables."""
+    def _get_cmd(self, config) -> TestTableCmd:
+        return TestTableCmd(self.dsn, self.schema_name, self.metadata, config)
+
+
+class ConfigureTablesSrcTests(ConfigureTablesTests):
+    """Testing configure-tables with src.dump."""
     dump_file_path = "src.dump"
     database_name = "src"
     schema_name = "public"
 
     def test_table_name_prompts(self) -> None:
         """Test that the prompts follow the names of the tables."""
-        metadata = MetaData()
-        metadata.reflect(self.engine)
         config = {}
-        with TestTableCmd(self.dsn, self.schema_name, metadata, config) as tc:
-            table_names = list(metadata.tables.keys())
+        with self._get_cmd(config) as tc:
+            table_names = list(self.metadata.tables.keys())
             for t in table_names:
                 self.assertIn(t, tc.prompt)
                 tc.do_next("")
@@ -80,10 +74,8 @@ class ConfigureTablesTests(RequiresDBTestCase):
 
     def test_column_display(self) -> None:
         """Test that we can see the names of the columns."""
-        metadata = MetaData()
-        metadata.reflect(self.engine)
         config = {}
-        with TestTableCmd(self.dsn, self.schema_name, metadata, config) as tc:
+        with self._get_cmd(config) as tc:
             tc.do_next("unique_constraint_test")
             tc.do_columns("")
             self.assertListEqual(
@@ -98,12 +90,10 @@ class ConfigureTablesTests(RequiresDBTestCase):
 
     def test_null_configuration(self) -> None:
         """A table still works if its configuration is None."""
-        metadata = MetaData()
-        metadata.reflect(self.engine)
         config = {
             "tables": None,
         }
-        with TestTableCmd(self.dsn, self.schema_name, metadata, config) as tc:
+        with self._get_cmd(config) as tc:
             tc.do_next("unique_constraint_test")
             tc.do_private("")
             tc.do_quit("")
@@ -114,14 +104,12 @@ class ConfigureTablesTests(RequiresDBTestCase):
 
     def test_null_table_configuration(self) -> None:
         """A table still works if its configuration is None."""
-        metadata = MetaData()
-        metadata.reflect(self.engine)
         config = {
             "tables": {
                 "unique_constraint_test": None,
             },
         }
-        with TestTableCmd(self.dsn, self.schema_name, metadata, config) as tc:
+        with self._get_cmd(config) as tc:
             tc.do_next("unique_constraint_test")
             tc.do_private("")
             tc.do_quit("")
@@ -132,8 +120,6 @@ class ConfigureTablesTests(RequiresDBTestCase):
 
     def test_configure_tables(self) -> None:
         """Test that we can change columns to ignore, vocab or generate."""
-        metadata = MetaData()
-        metadata.reflect(self.engine)
         config = {
             "tables": {
                 "unique_constraint_test": {
@@ -150,7 +136,7 @@ class ConfigureTablesTests(RequiresDBTestCase):
                 }
             },
         }
-        with TestTableCmd(self.dsn, self.schema_name, metadata, config) as tc:
+        with self._get_cmd(config) as tc:
             tc.do_next("unique_constraint_test")
             tc.do_generate("")
             tc.do_next("person")
@@ -191,9 +177,7 @@ class ConfigureTablesTests(RequiresDBTestCase):
 
     def test_print_data(self) -> None:
         """Test that we can print random rows from the table and random data from columns."""
-        metadata = MetaData()
-        metadata.reflect(self.engine)
-        person_table = metadata.tables["person"]
+        person_table = self.metadata.tables["person"]
         with self.engine.connect() as conn:
             person_rows = conn.execute(select(person_table)).mappings().fetchall()
             person_data = {
@@ -202,8 +186,7 @@ class ConfigureTablesTests(RequiresDBTestCase):
             }
             name_set = {row["name"] for row in person_rows}
         person_headings = ["person_id", "name", "research_opt_out", "stored_from"]
-        config = {}
-        with TestTableCmd(self.dsn, self.schema_name, metadata, config) as tc:
+        with self._get_cmd({}) as tc:
             tc.do_next("person")
             tc.do_data("")
             self.assertListEqual(tc.headings, person_headings)
@@ -240,8 +223,6 @@ class ConfigureTablesTests(RequiresDBTestCase):
 
     def test_list_tables(self):
         """Test that we can list the tables"""
-        metadata = MetaData()
-        metadata.reflect(self.engine)
         config = {
             "tables": {
                 "unique_constraint_test": {
@@ -252,7 +233,7 @@ class ConfigureTablesTests(RequiresDBTestCase):
                 },
             },
         }
-        with TestTableCmd(self.dsn, self.schema_name, metadata, config) as tc:
+        with self._get_cmd(config) as tc:
             tc.do_next("unique_constraint_test")
             tc.do_ignore("")
             tc.do_next("person")
@@ -286,15 +267,13 @@ class ConfigureTablesTests(RequiresDBTestCase):
             self.assertTrue(no_pk_test_listed)
 
 
-class ConfigureTablesInstrumentsTests(RequiresDBTestCase):
+class ConfigureTablesInstrumentsTests(ConfigureTablesTests):
     """ Testing configure-tables with the instrument.sql database. """
     dump_file_path = "instrument.sql"
     database_name = "instrument"
     schema_name = "public"
 
     def test_sanity_checks_both(self):
-        metadata = MetaData()
-        metadata.reflect(self.engine)
         config = {
             "tables": {
                 "model": {
@@ -308,7 +287,7 @@ class ConfigureTablesInstrumentsTests(RequiresDBTestCase):
                 },
             },
         }
-        with TestTableCmd(self.dsn, self.schema_name, metadata, config) as tc:
+        with self._get_cmd(config) as tc:
             tc.reset()
             tc.do_quit("")
             self.assertEqual(tc.messages[0], (TableCmd.NOTE_TEXT_NO_CHANGES, (), {}))
@@ -318,8 +297,6 @@ class ConfigureTablesInstrumentsTests(RequiresDBTestCase):
             self.assertEqual(tc.messages[4], (TableCmd.WARNING_TEXT_NON_EMPTY_TO_EMPTY, ("signature_model", "player"), {}))
 
     def test_sanity_checks_warnings_only(self):
-        metadata = MetaData()
-        metadata.reflect(self.engine)
         config = {
             "tables": {
                 "model": {
@@ -333,7 +310,7 @@ class ConfigureTablesInstrumentsTests(RequiresDBTestCase):
                 },
             },
         }
-        with TestTableCmd(self.dsn, self.schema_name, metadata, config) as tc:
+        with TestTableCmd(self.dsn, self.schema_name, self.metadata, config) as tc:
             tc.do_next("manufacturer")
             tc.do_vocabulary("")
             tc.reset()
@@ -343,8 +320,6 @@ class ConfigureTablesInstrumentsTests(RequiresDBTestCase):
             self.assertEqual(tc.messages[2], (TableCmd.WARNING_TEXT_NON_EMPTY_TO_EMPTY, ("signature_model", "player"), {}))
 
     def test_sanity_checks_errors_only(self):
-        metadata = MetaData()
-        metadata.reflect(self.engine)
         config = {
             "tables": {
                 "model": {
@@ -358,7 +333,7 @@ class ConfigureTablesInstrumentsTests(RequiresDBTestCase):
                 },
             },
         }
-        with TestTableCmd(self.dsn, self.schema_name, metadata, config) as tc:
+        with TestTableCmd(self.dsn, self.schema_name, self.metadata, config) as tc:
             tc.do_next("signature_model")
             tc.do_empty("")
             tc.reset()
@@ -386,14 +361,15 @@ class ConfigureGeneratorsTests(RequiresDBTestCase):
     database_name = "instrument"
     schema_name = "public"
 
+    def _get_cmd(self, config) -> TestGeneratorCmd:
+        return TestGeneratorCmd(self.dsn, self.schema_name, self.metadata, config)
+
     def test_null_configuration(self):
         """ Test that the tables having null configuration does not break. """
-        metadata = MetaData()
-        metadata.reflect(self.engine)
         config = {
             "tables": None,
         }
-        with TestGeneratorCmd(self.dsn, self.schema_name, metadata, config) as gc:
+        with self._get_cmd(config) as gc:
             TABLE = "model"
             gc.do_next(f"{TABLE}.name")
             gc.do_propose("")
@@ -404,14 +380,12 @@ class ConfigureGeneratorsTests(RequiresDBTestCase):
 
     def test_null_table_configuration(self):
         """ Test that a table having null configuration does not break. """
-        metadata = MetaData()
-        metadata.reflect(self.engine)
         config = {
             "tables": {
                 "model": None,
             }
         }
-        with TestGeneratorCmd(self.dsn, self.schema_name, metadata, config) as gc:
+        with self._get_cmd(config) as gc:
             TABLE = "model"
             gc.do_next(f"{TABLE}.name")
             gc.do_propose("")
@@ -421,9 +395,7 @@ class ConfigureGeneratorsTests(RequiresDBTestCase):
 
     def test_set_generator_mimesis(self):
         """ Test that we can set one generator to a mimesis generator. """
-        metadata = MetaData()
-        metadata.reflect(self.engine)
-        with TestGeneratorCmd(self.dsn, self.schema_name, metadata, {}) as gc:
+        with self._get_cmd({}) as gc:
             TABLE = "model"
             COLUMN = "name"
             GENERATOR = "person.first_name"
@@ -440,9 +412,7 @@ class ConfigureGeneratorsTests(RequiresDBTestCase):
 
     def test_set_generator_distribution(self):
         """ Test that we can set one generator to gaussian. """
-        metadata = MetaData()
-        metadata.reflect(self.engine)
-        with TestGeneratorCmd(self.dsn, self.schema_name, metadata, {}) as gc:
+        with self._get_cmd({}) as gc:
             TABLE = "string"
             COLUMN = "frequency"
             GENERATOR = "dist_gen.normal"
@@ -468,9 +438,7 @@ class ConfigureGeneratorsTests(RequiresDBTestCase):
 
     def test_set_generator_choice(self):
         """ Test that we can set one generator to uniform choice. """
-        metadata = MetaData()
-        metadata.reflect(self.engine)
-        with TestGeneratorCmd(self.dsn, self.schema_name, metadata, {}) as gc:
+        with self._get_cmd({}) as gc:
             TABLE = "string"
             COLUMN = "frequency"
             GENERATOR = "dist_gen.choice"
@@ -495,8 +463,6 @@ class ConfigureGeneratorsTests(RequiresDBTestCase):
 
     def test_old_generators_remain(self):
         """ Test that we can set one generator and keep an old one. """
-        metadata = MetaData()
-        metadata.reflect(self.engine)
         config = {
             "tables": {
                 "string": {
@@ -515,7 +481,7 @@ class ConfigureGeneratorsTests(RequiresDBTestCase):
                 "query": 'SELECT AVG(frequency) AS mean__frequency, STDDEV(frequency) AS stddev__frequency FROM string',
             }]
         }
-        with TestGeneratorCmd(self.dsn, self.schema_name, metadata, copy.deepcopy(config)) as gc:
+        with self._get_cmd(config) as gc:
             TABLE = "model"
             COLUMN = "name"
             GENERATOR = "person.first_name"
@@ -549,8 +515,6 @@ class ConfigureGeneratorsTests(RequiresDBTestCase):
         Test that we can set a generator that requires select aggregate clauses
         and keep an old one, resulting in a merged query.
         """
-        metadata = MetaData()
-        metadata.reflect(self.engine)
         config = {
             "tables": {
                 "string": {
@@ -569,7 +533,7 @@ class ConfigureGeneratorsTests(RequiresDBTestCase):
                 "query": 'SELECT AVG(frequency) AS mean__frequency, STDDEV(frequency) AS stddev__frequency FROM string',
             }]
         }
-        with TestGeneratorCmd(self.dsn, self.schema_name, metadata, copy.deepcopy(config)) as gc:
+        with self._get_cmd(copy.deepcopy(config)) as gc:
             COLUMN = "position"
             GENERATOR = "dist_gen.uniform_ms"
             gc.do_next(f"string.{COLUMN}")
@@ -610,9 +574,7 @@ class ConfigureGeneratorsTests(RequiresDBTestCase):
 
     def test_next_completion(self):
         """ Test tab completion for the next command. """
-        metadata = MetaData()
-        metadata.reflect(self.engine)
-        with TestGeneratorCmd(self.dsn, self.schema_name, metadata, {}) as gc:
+        with self._get_cmd({}) as gc:
             self.assertSetEqual(
                 set(gc.complete_next("m", "next m", 5, 6)),
                 {"manufacturer", "model"},
@@ -637,8 +599,6 @@ class ConfigureGeneratorsTests(RequiresDBTestCase):
         Test that compare reports whether the current table is primary private,
         secondary private or not private.
         """
-        metadata = MetaData()
-        metadata.reflect(self.engine)
         config = {
             "tables": {
                 "model": {
@@ -646,7 +606,7 @@ class ConfigureGeneratorsTests(RequiresDBTestCase):
                 }
             },
         }
-        with TestGeneratorCmd(self.dsn, self.schema_name, metadata, copy.deepcopy(config)) as gc:
+        with self._get_cmd(config) as gc:
             gc.do_next("manufacturer")
             gc.reset()
             gc.do_compare("")
@@ -668,8 +628,6 @@ class ConfigureGeneratorsTests(RequiresDBTestCase):
         """
         Test setting a generator does not remove other information.
         """
-        metadata = MetaData()
-        metadata.reflect(self.engine)
         config = {
             "tables": {
                 "string": {
@@ -681,7 +639,7 @@ class ConfigureGeneratorsTests(RequiresDBTestCase):
                 "query": 'SELECT MAX(frequency) AS max_frequency FROM string',
             }]
         }
-        with TestGeneratorCmd(self.dsn, self.schema_name, metadata, copy.deepcopy(config)) as gc:
+        with self._get_cmd(config) as gc:
             COLUMN = "position"
             GENERATOR = "dist_gen.uniform_ms"
             gc.do_next(f"string.{COLUMN}")
@@ -698,8 +656,6 @@ class ConfigureGeneratorsTests(RequiresDBTestCase):
 
     def test_empty_tables_are_not_configured(self):
         """ Test that tables marked as empty are not configured. """
-        metadata = MetaData()
-        metadata.reflect(self.engine)
         config = {
             "tables": {
                 "string": {
@@ -707,7 +663,7 @@ class ConfigureGeneratorsTests(RequiresDBTestCase):
                 }
             },
         }
-        with TestGeneratorCmd(self.dsn, self.schema_name, metadata, copy.deepcopy(config)) as gc:
+        with self._get_cmd(copy.deepcopy(config)) as gc:
             gc.do_tables("")
             table_names = { m[1][0] for m in gc.messages }
             self.assertIn("model", table_names)
@@ -723,11 +679,12 @@ class ConfigureMissingnessTests(RequiresDBTestCase):
     database_name = "instrument"
     schema_name = "public"
 
+    def _get_cmd(self, config) -> TestMissingnessCmd:
+        return TestMissingnessCmd(self.dsn, self.schema_name, self.metadata, config)
+
     def test_set_missingness_to_sampled(self):
         """ Test that we can set one table to sampled missingness. """
-        metadata = MetaData()
-        metadata.reflect(self.engine)
-        with TestMissingnessCmd(self.dsn, self.schema_name, metadata, {}) as mc:
+        with self._get_cmd({}) as mc:
             TABLE = "signature_model"
             mc.do_next(TABLE)
             mc.do_counts("")
@@ -751,65 +708,30 @@ class ConfigureMissingnessTests(RequiresDBTestCase):
                 }
             )
 
+
+class ConfigureMissingnessTests(GeneratesDBTestCase):
+    """ Testing configure-missing with generation. """
+    dump_file_path = "instrument.sql"
+    database_name = "instrument"
+    schema_name = "public"
+
+    def _get_cmd(self, config) -> TestMissingnessCmd:
+        return TestMissingnessCmd(self.dsn, self.schema_name, self.metadata, config)
+
     def test_create_with_missingness(self):
         """ Test that we can sample real missingness and reproduce it. """
         random.seed(45)
-        # Generate the `orm.yaml` from the database
-        (orm_fd, orm_file_path) = mkstemp(".yaml", "orm_", text=True)
-        (config_fd, config_file_path) = mkstemp(".yaml", "config_", text=True)
-        (stats_fd, stats_file_path) = mkstemp(".yaml", "src_stats_", text=True)
-        (datafaker_fd, datafaker_file_path) = mkstemp(".py", "datafaker_", text=True)
-        schema = "public"
-        table_name = "signature_model"
-        with os.fdopen(orm_fd, "w", encoding="utf-8") as orm_fh:
-            orm_fh.write(make_tables_file(self.dsn, schema, {}))
         # Configure the missingness
-        metadata = MetaData()
-        metadata.reflect(self.engine)
-        with TestMissingnessCmd(self.dsn, self.schema_name, metadata, {}) as mc:
+        table_name = "signature_model"
+        with self._get_cmd({}) as mc:
             mc.do_next(table_name)
             mc.do_sampled("")
             mc.do_quit("")
             config = mc.config
-            # Save out the resulting configuration
-            with os.fdopen(config_fd, "w", encoding="utf-8") as config_fh:
-                config_fh.write(yaml.dump(config))
-        # `make-stats` producing `src-stats.yaml`
-        loop = asyncio.new_event_loop()
-        src_stats = loop.run_until_complete(
-            make_src_stats(self.dsn, config, metadata, schema)
-        )
-        loop.close()
-        with os.fdopen(stats_fd, "w", encoding="utf-8") as stats_fh:
-            stats_fh.write(yaml.dump(src_stats))
-        # `create-generators` with `src-stats.yaml` and the rest, producing `datafaker.py`
-        datafaker_content = make_table_generators(
-            metadata,
-            config,
-            orm_file_path,
-            config_file_path,
-            stats_file_path,
-        )
-        with os.fdopen(datafaker_fd, "w", encoding="utf-8") as datafaker_fh:
-            datafaker_fh.write(datafaker_content)
-        # `remove-data` so we don't have to use a separate database for the destination
-        remove_db_data_from(metadata, config, self.dsn, schema)
-        # `create-data` with all this stuff
-        datafaker_module = import_file(datafaker_file_path)
-        table_generator_dict = datafaker_module.table_generator_dict
-        story_generator_list = datafaker_module.story_generator_list
-        num_passes = 100
-        row_counts = create_db_data_into(
-            sorted_non_vocabulary_tables(metadata, config),
-            table_generator_dict,
-            story_generator_list,
-            num_passes,
-            self.dsn,
-            schema,
-        )
+            self.generate_data(config, num_passes=100)
         # Test that each missingness pattern is present in the database
         with self.engine.connect() as conn:
-            stmt = select(metadata.tables[table_name])
+            stmt = select(self.metadata.tables[table_name])
             rows = conn.execute(stmt).mappings().fetchall()
             patterns: set[int] = set()
             for row in rows:
