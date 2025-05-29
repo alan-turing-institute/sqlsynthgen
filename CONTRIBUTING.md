@@ -1,6 +1,4 @@
-# How to Develop for SQLSYNTHGEN
-
-The following instructions have been tested on MacOS Ventura, but they *should* work on other Unix-based OS.
+# How to Develop for DATAFAKER
 
 ## Pre-requisites
 
@@ -15,13 +13,13 @@ Please install the following software on your workstation:
 1. Clone the GitHub repository:
 
     ```bash
-    git clone https://github.com/alan-turing-institute/sqlsynthgen.git
+    git clone https://github.com/SAFEHR-data/datafaker
     ```
 
-1. In the directory of your local copy, create a virtual environment with all `sqlsynthgen` dependencies:
+1. In the directory of your local copy, create a virtual environment with all `datafaker` dependencies:
 
     ```bash
-    cd sqlsynthgen
+    cd datafaker
     poetry install --all-extras
     ```
 
@@ -46,11 +44,20 @@ Please install the following software on your workstation:
 Executing unit tests is straightforward:
 
 ```bash
-cd sqlsynthgen
 python -m unittest discover --verbose tests/
 ```
 
+Although currently not many tests actually work, so try:
+
+```bash
+python -m unittest -k Config -k Dump
+```
+
+for tests that are currently maintained.
+
 ## Running functional tests
+
+These tests do not currently work, and will be replaced by unit tests.
 
 Functional tests require a PostgreSQL service running. Perform the following steps on your local server:
 
@@ -67,7 +74,7 @@ Functional tests require a PostgreSQL service running. Perform the following ste
 
     ```bash
     createdb src
-    cd sqlsynthgen
+    cd datafaker
     PGPASSWORD=password psql --host=localhost --username=postgres --file=tests/examples/src.dump
     ```
 

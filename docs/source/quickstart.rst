@@ -6,12 +6,12 @@ Quick Start
 Overview
 --------
 
-After :ref:`Installation <page-installation>`, we can run ``sqlsynthgen`` to see the available commands:
+After :ref:`Installation <page-installation>`, we can run ``datafaker`` to see the available commands:
 
 .. code-block:: console
 
-   $ sqlsynthgen
-   Usage: sqlsynthgen [OPTIONS] COMMAND [ARGS]...
+   $ datafaker
+   Usage: datafaker [OPTIONS] COMMAND [ARGS]...
 
    Options:
      --help                          Show this message and exit.
@@ -21,7 +21,7 @@ After :ref:`Installation <page-installation>`, we can run ``sqlsynthgen`` to see
       configure-missing     Interactively set the missingness of the...
       configure-tables      Interactively set tables to ignored, vocabulary...
       create-data           Populate the schema in the target directory with...
-      create-generators     Make a SQLSynthGen file of generator classes.
+      create-generators     Make a datafaker file of generator classes.
       create-tables         Create schema from the ORM YAML file.
       create-vocab          Import vocabulary data into the target database.
       list-tables           List the names of tables
@@ -34,8 +34,8 @@ After :ref:`Installation <page-installation>`, we can run ``sqlsynthgen`` to see
       validate-config       Validate the format of a config file.
       version               Display version information.
 
-sqlsynthgen is designed to be run connected to either the private source database or the more public destination database. It never needs to be connected to both.
-So you can install sqlsynthgen on a machine with access to the private source database that will do the reading, and again on another machine that will do the creation.
+datafaker is designed to be run connected to either the private source database or the more public destination database. It never needs to be connected to both.
+So you can install datafaker on a machine with access to the private source database that will do the reading, and again on another machine that will do the creation.
 
 In this guide we will walk through configuring column generators. We will not discuss stories here.
 
@@ -64,7 +64,7 @@ Running from the ready-built Docker container, make an output directory then use
 .. code-block:: console
 
    $ mkdir output
-   $ docker run --rm --user $(id -u):$(id -g) --network host -e SRC_SCHEMA=myschema -e DST_DSN=postgresql://someuser:somepassword@myserver.mydomain.com:5432/db_name -itv ./output:data --pull always timband/ssg
+   $ docker run --rm --user $(id -u):$(id -g) --network host -e SRC_SCHEMA=myschema -e DST_DSN=postgresql://someuser:somepassword@myserver.mydomain.com:5432/db_name -itv ./output:data --pull always timband/datafaker
 
 Now you can use the commands that use the source database (the ones beginning ``configure-`` and ``make-`` but not the ones beginning ``create-`` and ``remove-``).
 
@@ -75,7 +75,7 @@ The first job is to read the structure of the source database:
 
 .. code-block:: console
 
-   $ sqlsynthgen make-tables
+   $ datafaker make-tables
 
 This will create a file called ``orm.yaml``. You should not need to edit this file.
 
@@ -94,7 +94,7 @@ This command will start an interactive command shell. Don't be intimidated, just
 
 .. code-block:: console
 
-   $ sqlsynthgen configure-tables
+   $ datafaker configure-tables
    Interactive table configuration (ignore, vocabulary, private, generate or empty). Type ? for help.
 
    (table: myfirsttable) ?
@@ -215,7 +215,7 @@ The other lines have four elements:
 
 * ``3.`` is the number of the generator, we will need that later!
 * ``dist_gen.choice`` is the name of the generator
-* ``(fit: 0.0346)`` is a measure of how good sqlsynthgen thinks the generator is (not necessarily a very good measure)
+* ``(fit: 0.0346)`` is a measure of how good datafaker thinks the generator is (not necessarily a very good measure)
 * ``155, 86, 89, 178, 166 ...`` is a sample of data from this generator
 
 For more information, we need the next command, ``compare``.
@@ -297,12 +297,12 @@ You also need two more. Run the following commands:
 
 .. code-block:: console
 
-   $ sqlsynthgen make-stats
-   $ sqlsynthgen make-vocab --compress --no-force
+   $ datafaker make-stats
+   $ datafaker make-vocab --compress --no-force
 
 The first of these generates a files ``src-stats.yaml`` containing summary statistics from the database that the generators need.
 The second generates files ``tablename.yaml.gz`` containing data from the vocabulary tables. WARNING: this can take many hours depending on how big they are!
-``--compress`` compresses the files with gzip, which might be necessary if the machine sqlsynthgen is running on risks running out of disk space.
+``--compress`` compresses the files with gzip, which might be necessary if the machine datafaker is running on risks running out of disk space.
 ``-no-force`` is necessary if you have had to interrupt the process previously and want to keep your existing files; it will generate only files that do not already exist.
 If you had to stop ``make-vocab`` (or it got stopped for some other reason) you will need to check which of your ``.gz`` files are complete. You can use ``gzip -t filename.gz`` for this.
 
@@ -335,7 +335,7 @@ Running from the ready-built Docker container, from within a directory holding o
 
 .. code-block:: console
 
-   $ docker run --rm --user $(id -u):$(id -g) --network host -e DST_SCHEMA=myschema -e DST_DSN=postgresql://someuser:somepassword@myserver.mydomain.com:5432/dst_db -itv .:data --pull always timband/ssg
+   $ docker run --rm --user $(id -u):$(id -g) --network host -e DST_SCHEMA=myschema -e DST_DSN=postgresql://someuser:somepassword@myserver.mydomain.com:5432/dst_db -itv .:data --pull always timband/datafaker
 
 (Windows users will need to modify this docker command, perhaps removing the `--user` option and its argument?)
 
@@ -343,14 +343,14 @@ Whichever we chose, now we can create the generators Python file:
 
 .. code-block:: console
 
-   $ sqlsynthgen create-tables
-   $ sqlsynthgen create-vocab
-   $ sqlsynthgen create-generators --stats-file src-stats.yaml
-   $ sqlsynthgen create-data --num-passes 10
+   $ datafaker create-tables
+   $ datafaker create-vocab
+   $ datafaker create-generators --stats-file src-stats.yaml
+   $ datafaker create-data --num-passes 10
 
 The first of these uses ``orm.yaml`` to create the destination database.
 The second uses all the ``.yaml.gz`` (or ``.yaml``) files representing the vocabulary tables (this can take hours, too).
-The third uses ``config.yaml`` to create a file ``ssg.py`` file containing code to call the generators as configured.
+The third uses ``config.yaml`` to create a file ``datafaker.py`` file containing code to call the generators as configured.
 The last one actually generates the data. ``--num-passes`` controls how many rows are generated.
 At present the only ways to generate different numbers of rows for different tables is to configure ``num_rows_per_pass`` in ``config.yaml``:
 

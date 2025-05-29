@@ -3,8 +3,8 @@ from typing import Any, Mapping
 
 from sqlalchemy import delete, MetaData
 
-from sqlsynthgen.settings import get_settings
-from sqlsynthgen.utils import (
+from datafaker.settings import get_settings
+from datafaker.utils import (
     create_db_engine,
     get_sync_engine,
     get_vocabulary_table_names,

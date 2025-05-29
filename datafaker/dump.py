@@ -3,8 +3,8 @@ import io
 import sqlalchemy
 from sqlalchemy.schema import MetaData
 
-from sqlsynthgen.settings import get_settings
-from sqlsynthgen.utils import (
+from datafaker.settings import get_settings
+from datafaker.utils import (
     create_db_engine,
     get_sync_engine,
     logger,
@@ -33,4 +33,4 @@ def dump_db_tables(
     with engine.connect() as connection:
         result = connection.execute(sqlalchemy.select(table))
         for row in result:
-            csv_out.writerow(row.tuple())
+            csv_out.writerow(row._tuple())

@@ -71,7 +71,7 @@ we see that they are always 0 or 1 so we will pick randomly from 0 and 1 for our
 .. literalinclude:: ../../examples/loans/config1.yaml
    :language: yaml
 
-We run SqlSynthGen's ``create-generators`` command to create ``ssg.py``, which contains a generator class for each table in the source database:
+We run SqlSynthGen's ``create-generators`` command to create ``datafaker.py``, which contains a generator class for each table in the source database:
 
 .. code-block:: console
 
@@ -160,7 +160,7 @@ We add it manually to the orm.py file:
        )
        ...
 
-We'll need to recreate the ``ssg.py`` file, the destination database and the data:
+We'll need to recreate the ``datafaker.py`` file, the destination database and the data:
 
 .. code-block:: console
 
@@ -212,7 +212,7 @@ We define a custom row-generator to use the source statistics and Python's ``ran
 .. literalinclude:: ../../examples/loans/my_row_generators.py
    :language: python
 
-As before, we will need to re-create ``ssg.py`` and the data.
+As before, we will need to re-create ``datafaker.py`` and the data.
 
 .. code-block:: console
 

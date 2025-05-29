@@ -29,7 +29,7 @@ repos:
           poetry run
           generate-schema-doc
           --config-file .jsfh.yaml
-          sqlsynthgen/json_schemas/config_schema.json
+          datafaker/json_schemas/config_schema.json
           docs/source/_static/
         language: system
         pass_filenames: false

@@ -6,18 +6,18 @@ import yaml
 from click.testing import Result
 from typer.testing import CliRunner
 
-from sqlsynthgen.main import app
-from sqlsynthgen.settings import Settings
-from tests.utils import SSGTestCase, get_test_settings
+from datafaker.main import app
+from datafaker.settings import Settings
+from tests.utils import DatafakerTestCase, get_test_settings
 
 runner = CliRunner(mix_stderr=False)
 
 
-class TestCLI(SSGTestCase):
+class TestCLI(DatafakerTestCase):
     """Tests for the command-line interface."""
 
-    @patch("sqlsynthgen.main.import_file")
-    @patch("sqlsynthgen.main.create_db_vocab")
+    @patch("datafaker.main.import_file")
+    @patch("datafaker.main.create_db_vocab")
     def test_create_vocab(self, mock_create: MagicMock, mock_import: MagicMock) -> None:
         """Test the create-vocab sub-command."""
         result = runner.invoke(
@@ -31,10 +31,10 @@ class TestCLI(SSGTestCase):
         mock_create.assert_called_once_with(mock_import.return_value.vocab_dict)
         self.assertSuccess(result)
 
-    @patch("sqlsynthgen.main.get_settings")
-    @patch("sqlsynthgen.main.import_file")
-    @patch("sqlsynthgen.main.Path")
-    @patch("sqlsynthgen.main.make_table_generators")
+    @patch("datafaker.main.get_settings")
+    @patch("datafaker.main.import_file")
+    @patch("datafaker.main.Path")
+    @patch("datafaker.main.make_table_generators")
     def test_create_generators(
         self,
         mock_make: MagicMock,
@@ -63,15 +63,15 @@ class TestCLI(SSGTestCase):
         )
         self.assertSuccess(result)
 
-    @patch("sqlsynthgen.main.Path")
-    @patch("sqlsynthgen.main.logger")
+    @patch("datafaker.main.Path")
+    @patch("datafaker.main.logger")
     def test_create_generators_errors_if_file_exists(
         self, mock_logger: MagicMock, mock_path: MagicMock
     ) -> None:
         """Test the create-generators sub-command doesn't overwrite."""
 
         mock_path.return_value.exists.return_value = True
-        mock_path.return_value.__str__.return_value = "ssg.py"
+        mock_path.return_value.__str__.return_value = "datafaker.py"
 
         result = runner.invoke(
             app,
@@ -85,7 +85,7 @@ class TestCLI(SSGTestCase):
         )
         self.assertEqual(1, result.exit_code)
 
-    @patch("sqlsynthgen.main.logger")
+    @patch("datafaker.main.logger")
     def test_create_generators_errors_if_src_dsn_missing(
         self, mock_logger: MagicMock
     ) -> None:
@@ -102,10 +102,10 @@ class TestCLI(SSGTestCase):
         )
         self.assertEqual(1, result.exit_code)
 
-    @patch("sqlsynthgen.main.get_settings")
-    @patch("sqlsynthgen.main.Path")
-    @patch("sqlsynthgen.main.import_file")
-    @patch("sqlsynthgen.main.make_table_generators")
+    @patch("datafaker.main.get_settings")
+    @patch("datafaker.main.Path")
+    @patch("datafaker.main.import_file")
+    @patch("datafaker.main.make_table_generators")
     def test_create_generators_with_force_enabled(
         self,
         mock_make: MagicMock,
@@ -134,8 +134,8 @@ class TestCLI(SSGTestCase):
                 mock_make.reset_mock()
                 mock_path.reset_mock()
 
-    @patch("sqlsynthgen.main.create_db_tables")
-    @patch("sqlsynthgen.main.import_file")
+    @patch("datafaker.main.create_db_tables")
+    @patch("datafaker.main.import_file")
     def test_create_tables(
         self, mock_import: MagicMock, mock_create: MagicMock
     ) -> None:
@@ -152,9 +152,9 @@ class TestCLI(SSGTestCase):
         mock_create.assert_called_once_with(mock_import.return_value.Base.metadata)
         self.assertSuccess(result)
 
-    @patch("sqlsynthgen.main.logger")
-    @patch("sqlsynthgen.main.import_file")
-    @patch("sqlsynthgen.main.create_db_data")
+    @patch("datafaker.main.logger")
+    @patch("datafaker.main.import_file")
+    @patch("datafaker.main.create_db_data")
     def test_create_data(
         self, mock_create: MagicMock, mock_import: MagicMock, mock_logger: MagicMock
     ) -> None:
@@ -171,7 +171,7 @@ class TestCLI(SSGTestCase):
         self.assertListEqual(
             [
                 call("orm.py"),
-                call("ssg.py"),
+                call("datafaker.py"),
             ],
             mock_import.call_args_list,
         )
@@ -192,10 +192,10 @@ class TestCLI(SSGTestCase):
             ]
         )
 
-    @patch("sqlsynthgen.main.Path")
-    @patch("sqlsynthgen.main.make_tables_file")
-    @patch("sqlsynthgen.main.get_settings")
-    @patch("sqlsynthgen.main.read_config_file")
+    @patch("datafaker.main.Path")
+    @patch("datafaker.main.make_tables_file")
+    @patch("datafaker.main.get_settings")
+    @patch("datafaker.main.read_config_file")
     def test_make_tables(
         self,
         mock_config_yaml_file: MagicMock,
@@ -228,8 +228,8 @@ class TestCLI(SSGTestCase):
         )
         self.assertSuccess(result)
 
-    @patch("sqlsynthgen.main.Path")
-    @patch("sqlsynthgen.main.logger")
+    @patch("datafaker.main.Path")
+    @patch("datafaker.main.logger")
     def test_make_tables_errors_if_file_exists(
         self, mock_logger: MagicMock, mock_path: MagicMock
     ) -> None:
@@ -250,7 +250,7 @@ class TestCLI(SSGTestCase):
         )
         self.assertEqual(1, result.exit_code)
 
-    @patch("sqlsynthgen.main.logger")
+    @patch("datafaker.main.logger")
     def test_make_tables_errors_if_src_dsn_missing(
         self, mock_logger: MagicMock
     ) -> None:
@@ -268,9 +268,9 @@ class TestCLI(SSGTestCase):
         )
         self.assertEqual(1, result.exit_code)
 
-    @patch("sqlsynthgen.main.make_tables_file")
-    @patch("sqlsynthgen.main.get_settings")
-    @patch("sqlsynthgen.main.Path")
+    @patch("datafaker.main.make_tables_file")
+    @patch("datafaker.main.get_settings")
+    @patch("datafaker.main.Path")
     def test_make_tables_with_force_enabled(
         self,
         mock_path: MagicMock,
@@ -302,9 +302,9 @@ class TestCLI(SSGTestCase):
                 mock_make_tables.reset_mock()
                 mock_path.reset_mock()
 
-    @patch("sqlsynthgen.main.Path")
-    @patch("sqlsynthgen.main.make_src_stats")
-    @patch("sqlsynthgen.main.get_settings")
+    @patch("datafaker.main.Path")
+    @patch("datafaker.main.make_src_stats")
+    @patch("datafaker.main.get_settings")
     def test_make_stats(
         self, mock_get_settings: MagicMock, mock_make: MagicMock, mock_path: MagicMock
     ) -> None:
@@ -331,8 +331,8 @@ class TestCLI(SSGTestCase):
             "a: 1\n", encoding="utf-8"
         )
 
-    @patch("sqlsynthgen.main.Path")
-    @patch("sqlsynthgen.main.logger")
+    @patch("datafaker.main.Path")
+    @patch("datafaker.main.logger")
     def test_make_stats_errors_if_file_exists(
         self, mock_logger: MagicMock, mock_path: MagicMock
     ) -> None:
@@ -356,7 +356,7 @@ class TestCLI(SSGTestCase):
         )
         self.assertEqual(1, result.exit_code)
 
-    @patch("sqlsynthgen.main.logger")
+    @patch("datafaker.main.logger")
     def test_make_stats_errors_if_no_src_dsn(self, mock_logger: MagicMock) -> None:
         """Test the make-stats sub-command with missing settings."""
         example_conf_path = "tests/examples/example_config.yaml"
@@ -374,9 +374,9 @@ class TestCLI(SSGTestCase):
         )
         self.assertEqual(1, result.exit_code)
 
-    @patch("sqlsynthgen.main.Path")
-    @patch("sqlsynthgen.main.make_src_stats")
-    @patch("sqlsynthgen.main.get_settings")
+    @patch("datafaker.main.Path")
+    @patch("datafaker.main.make_src_stats")
+    @patch("datafaker.main.get_settings")
     def test_make_stats_with_force_enabled(
         self, mock_get_settings: MagicMock, mock_make: MagicMock, mock_path: MagicMock
     ) -> None:
@@ -434,8 +434,8 @@ class TestCLI(SSGTestCase):
 
         self.assertEqual(1, result.exit_code)
 
-    @patch("sqlsynthgen.main.remove_db_data")
-    @patch("sqlsynthgen.main.import_file", side_effect=(1, 2))
+    @patch("datafaker.main.remove_db_data")
+    @patch("datafaker.main.import_file", side_effect=(1, 2))
     def test_remove_data(self, _: MagicMock, mock_remove: MagicMock) -> None:
         """Test the remove-data command."""
         result = runner.invoke(
@@ -446,8 +446,8 @@ class TestCLI(SSGTestCase):
         self.assertEqual(0, result.exit_code)
         mock_remove.assert_called_once_with(1, 2, {})
 
-    @patch("sqlsynthgen.main.remove_db_vocab")
-    @patch("sqlsynthgen.main.import_file", side_effect=(1, 2))
+    @patch("datafaker.main.remove_db_vocab")
+    @patch("datafaker.main.import_file", side_effect=(1, 2))
     def test_remove_vocab(self, _: MagicMock, mock_remove: MagicMock) -> None:
         """Test the remove-vocab command."""
         result = runner.invoke(
@@ -458,8 +458,8 @@ class TestCLI(SSGTestCase):
         self.assertEqual(0, result.exit_code)
         mock_remove.assert_called_once_with(1, 2, {})
 
-    @patch("sqlsynthgen.main.remove_db_tables")
-    @patch("sqlsynthgen.main.import_file", side_effect=(1,))
+    @patch("datafaker.main.remove_db_tables")
+    @patch("datafaker.main.import_file", side_effect=(1,))
     def test_remove_tables(self, _: MagicMock, mock_remove: MagicMock) -> None:
         """Test the remove-tables command."""
         result = runner.invoke(

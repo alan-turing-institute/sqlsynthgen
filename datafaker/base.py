@@ -15,7 +15,7 @@ from sqlalchemy import Connection, insert
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.schema import Table
 
-from sqlsynthgen.utils import (
+from datafaker.utils import (
     logger,
     stream_yaml,
     MAKE_VOCAB_PROGRESS_REPORT_EVERY,
@@ -113,7 +113,7 @@ class FileUploader:
                 logger.warning("File %s not found. Skipping...", yaml_file)
                 return
         if 0 < table_row_count(self.table, connection):
-            logger.warning("Table %s already contains data (consider running 'sqlsynthgen remove-vocab'), skipping...", self.table.name)
+            logger.warning("Table %s already contains data (consider running 'datafaker remove-vocab'), skipping...", self.table.name)
             return
         try:
             file_size = os.path.getsize(yaml_file)

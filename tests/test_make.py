@@ -11,17 +11,17 @@ from sqlalchemy import BigInteger, Column, String
 from sqlalchemy.dialects.mysql.types import INTEGER
 from sqlalchemy.dialects.postgresql import UUID
 
-from sqlsynthgen.make import (
+from datafaker.make import (
     _get_provider_for_column,
     make_src_stats,
     make_table_generators,
     make_tables_file,
 )
 from tests.examples import example_orm
-from tests.utils import RequiresDBTestCase, SSGTestCase, get_test_settings
+from tests.utils import RequiresDBTestCase, DatafakerTestCase, get_test_settings
 
 
-class TestMakeGenerators(SSGTestCase):
+class TestMakeGenerators(DatafakerTestCase):
     """Test the make_table_generators function."""
 
     test_dir = Path("tests/examples")
@@ -35,10 +35,10 @@ class TestMakeGenerators(SSGTestCase):
         """Post-test cleanup."""
         os.chdir(self.start_dir)
 
-    @patch("sqlsynthgen.make.Path")
-    @patch("sqlsynthgen.make.get_settings")
-    @patch("sqlsynthgen.utils.create_engine")
-    @patch("sqlsynthgen.make.download_table")
+    @patch("datafaker.make.Path")
+    @patch("datafaker.make.get_settings")
+    @patch("datafaker.utils.create_engine")
+    @patch("datafaker.make.download_table")
     def test_make_table_generators(
         self,
         mock_download: MagicMock,
@@ -52,7 +52,7 @@ class TestMakeGenerators(SSGTestCase):
         mock_path.return_value.exists.return_value = False
 
         mock_get_settings.return_value = get_test_settings()
-        with open("expected_ssg.py", encoding="utf-8") as expected_output:
+        with open("expected_datafaker.py", encoding="utf-8") as expected_output:
             expected = expected_output.read()
         conf_path = "example_config.yaml"
         with open(conf_path, "r", encoding="utf8") as f:
@@ -66,10 +66,10 @@ class TestMakeGenerators(SSGTestCase):
         mock_create.assert_called_once()
         self.assertEqual(expected, actual)
 
-    @patch("sqlsynthgen.make.logger")
-    @patch("sqlsynthgen.make.Path")
-    @patch("sqlsynthgen.make.get_settings")
-    @patch("sqlsynthgen.utils.create_engine")
+    @patch("datafaker.make.logger")
+    @patch("datafaker.make.Path")
+    @patch("datafaker.make.get_settings")
+    @patch("datafaker.utils.create_engine")
     def test_create_generators_do_not_overwrite(
         self,
         mock_create: MagicMock,
@@ -95,10 +95,10 @@ class TestMakeGenerators(SSGTestCase):
             "%s already exists. Exiting...", "empty_vocabulary.yaml"
         )
 
-    @patch("sqlsynthgen.make.download_table")
-    @patch("sqlsynthgen.utils.create_engine")
-    @patch("sqlsynthgen.make.get_settings")
-    @patch("sqlsynthgen.make.Path")
+    @patch("datafaker.make.download_table")
+    @patch("datafaker.utils.create_engine")
+    @patch("datafaker.make.get_settings")
+    @patch("datafaker.make.Path")
     def test_create_generators_force_overwrite(
         self,
         mock_path: MagicMock,
@@ -110,7 +110,7 @@ class TestMakeGenerators(SSGTestCase):
         mock_path.return_value.exists.return_value = True
 
         mock_get_settings.return_value = get_test_settings()
-        with open("expected_ssg.py", encoding="utf-8") as expected_output:
+        with open("expected_datafaker.py", encoding="utf-8") as expected_output:
             expected: str = expected_output.read()
         conf_path = "example_config.yaml"
         with open(conf_path, "r", encoding="utf8") as f:
@@ -186,7 +186,7 @@ class TestMakeGenerators(SSGTestCase):
         )
 
 
-class TestMakeTables(SSGTestCase):
+class TestMakeTables(DatafakerTestCase):
     """Test the make_tables function."""
 
     test_dir = Path("tests/examples")
@@ -200,8 +200,8 @@ class TestMakeTables(SSGTestCase):
         """Post-test cleanup."""
         os.chdir(self.start_dir)
 
-    @patch("sqlsynthgen.make.MetaData")
-    @patch("sqlsynthgen.make.DeclarativeGenerator")
+    @patch("datafaker.make.MetaData")
+    @patch("datafaker.make.DeclarativeGenerator")
     def test_make_tables_file(self, mock_declarative: MagicMock, _: MagicMock) -> None:
         """Test the make_tables_file function."""
         mock_declarative.return_value.generate.return_value = "pass\n"
@@ -213,8 +213,8 @@ class TestMakeTables(SSGTestCase):
             ),
         )
 
-    @patch("sqlsynthgen.make.MetaData")
-    @patch("sqlsynthgen.make.DeclarativeGenerator")
+    @patch("datafaker.make.MetaData")
+    @patch("datafaker.make.DeclarativeGenerator")
     def test_make_tables_file_with_schema(
         self, mock_declarative: MagicMock, _: MagicMock
     ) -> None:
@@ -230,9 +230,9 @@ class TestMakeTables(SSGTestCase):
             ),
         )
 
-    @patch("sqlsynthgen.make.MetaData")
-    @patch("sqlsynthgen.make.logger")
-    @patch("sqlsynthgen.make.DeclarativeGenerator")
+    @patch("datafaker.make.MetaData")
+    @patch("datafaker.make.logger")
+    @patch("datafaker.make.DeclarativeGenerator")
     def test_make_tables_warns_no_pk(
         self, mock_declarative: MagicMock, mock_logger: MagicMock, _: MagicMock
     ) -> None:
@@ -244,7 +244,7 @@ class TestMakeTables(SSGTestCase):
         )
 
         mock_logger.warning.assert_called_with(
-            "Table without PK detected. sqlsynthgen may not be able to continue.",
+            "Table without PK detected. datafaker may not be able to continue.",
         )
 
 
@@ -316,7 +316,7 @@ class TestMakeStats(RequiresDBTestCase):
         )
         self.check_make_stats_output(src_stats)
 
-    @patch("sqlsynthgen.make.logger")
+    @patch("datafaker.make.logger")
     def test_make_stats_empty_result(self, mock_logger: MagicMock) -> None:
         """Test that make_src_stats logs a warning if a query returns nothing."""
         query_name1 = "non-existent-person"

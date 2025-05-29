@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "SQLSynthGen Config",
-  "description": "A SQLSynthGen configuration YAML file",
+  "title": "datafaker Config",
+  "description": "A datafaker configuration YAML file",
   "type": ["object"],
   "additionalProperties": false,
   "properties": {

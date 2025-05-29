@@ -14,7 +14,7 @@ import sys
 sys.path.insert(0, pathlib.Path(__file__).parents[2].resolve().as_posix())
 sys.path.insert(0, os.path.abspath("../.."))
 
-project = "sqlsynthgen"  # pylint: disable=C0103
+project = "datafaker"  # pylint: disable=C0103
 copyright = "2023, anon"  # pylint: disable=C0103,W0622
 author = "anon"  # pylint: disable=C0103
 release = "0.0"  # pylint: disable=C0103

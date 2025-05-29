@@ -9,6 +9,6 @@ ENV HOME=/
 RUN poetry install
 SHELL ["/bin/bash", "-c"]
 # The redirect to /dev/null seems to help shellingham detect bash!
-RUN poetry run sqlsynthgen --install-completion > /dev/null
+RUN poetry run datafaker --install-completion > /dev/null
 WORKDIR /data
 CMD ["poetry", "--directory=/app", "shell"]

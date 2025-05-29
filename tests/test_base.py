@@ -5,7 +5,7 @@ from pathlib import Path
 from sqlalchemy import Column, Integer, select
 from sqlalchemy.orm import declarative_base
 
-from sqlsynthgen.base import FileUploader
+from datafaker.base import FileUploader
 from tests.utils import RequiresDBTestCase
 
 # pylint: disable=invalid-name

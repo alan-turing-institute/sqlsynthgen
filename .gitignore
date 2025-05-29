@@ -134,7 +134,7 @@ dmypy.json
 .pyre/
 
 .fake
-sqlsynthgen/config.ini
+datafaker/config.ini
 
 # sphinx
 docs/build/*
@@ -144,6 +144,7 @@ docs/temp/*
 *.swp
 
 # tool outputs
+datafaker.py
 ssg.py
 orm.yaml
 src-stats.yaml

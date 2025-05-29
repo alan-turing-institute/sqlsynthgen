@@ -4,41 +4,41 @@ API Reference
 Submodules
 ----------
 
-sqlsynthgen.create module
+datafaker.create module
 -------------------------
 
-.. automodule:: sqlsynthgen.create
+.. automodule:: datafaker.create
    :members:
    :undoc-members:
    :show-inheritance:
 
-sqlsynthgen.main module
+datafaker.main module
 -----------------------
 
-.. automodule:: sqlsynthgen.main
+.. automodule:: datafaker.main
    :members:
    :undoc-members:
    :show-inheritance:
 
-sqlsynthgen.make module
+datafaker.make module
 -----------------------
 
-.. automodule:: sqlsynthgen.make
+.. automodule:: datafaker.make
    :members:
    :undoc-members:
    :show-inheritance:
 
-sqlsynthgen.providers module
+datafaker.providers module
 ----------------------------
 
-.. automodule:: sqlsynthgen.providers
+.. automodule:: datafaker.providers
    :members:
    :undoc-members:
    :show-inheritance:
 
-sqlsynthgen.settings module
+datafaker.settings module
 ---------------------------
 
-.. automodule:: sqlsynthgen.settings
+.. automodule:: datafaker.settings
    :members:
    :show-inheritance:

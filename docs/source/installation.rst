@@ -3,7 +3,7 @@
 Installation
 ============
 
-To use SqlSynthGen, first install it.
+To use datafaker, first install it.
 
 Make sure you have pipx installed. To do this on Windows:
 
@@ -28,7 +28,7 @@ Check that you can view the help message with:
 
 .. code-block:: console
 
-   $ sqlsynthgen --help
+   $ datafaker --help
 
-It can also be used directly within a Docker container by downloading image ``timband/ssg``.
+It can also be used directly within a Docker container by downloading image ``timband/datafaker``.
 See the :ref:`quickstart guide <page-quickstart>` for more information.

@@ -3,7 +3,7 @@ from typing import Any, Callable, List, Optional, Set
 
 import sqlalchemy as sqla
 
-from sqlsynthgen.utils import logger
+from datafaker.utils import logger
 
 
 class UniqueGenerator:

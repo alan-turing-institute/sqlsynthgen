@@ -2,7 +2,7 @@ import parsy
 from sqlalchemy import Column, Dialect, Engine, ForeignKey, MetaData, Table
 from sqlalchemy.dialects import oracle, postgresql
 from sqlalchemy.sql import sqltypes, schema
-from sqlsynthgen.utils import make_foreign_key_name
+from datafaker.utils import make_foreign_key_name
 
 type table_component_t = dict[str, any]
 type table_t = dict[str, table_component_t]

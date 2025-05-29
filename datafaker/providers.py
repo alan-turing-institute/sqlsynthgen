@@ -136,7 +136,7 @@ class SQLGroupByProvider(BaseProvider):
     ) -> Union[Any, dict[str, Any], tuple[Any, ...]]:
         """Random sample a row from the result of a SQL `GROUP BY` query.
 
-        The result of the query is assumed to be in the format that sqlsynthgen's
+        The result of the query is assumed to be in the format that datafaker's
         make-stats outputs.
 
         For example, if one executes the following src-stats query

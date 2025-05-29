@@ -46,7 +46,7 @@ SET default_table_access_method = heap;
 
 -- One table, called unignorable_table, should be created here to mirror the one in
 -- src.dump. This mimics a situation where some vocabulary table is already present in
--- the destination db, and thus we want SSG to ignore it (not copy it over again). It's
+-- the destination db, and thus we want datafaker to ignore it (not copy it over again). It's
 -- called "unignorable" because there's a foreign key reference to it, which means we
 -- can't ignore it when creating orm.py like we usually do when `ignore: true`, but
 -- rather have to handle the ignore at a later stage.

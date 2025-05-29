@@ -8,8 +8,8 @@ import testing.postgresql
 from typing import Any
 from unittest import TestCase, skipUnless
 
-from sqlsynthgen import settings
-from sqlsynthgen.utils import create_db_engine
+from datafaker import settings
+from datafaker.utils import create_db_engine
 
 class SysExit(Exception):
     """To force the function to exit as sys.exit() would."""
@@ -28,11 +28,11 @@ def get_test_settings() -> settings.Settings:
     )
 
 
-class SSGTestCase(TestCase):
-    """Parent class for all TestCases in SqlSynthGen."""
+class DatafakerTestCase(TestCase):
+    """Parent class for all TestCases in datafaker."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initialize an instance of SSGTestCase."""
+        """Initialize an instance of DatafakerTestCase."""
         self.maxDiff = None  # pylint: disable=invalid-name
         super().__init__(*args, **kwargs)
 
@@ -56,7 +56,7 @@ class SSGTestCase(TestCase):
 
 
 @skipUnless(shutil.which("psql"), "need to find 'psql': install PostgreSQL to enable")
-class RequiresDBTestCase(SSGTestCase):
+class RequiresDBTestCase(DatafakerTestCase):
     """A test case that only runs if PostgreSQL is installed."""
     schema_name = None
     use_asyncio = False

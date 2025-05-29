@@ -17,14 +17,14 @@ class FunctionalTestCase(RequiresDBTestCase):
     def test_version_command(self) -> None:
         """Check that the version command works."""
         completed_process = run(
-            ["sqlsynthgen", "version"],
+            ["datafaker", "version"],
             capture_output=True,
         )
         self.assertEqual("", completed_process.stderr.decode("utf-8"))
         self.assertSuccess(completed_process)
         self.assertRegex(
             completed_process.stdout.decode("utf-8"),
-            r"sqlsynthgen version [0-9]+\.[0-9]+\.[0-9]+",
+            r"datafaker version [0-9]+\.[0-9]+\.[0-9]+",
         )
 
 
@@ -35,10 +35,10 @@ class DBFunctionalTestCase(RequiresDBTestCase):
     examples_dir = Path("tests/examples")
 
     orm_file_path = Path("orm.py")
-    ssg_file_path = Path("ssg.py")
+    datafaker_file_path = Path("datafaker.py")
 
     alt_orm_file_path = Path("my_orm.py")
-    alt_ssg_file_path = Path("my_ssg.py")
+    alt_datafaker_file_path = Path("my_datafaker.py")
 
     vocabulary_file_paths = tuple(
         map(Path, ("concept.yaml", "concept_type.yaml", "mitigation_type.yaml")),
@@ -83,19 +83,19 @@ class DBFunctionalTestCase(RequiresDBTestCase):
     def test_workflow_minimal_args(self) -> None:
         """Test the recommended CLI workflow runs without errors."""
         completed_process = run(
-            ["sqlsynthgen", "make-tables", "--force"],
+            ["datafaker", "make-tables", "--force"],
             capture_output=True,
             env=self.env,
         )
         self.assertEqual(
-            "Table without PK detected. sqlsynthgen may not be able to continue.\n",
+            "Table without PK detected. datafaker may not be able to continue.\n",
             completed_process.stderr.decode("utf-8"),
         )
         self.assertSuccess(completed_process)
         self.assertEqual("", completed_process.stdout.decode("utf-8"))
 
         completed_process = run(
-            ["sqlsynthgen", "create-generators", "--force"],
+            ["datafaker", "create-generators", "--force"],
             capture_output=True,
             env=self.env,
         )
@@ -130,7 +130,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         self.assertEqual("", completed_process.stdout.decode("utf-8"))
 
         completed_process = run(
-            ["sqlsynthgen", "create-tables"],
+            ["datafaker", "create-tables"],
             capture_output=True,
             env=self.env,
         )
@@ -139,7 +139,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         self.assertEqual("", completed_process.stdout.decode("utf-8"))
 
         completed_process = run(
-            ["sqlsynthgen", "create-vocab"],
+            ["datafaker", "create-vocab"],
             capture_output=True,
             env=self.env,
         )
@@ -148,7 +148,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         self.assertEqual("", completed_process.stdout.decode("utf-8"))
 
         completed_process = run(
-            ["sqlsynthgen", "create-data"],
+            ["datafaker", "create-data"],
             capture_output=True,
             env=self.env,
         )
@@ -157,7 +157,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         self.assertEqual("", completed_process.stdout.decode("utf-8"))
 
         completed_process = run(
-            ["sqlsynthgen", "remove-data"],
+            ["datafaker", "remove-data"],
             capture_output=True,
             env=self.env,
             input=b"\n",  # To select the default prompt option
@@ -171,7 +171,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         )
 
         completed_process = run(
-            ["sqlsynthgen", "remove-vocab"],
+            ["datafaker", "remove-vocab"],
             capture_output=True,
             env=self.env,
             input=b"\n",  # To select the default prompt option
@@ -185,7 +185,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         )
 
         completed_process = run(
-            ["sqlsynthgen", "remove-tables"],
+            ["datafaker", "remove-tables"],
             capture_output=True,
             env=self.env,
             input=b"\n",  # To select the default prompt option
@@ -201,7 +201,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         """Test the CLI workflow runs with optional arguments."""
         completed_process = run(
             [
-                "sqlsynthgen",
+                "datafaker",
                 "make-tables",
                 f"--config-file={self.config_file_path}",
                 f"--orm-file={self.alt_orm_file_path}",
@@ -216,7 +216,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             "there is a foreign key reference to it. "
             "You may need to create this table manually at the dst schema before "
             "running create-tables.\n"
-            "Table without PK detected. sqlsynthgen may not be able to continue.\n",
+            "Table without PK detected. datafaker may not be able to continue.\n",
             completed_process.stderr.decode("utf-8"),
         )
         self.assertSuccess(completed_process)
@@ -231,7 +231,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
 
         completed_process = run(
             [
-                "sqlsynthgen",
+                "datafaker",
                 "make-stats",
                 f"--stats-file={self.stats_file_path}",
                 f"--config-file={self.config_file_path}",
@@ -255,10 +255,10 @@ class DBFunctionalTestCase(RequiresDBTestCase):
 
         completed_process = run(
             [
-                "sqlsynthgen",
+                "datafaker",
                 "create-generators",
                 f"--orm-file={self.alt_orm_file_path}",
-                f"--ssg-file={self.alt_ssg_file_path}",
+                f"--df-file={self.alt_datafaker_file_path}",
                 f"--config-file={self.config_file_path}",
                 f"--stats-file={self.stats_file_path}",
                 "--force",
@@ -282,7 +282,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         )
         self.assertSuccess(completed_process)
         self.assertEqual(
-            f"Making {self.alt_ssg_file_path}.\n"
+            f"Making {self.alt_datafaker_file_path}.\n"
             "Downloading vocabulary table empty_vocabulary\n"
             "Done downloading empty_vocabulary\n"
             "Downloading vocabulary table mitigation_type\n"
@@ -293,13 +293,13 @@ class DBFunctionalTestCase(RequiresDBTestCase):
             "Done downloading concept_type\n"
             "Downloading vocabulary table concept\n"
             "Done downloading concept\n"
-            f"{self.alt_ssg_file_path} created.\n",
+            f"{self.alt_datafaker_file_path} created.\n",
             completed_process.stdout.decode("utf-8"),
         )
 
         completed_process = run(
             [
-                "sqlsynthgen",
+                "datafaker",
                 "create-tables",
                 f"--orm-file={self.alt_orm_file_path}",
                 f"--config-file={self.config_file_path}",
@@ -317,9 +317,9 @@ class DBFunctionalTestCase(RequiresDBTestCase):
 
         completed_process = run(
             [
-                "sqlsynthgen",
+                "datafaker",
                 "create-vocab",
-                f"--ssg-file={self.alt_ssg_file_path}",
+                f"--df-file={self.alt_datafaker_file_path}",
                 "--verbose",
             ],
             capture_output=True,
@@ -343,10 +343,10 @@ class DBFunctionalTestCase(RequiresDBTestCase):
 
         completed_process = run(
             [
-                "sqlsynthgen",
+                "datafaker",
                 "create-data",
                 f"--orm-file={self.alt_orm_file_path}",
-                f"--ssg-file={self.alt_ssg_file_path}",
+                f"--df-file={self.alt_datafaker_file_path}",
                 f"--config-file={self.config_file_path}",
                 "--num-passes=2",
                 "--verbose",
@@ -400,11 +400,11 @@ class DBFunctionalTestCase(RequiresDBTestCase):
 
         completed_process = run(
             [
-                "sqlsynthgen",
+                "datafaker",
                 "remove-data",
                 "--yes",
                 f"--orm-file={self.alt_orm_file_path}",
-                f"--ssg-file={self.alt_ssg_file_path}",
+                f"--df-file={self.alt_datafaker_file_path}",
                 f"--config-file={self.config_file_path}",
                 "--verbose",
             ],
@@ -429,11 +429,11 @@ class DBFunctionalTestCase(RequiresDBTestCase):
 
         completed_process = run(
             [
-                "sqlsynthgen",
+                "datafaker",
                 "remove-vocab",
                 "--yes",
                 f"--orm-file={self.alt_orm_file_path}",
-                f"--ssg-file={self.alt_ssg_file_path}",
+                f"--df-file={self.alt_datafaker_file_path}",
                 f"--config-file={self.config_file_path}",
                 "--verbose",
             ],
@@ -455,7 +455,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
 
         completed_process = run(
             [
-                "sqlsynthgen",
+                "datafaker",
                 "remove-tables",
                 "--yes",
                 f"--orm-file={self.alt_orm_file_path}",
@@ -488,7 +488,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         # This is all exactly the same stuff we run in test_workflow_maximal_args.
         run(
             [
-                "sqlsynthgen",
+                "datafaker",
                 "make-tables",
                 f"--orm-file={self.alt_orm_file_path}",
                 "--force",
@@ -498,7 +498,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         )
         run(
             [
-                "sqlsynthgen",
+                "datafaker",
                 "make-stats",
                 f"--stats-file={self.stats_file_path}",
                 f"--config-file={self.config_file_path}",
@@ -509,10 +509,10 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         )
         run(
             [
-                "sqlsynthgen",
+                "datafaker",
                 "create-generators",
                 f"--orm-file={self.alt_orm_file_path}",
-                f"--ssg-file={self.alt_ssg_file_path}",
+                f"--df-file={self.alt_datafaker_file_path}",
                 f"--config-file={self.config_file_path}",
                 f"--stats-file={self.stats_file_path}",
                 "--force",
@@ -522,7 +522,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         )
         run(
             [
-                "sqlsynthgen",
+                "datafaker",
                 "create-tables",
                 f"--orm-file={self.alt_orm_file_path}",
             ],
@@ -531,9 +531,9 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         )
         run(
             [
-                "sqlsynthgen",
+                "datafaker",
                 "create-vocab",
-                f"--ssg-file={self.alt_ssg_file_path}",
+                f"--df-file={self.alt_datafaker_file_path}",
             ],
             capture_output=True,
             env=self.env,
@@ -543,10 +543,10 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         # up to 4.
         completed_process = run(
             [
-                "sqlsynthgen",
+                "datafaker",
                 "create-data",
                 f"--orm-file={self.alt_orm_file_path}",
-                f"--ssg-file={self.alt_ssg_file_path}",
+                f"--df-file={self.alt_datafaker_file_path}",
                 "--num-passes=1",
             ],
             capture_output=True,
@@ -558,10 +558,10 @@ class DBFunctionalTestCase(RequiresDBTestCase):
 
         completed_process = run(
             [
-                "sqlsynthgen",
+                "datafaker",
                 "create-data",
                 f"--orm-file={self.alt_orm_file_path}",
-                f"--ssg-file={self.alt_ssg_file_path}",
+                f"--df-file={self.alt_datafaker_file_path}",
                 "--num-passes=3",
             ],
             capture_output=True,
@@ -574,10 +574,10 @@ class DBFunctionalTestCase(RequiresDBTestCase):
         # Writing one more row should fail.
         completed_process = run(
             [
-                "sqlsynthgen",
+                "datafaker",
                 "create-data",
                 f"--orm-file={self.alt_orm_file_path}",
-                f"--ssg-file={self.alt_ssg_file_path}",
+                f"--df-file={self.alt_datafaker_file_path}",
                 "--num-passes=1",
             ],
             capture_output=True,
@@ -601,7 +601,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
 
         completed_process = run(
             [
-                "sqlsynthgen",
+                "datafaker",
                 "make-tables",
                 "--force",
             ],
@@ -612,7 +612,7 @@ class DBFunctionalTestCase(RequiresDBTestCase):
 
         completed_process = run(
             [
-                "sqlsynthgen",
+                "datafaker",
                 "create-tables",
             ],
             capture_output=True,

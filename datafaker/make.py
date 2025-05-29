@@ -21,9 +21,9 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.schema import Column, Table
 from sqlalchemy.sql import sqltypes, type_api
 
-from sqlsynthgen import providers
-from sqlsynthgen.settings import get_settings
-from sqlsynthgen.utils import (
+from datafaker import providers
+from datafaker.settings import get_settings
+from datafaker.utils import (
     create_db_engine,
     download_table,
     get_property,
@@ -38,16 +38,16 @@ from .serialize_metadata import metadata_to_dict
 
 PROVIDER_IMPORTS: Final[list[str]] = []
 for entry_name, entry in inspect.getmembers(providers, inspect.isclass):
-    if issubclass(entry, BaseProvider) and entry.__module__ == "sqlsynthgen.providers":
+    if issubclass(entry, BaseProvider) and entry.__module__ == "datafaker.providers":
         PROVIDER_IMPORTS.append(entry_name)
 
 TEMPLATE_DIRECTORY: Final[Path] = Path(__file__).parent / "templates/"
-SSG_TEMPLATE_FILENAME: Final[str] = "ssg.py.j2"
+DF_TEMPLATE_FILENAME: Final[str] = "datafaker.py.j2"
 
 
 @dataclass
 class VocabularyTableGeneratorInfo:
-    """Contains the ssg.py content related to vocabulary tables."""
+    """Contains the datafaker.py content related to vocabulary tables."""
 
     variable_name: str
     table_name: str
@@ -56,7 +56,7 @@ class VocabularyTableGeneratorInfo:
 
 @dataclass
 class FunctionCall:
-    """Contains the ssg.py content related function calls."""
+    """Contains the datafaker.py content related function calls."""
 
     function_name: str
     argument_values: list[str]
@@ -64,7 +64,7 @@ class FunctionCall:
 
 @dataclass
 class RowGeneratorInfo:
-    """Contains the ssg.py content related to row generators of a table."""
+    """Contains the datafaker.py content related to row generators of a table."""
 
     variable_names: list[str]
     function_call: FunctionCall
@@ -96,7 +96,7 @@ def make_column_choices(
 
 @dataclass
 class TableGeneratorInfo:
-    """Contains the ssg.py content related to regular tables."""
+    """Contains the datafaker.py content related to regular tables."""
 
     class_name: str
     table_name: str
@@ -109,7 +109,7 @@ class TableGeneratorInfo:
 
 @dataclass
 class StoryGeneratorInfo:
-    """Contains the ssg.py content related to story generators."""
+    """Contains the datafaker.py content related to story generators."""
 
     wrapper_name: str
     function_call: FunctionCall
@@ -427,7 +427,7 @@ class _PrimaryConstraint:
     """
     Describes a Uniqueness constraint for when multiple
     columns in a table comprise the primary key. Not a
-    real constraint, but enough to write ssg.py.
+    real constraint, but enough to write datafaker.py.
     """
     def __init__(self, *columns: Column, name: str):
         self.name = name
@@ -545,7 +545,7 @@ def make_table_generators(  # pylint: disable=too-many-locals
     src_stats_filename: Optional[str],
 ) -> str:
     """
-    Create sqlsynthgen generator classes.
+    Create datafaker generator classes.
 
     The orm and vocabulary YAML files must already have been
     generated (by make-tables and make-vocab).
@@ -592,7 +592,7 @@ def make_table_generators(  # pylint: disable=too-many-locals
     story_generators = _get_story_generators(config)
 
     max_unique_constraint_tries = config.get("max-unique-constraint-tries", None)
-    return generate_ssg_content(
+    return generate_df_content(
         {
             "provider_imports": PROVIDER_IMPORTS,
             "orm_file_name": orm_filename,
@@ -608,15 +608,15 @@ def make_table_generators(  # pylint: disable=too-many-locals
     )
 
 
-def generate_ssg_content(template_context: Mapping[str, Any]) -> str:
-    """Generate the content of the ssg.py file as a string."""
+def generate_df_content(template_context: Mapping[str, Any]) -> str:
+    """Generate the content of the datafaker.py file as a string."""
     environment: Environment = Environment(
         loader=FileSystemLoader(TEMPLATE_DIRECTORY),
         trim_blocks=True,
         lstrip_blocks=True,
     )
-    ssg_template: Template = environment.get_template(SSG_TEMPLATE_FILENAME)
-    template_output: str = ssg_template.render(template_context)
+    df_template: Template = environment.get_template(DF_TEMPLATE_FILENAME)
+    template_output: str = df_template.render(template_context)
     return format_str(template_output, mode=FileMode())
 
 

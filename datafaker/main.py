@@ -1,4 +1,4 @@
-"""Entrypoint for the SQLSynthGen package."""
+"""Entrypoint for the datafaker package."""
 import asyncio
 from enum import Enum
 import json
@@ -12,22 +12,22 @@ from jsonschema.exceptions import ValidationError
 from jsonschema.validators import validate
 from typer import Argument, Option, Typer
 
-from sqlsynthgen.create import create_db_data, create_db_tables, create_db_vocab
-from sqlsynthgen.dump import dump_db_tables
-from sqlsynthgen.interactive import (
+from datafaker.create import create_db_data, create_db_tables, create_db_vocab
+from datafaker.dump import dump_db_tables
+from datafaker.interactive import (
     update_config_tables,
     update_config_generators,
     update_missingness,
 )
-from sqlsynthgen.make import (
+from datafaker.make import (
     make_src_stats,
     make_table_generators,
     make_tables_file,
     make_vocabulary_tables,
 )
-from sqlsynthgen.remove import remove_db_data, remove_db_tables, remove_db_vocab
-from sqlsynthgen.settings import Settings, get_settings
-from sqlsynthgen.utils import (
+from datafaker.remove import remove_db_data, remove_db_tables, remove_db_vocab
+from datafaker.settings import Settings, get_settings
+from datafaker.utils import (
     CONFIG_SCHEMA_PATH,
     conf_logger,
     get_flag,
@@ -43,7 +43,7 @@ from .serialize_metadata import dict_to_metadata
 
 ORM_FILENAME: Final[str] = "orm.yaml"
 CONFIG_FILENAME: Final[str] = "config.yaml"
-SSG_FILENAME: Final[str] = "ssg.py"
+DF_FILENAME: Final[str] = "datafaker.py"
 STATS_FILENAME: Final[str] = "src-stats.yaml"
 
 app = Typer(no_args_is_help=True)
@@ -97,8 +97,8 @@ def main(verbose: bool = Option(
 @app.command()
 def create_data(
     orm_file: str = Option(ORM_FILENAME, help="The name of the ORM yaml file"),
-    ssg_file: str = Option(
-        SSG_FILENAME,
+    df_file: str = Option(
+        DF_FILENAME,
         help="The name of the generators file. Must be in the current working directory."
     ),
     config_file: Optional[str] = Option(CONFIG_FILENAME, help="The configuration file"),
@@ -113,21 +113,21 @@ def create_data(
     Also takes as input object relational model as represented
     by file containing Python classes and its attributes.
 
-    Takes as input sqlsynthgen output as represented by Python
+    Takes as input datafaker output as represented by Python
     classes, its attributes and methods for generating values
     for those attributes.
 
     Final input is the number of rows required.
 
     Example:
-        $ sqlsynthgen create-data
+        $ datafaker create-data
     """
     logger.debug("Creating data.")
     config = read_config_file(config_file) if config_file is not None else {}
     orm_metadata = load_metadata(orm_file, config)
-    ssg_module = import_file(ssg_file)
-    table_generator_dict = ssg_module.table_generator_dict
-    story_generator_list = ssg_module.story_generator_list
+    df_module = import_file(df_file)
+    table_generator_dict = df_module.table_generator_dict
+    story_generator_list = df_module.story_generator_list
     row_counts = create_db_data(
         sorted_non_vocabulary_tables(orm_metadata, config),
         table_generator_dict,
@@ -154,7 +154,7 @@ def create_vocab(
     """Import vocabulary data into the target database.
 
     Example:
-        $ sqlsynthgen create-vocab
+        $ datafaker create-vocab
     """
     logger.debug("Loading vocab.")
     config = read_config_file(config_file) if config_file is not None else {}
@@ -176,7 +176,7 @@ def create_tables(
     relational model declared as Python tables.
 
     Example:
-        $ sqlsynthgen create-tables
+        $ datafaker create-tables
     """
     logger.debug("Creating tables.")
     config = read_config_file(config_file) if config_file is not None else {}
@@ -188,24 +188,24 @@ def create_tables(
 @app.command()
 def create_generators(
     orm_file: str = Option(ORM_FILENAME, help="The name of the ORM yaml file"),
-    ssg_file: str = Option(SSG_FILENAME, help="Path to write Python generators to."),
+    df_file: str = Option(DF_FILENAME, help="Path to write Python generators to."),
     config_file: Optional[str] = Option(CONFIG_FILENAME, help="The configuration file"),
     stats_file: Optional[str] = Option(None, help="Statistics file (output of make-stats)"),
     force: bool = Option(False, help="Overwrite any existing Python generators file."),
 ) -> None:
-    """Make a SQLSynthGen file of generator classes.
+    """Make a datafaker file of generator classes.
 
     This CLI command takes an object relation model output by sqlcodegen and
     returns a set of synthetic data generators for each attribute
 
     Example:
-        $ sqlsynthgen create-generators
+        $ datafaker create-generators
     """
-    logger.debug("Making %s.", ssg_file)
+    logger.debug("Making %s.", df_file)
 
-    ssg_file_path = Path(ssg_file)
+    df_file_path = Path(df_file)
     if not force:
-        _check_file_non_existence(ssg_file_path)
+        _check_file_non_existence(df_file_path)
 
     generator_config = read_config_file(config_file) if config_file is not None else {}
     orm_metadata = load_metadata(orm_file, generator_config)
@@ -217,9 +217,9 @@ def create_generators(
         stats_file,
     )
 
-    ssg_file_path.write_text(result, encoding="utf-8")
+    df_file_path.write_text(result, encoding="utf-8")
 
-    logger.debug("%s created.", ssg_file)
+    logger.debug("%s created.", df_file)
 
 
 @app.command()
@@ -235,7 +235,7 @@ def make_vocab(
     Each table marked in the configuration file as "vocabulary_table: true"
 
     Example:
-        $ sqlsynthgen make-vocab --config-file config.yml
+        $ datafaker make-vocab --config-file config.yml
     """
     settings = get_settings()
     _require_src_db_dsn(settings)
@@ -263,7 +263,7 @@ def make_stats(
     Writes the statistics to a YAML file.
 
     Example:
-        $ sqlsynthgen make_stats --config-file=example_config.yaml
+        $ datafaker make_stats --config-file=example_config.yaml
     """
     logger.debug("Creating %s.", stats_file)
 
@@ -293,7 +293,7 @@ def make_tables(
     """Make a YAML file representing the tables in the schema.
 
     Example:
-        $ sqlsynthgen make_tables
+        $ datafaker make_tables
     """
     logger.debug("Creating %s.", orm_file)
 

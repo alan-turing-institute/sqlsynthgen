@@ -1,11 +1,11 @@
 """Tests for the settings module."""
 from pydantic import ValidationError
 
-from sqlsynthgen.settings import Settings
-from tests.utils import SSGTestCase
+from datafaker.settings import Settings
+from tests.utils import DatafakerTestCase
 
 
-class TestSettings(SSGTestCase):
+class TestSettings(DatafakerTestCase):
     """Tests for the Settings class."""
 
     def test_minimal_settings(self) -> None:

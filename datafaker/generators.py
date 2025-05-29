@@ -15,7 +15,7 @@ from sqlalchemy import Column, Engine, text
 from sqlalchemy.types import Date, DateTime, Integer, Numeric, String, Time
 from typing import Callable
 
-from sqlsynthgen.base import DistributionGenerator
+from datafaker.base import DistributionGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ class Generator(ABC):
     """
     @abstractmethod
     def function_name(self) -> str:
-        """ The name of the generator function to put into ssg.py. """
+        """ The name of the generator function to put into datafaker.py. """
 
     @abstractmethod
     def nominal_kwargs(self) -> dict[str, str]:

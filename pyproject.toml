@@ -1,8 +1,8 @@
 [tool.poetry]
-name = "sqlsynthgen"
-version = "0.4.2"
-description = "Synthetic SQL data generator"
-authors = ["Iain <25081046+Iain-S@users.noreply.github.com>"]
+name = "datafaker"
+version = "0.1"
+description = "Generates fake SQL data"
+authors = ["Tim Band <3266052+tim-band@users.noreply.github.com>"]
 license = "MIT"
 readme = "README.md"
 classifiers = [
@@ -12,8 +12,7 @@ classifiers = [
     "Topic :: Database",
     "Topic :: Utilities",
 ]
-homepage = "https://github.com/alan-turing-institute/sqlsynthgen"
-documentation = "https://sqlsynthgen.readthedocs.io/en/stable/"
+homepage = "https://github.com/SAFEHR-data/datafaker"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.14"
@@ -61,7 +60,7 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-sqlsynthgen = "sqlsynthgen.main:app"
+datafaker = "datafaker.main:app"
 
 [tool.isort]
 profile = "black"

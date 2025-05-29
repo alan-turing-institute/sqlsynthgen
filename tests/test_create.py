@@ -9,8 +9,8 @@ from sqlalchemy import Column, Connection, Integer, create_engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.schema import Table
 
-from sqlsynthgen.base import FileUploader, TableGenerator
-from sqlsynthgen.create import (
+from datafaker.base import FileUploader, TableGenerator
+from datafaker.create import (
     Story,
     StoryIterator,
     create_db_data,
@@ -18,15 +18,15 @@ from sqlsynthgen.create import (
     create_db_vocab,
     populate,
 )
-from tests.utils import RequiresDBTestCase, SSGTestCase, get_test_settings
+from tests.utils import RequiresDBTestCase, DatafakerTestCase, get_test_settings
 
 
-class MyTestCase(SSGTestCase):
+class MyTestCase(DatafakerTestCase):
     """Module test case."""
 
-    @patch("sqlsynthgen.utils.create_engine")
-    @patch("sqlsynthgen.create.get_settings")
-    @patch("sqlsynthgen.create.populate")
+    @patch("datafaker.utils.create_engine")
+    @patch("datafaker.create.get_settings")
+    @patch("datafaker.create.populate")
     def test_create_db_data(
         self,
         mock_populate: MagicMock,
@@ -44,8 +44,8 @@ class MyTestCase(SSGTestCase):
         self.assertEqual(row_counts, {})
         mock_create_engine.assert_called()
 
-    @patch("sqlsynthgen.create.get_settings")
-    @patch("sqlsynthgen.utils.create_engine")
+    @patch("datafaker.create.get_settings")
+    @patch("datafaker.utils.create_engine")
     def test_create_db_tables(
         self, mock_create_engine: MagicMock, mock_get_settings: MagicMock
     ) -> None:
@@ -74,7 +74,7 @@ class MyTestCase(SSGTestCase):
         for num_stories_per_pass, num_rows_per_pass, num_initial_rows in itt.product(
             [0, 2], [0, 3], [0, 17]
         ):
-            with patch("sqlsynthgen.create.insert") as mock_insert:
+            with patch("datafaker.create.insert") as mock_insert:
                 mock_values = mock_insert.return_value.values
                 mock_dst_conn = MagicMock(spec=Connection)
                 mock_dst_conn.execute.return_value.returned_defaults = {}
@@ -134,7 +134,7 @@ class MyTestCase(SSGTestCase):
                     mock_dst_conn.execute.call_args_list,
                 )
 
-    @patch("sqlsynthgen.create.insert")
+    @patch("datafaker.create.insert")
     def test_populate_diff_length(self, mock_insert: MagicMock) -> None:
         """Test when generators and tables differ in length."""
         mock_dst_conn = MagicMock(spec=Connection)
@@ -161,8 +161,8 @@ class MyTestCase(SSGTestCase):
         mock_gen_two.assert_called_once()
         mock_gen_three.assert_called_once()
 
-    @patch("sqlsynthgen.utils.create_engine")
-    @patch("sqlsynthgen.create.get_settings")
+    @patch("datafaker.utils.create_engine")
+    @patch("datafaker.create.get_settings")
     def test_create_db_vocab(
         self, mock_get_settings: MagicMock, mock_create_engine: MagicMock
     ) -> None:

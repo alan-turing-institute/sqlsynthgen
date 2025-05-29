@@ -9,8 +9,8 @@ import re
 import sqlalchemy
 from sqlalchemy import Column, MetaData, Table, text
 
-from sqlsynthgen.generators import everything_factory, Generator, PredefinedGenerator
-from sqlsynthgen.utils import create_db_engine, primary_private_fks, table_is_private
+from datafaker.generators import everything_factory, Generator, PredefinedGenerator
+from datafaker.utils import create_db_engine, primary_private_fks, table_is_private
 
 # Monkey patch pyreadline3 v3.5 so that it works with Python 3.13
 # Windows users can install pyreadline3 to get tab completion working.
@@ -231,7 +231,7 @@ class DbCmd(ABC, cmd.Cmd):
                 self.print("Showing the first {} rows", MAX_SELECT_ROWS)
             fields = list(result.keys())
             rows = [
-                row.tuple()
+                row._tuple()
                 for row in result.fetchmany(MAX_SELECT_ROWS)
             ]
             self.print_table(fields, rows)
@@ -254,7 +254,7 @@ class DbCmd(ABC, cmd.Cmd):
                 ))
             )
             rows = [
-                row.tuple()
+                row._tuple()
                 for row in result.fetchmany(MAX_PEEK_ROWS)
             ]
             self.print_table(list(result.keys()), rows)

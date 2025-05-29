@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=../../sqlsynthgen/json_schemas/config_schema.json
+# yaml-language-server: $schema=../../datafaker/json_schemas/config_schema.json
 
 use-asyncio: false
 

@@ -10,11 +10,11 @@ import yaml
 
 from pydantic import BaseSettings
 
-from sqlsynthgen.create import create_db_data_into
-from sqlsynthgen.interactive import DbCmd, TableCmd, GeneratorCmd, MissingnessCmd
-from sqlsynthgen.make import make_tables_file, make_src_stats, make_table_generators
-from sqlsynthgen.remove import remove_db_data_from
-from sqlsynthgen.utils import import_file, sorted_non_vocabulary_tables
+from datafaker.create import create_db_data_into
+from datafaker.interactive import DbCmd, TableCmd, GeneratorCmd, MissingnessCmd
+from datafaker.make import make_tables_file, make_src_stats, make_table_generators
+from datafaker.remove import remove_db_data_from
+from datafaker.utils import import_file, sorted_non_vocabulary_tables
 
 from tests.utils import RequiresDBTestCase
 
@@ -758,7 +758,7 @@ class ConfigureMissingnessTests(RequiresDBTestCase):
         (orm_fd, orm_file_path) = mkstemp(".yaml", "orm_", text=True)
         (config_fd, config_file_path) = mkstemp(".yaml", "config_", text=True)
         (stats_fd, stats_file_path) = mkstemp(".yaml", "src_stats_", text=True)
-        (ssg_fd, ssg_file_path) = mkstemp(".py", "ssg_", text=True)
+        (datafaker_fd, datafaker_file_path) = mkstemp(".py", "datafaker_", text=True)
         schema = "public"
         table_name = "signature_model"
         with os.fdopen(orm_fd, "w", encoding="utf-8") as orm_fh:
@@ -782,22 +782,22 @@ class ConfigureMissingnessTests(RequiresDBTestCase):
         loop.close()
         with os.fdopen(stats_fd, "w", encoding="utf-8") as stats_fh:
             stats_fh.write(yaml.dump(src_stats))
-        # `create-generators` with `src-stats.yaml` and the rest, producing `ssg.py`
-        ssg_content = make_table_generators(
+        # `create-generators` with `src-stats.yaml` and the rest, producing `datafaker.py`
+        datafaker_content = make_table_generators(
             metadata,
             config,
             orm_file_path,
             config_file_path,
             stats_file_path,
         )
-        with os.fdopen(ssg_fd, "w", encoding="utf-8") as ssg_fh:
-            ssg_fh.write(ssg_content)
+        with os.fdopen(datafaker_fd, "w", encoding="utf-8") as datafaker_fh:
+            datafaker_fh.write(datafaker_content)
         # `remove-data` so we don't have to use a separate database for the destination
         remove_db_data_from(metadata, config, self.dsn, schema)
         # `create-data` with all this stuff
-        ssg_module = import_file(ssg_file_path)
-        table_generator_dict = ssg_module.table_generator_dict
-        story_generator_list = ssg_module.story_generator_list
+        datafaker_module = import_file(datafaker_file_path)
+        table_generator_dict = datafaker_module.table_generator_dict
+        story_generator_list = datafaker_module.story_generator_list
         num_passes = 100
         row_counts = create_db_data_into(
             sorted_non_vocabulary_tables(metadata, config),

@@ -9,13 +9,13 @@ from pydantic.tools import parse_obj_as
 from sqlalchemy import Column, Integer, create_engine, insert
 from sqlalchemy.orm import declarative_base
 
-from sqlsynthgen.utils import (
+from datafaker.utils import (
     create_db_engine,
     download_table,
     import_file,
     read_config_file,
 )
-from tests.utils import RequiresDBTestCase, SSGTestCase
+from tests.utils import RequiresDBTestCase, DatafakerTestCase
 
 # pylint: disable=invalid-name
 Base = declarative_base()
@@ -33,7 +33,7 @@ class MyTable(Base):  # type: ignore
     )
 
 
-class TestImport(SSGTestCase):
+class TestImport(DatafakerTestCase):
     """Tests for the import_file function."""
 
     test_dir = Path("tests/examples")
@@ -99,12 +99,12 @@ class TestDownload(RequiresDBTestCase):
         self.assertEqual(expected, actual)
 
 
-class TestReadConfig(SSGTestCase):
+class TestReadConfig(DatafakerTestCase):
     """Tests for the read_config_file function."""
 
     def test_warns_of_invalid_config(self) -> None:
         """Test that we get a warning if the config is invalid."""
-        with patch("sqlsynthgen.utils.logger") as mock_logger:
+        with patch("datafaker.utils.logger") as mock_logger:
             read_config_file("tests/examples/invalid_config.yaml")
             mock_logger.error.assert_called_with(
                 "The config file is invalid: %s", "'a' is not of type 'integer'"

@@ -13,7 +13,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.declarative import declarative_base
 
-from sqlsynthgen.unique_generator import UniqueGenerator
+from datafaker.unique_generator import UniqueGenerator
 from tests.utils import RequiresDBTestCase
 
 # pylint: disable=invalid-name

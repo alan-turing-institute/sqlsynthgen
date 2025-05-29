@@ -4,4 +4,5 @@ orm.yaml
 config.yaml
 src-stats.yaml
 ssg.py
+datafaker.py
 dist

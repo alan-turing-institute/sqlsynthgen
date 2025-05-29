@@ -79,7 +79,7 @@ def import_file(file_path: str) -> ModuleType:
     Returns:
         ModuleType
     """
-    spec = importlib.util.spec_from_file_location("ssg", file_path)
+    spec = importlib.util.spec_from_file_location("df", file_path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -192,7 +192,7 @@ def get_orm_metadata(
     return metadata
 
 
-# This is the main logger that the other modules of sqlsynthgen should use for output.
+# This is the main logger that the other modules of datafaker should use for output.
 # conf_logger() should be called once, as early as possible, to configure this logger.
 logger = logging.getLogger(__name__)
 

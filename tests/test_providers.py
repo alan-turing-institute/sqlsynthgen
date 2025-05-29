@@ -6,8 +6,8 @@ from typing import Any
 from sqlalchemy import Column, Integer, Text, create_engine, insert
 from sqlalchemy.ext.declarative import declarative_base
 
-from sqlsynthgen import providers
-from tests.utils import RequiresDBTestCase, SSGTestCase
+from datafaker import providers
+from tests.utils import RequiresDBTestCase, DatafakerTestCase
 
 # pylint: disable=invalid-name
 Base = declarative_base()
@@ -27,7 +27,7 @@ class Person(Base):  # type: ignore
     sex = Column(Text)
 
 
-class BinaryProviderTestCase(SSGTestCase):
+class BinaryProviderTestCase(DatafakerTestCase):
     """Tests for the BytesProvider class."""
 
     def test_bytes(self) -> None:
@@ -67,7 +67,7 @@ class ColumnValueProviderTestCase(RequiresDBTestCase):
         self.assertIsNone(generated_value)
 
 
-class TimedeltaProvider(SSGTestCase):
+class TimedeltaProvider(DatafakerTestCase):
     """Tests for TimedeltaProvider"""
 
     def test_timedelta(self) -> None:
@@ -80,7 +80,7 @@ class TimedeltaProvider(SSGTestCase):
         self.assertLessEqual(delta, max_dt)
 
 
-class TimespanProvider(SSGTestCase):
+class TimespanProvider(DatafakerTestCase):
     """Tests for TimespanProvider."""
 
     def test_timespan(self) -> None:
@@ -102,7 +102,7 @@ class TimespanProvider(SSGTestCase):
         self.assertEqual(end - start, delta)
 
 
-class TestWeightedBooleanProvider(SSGTestCase):
+class TestWeightedBooleanProvider(DatafakerTestCase):
     """Tests for WeightedBooleanProvider."""
 
     def test_bool(self) -> None:

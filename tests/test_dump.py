@@ -3,7 +3,7 @@ from sqlalchemy.schema import MetaData
 from tests.utils import RequiresDBTestCase
 from unittest.mock import MagicMock, call, patch
 
-from sqlsynthgen.dump import dump_db_tables
+from datafaker.dump import dump_db_tables
 
 class DumpTests(RequiresDBTestCase):
     """Testing configure-tables."""
@@ -11,7 +11,7 @@ class DumpTests(RequiresDBTestCase):
     database_name = "instrument"
     schema_name = "public"
 
-    @patch("sqlsynthgen.dump._make_csv_writer")
+    @patch("datafaker.dump._make_csv_writer")
     def test_dump_data(self, make_csv_writer: MagicMock) -> None:
         """ Test dump-data. """
         TEST_OUTPUT_FILE = "test_output_file_object"

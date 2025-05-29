@@ -29,9 +29,9 @@ and creating the configuration, ORM and initial statistics files
 
     export SRC_DSN='postgresql://postgres:password@localhost/pagila'
     export SRC_SCHEMA='public'
-    sqlsynthgen generate-config
-    sqlsynthgen make-tables
-    sqlsynthgen make-stats
+    datafaker generate-config
+    datafaker make-tables
+    datafaker make-stats
 
 This generates the files ``config.yaml``, ``orm.yaml`` and ``src-stats.yaml``.
 
@@ -62,15 +62,15 @@ And let's populate it with the fake data:
 
     export DST_DSN='postgresql://tim:password@localhost/fake_pagila'
     export DST_SCHEMA='public'
-    sqlsynthgen create-generators
-    sqlsynthgen create-tables
-    sqlsynthgen create-data
+    datafaker create-generators
+    datafaker create-tables
+    datafaker create-data
 
-``create-generators`` creates a Python file called ``ssg.py``.
-You can edit this file if you want, but it is much easier to edit ``config.yaml`` and call ``sqlsynthgen create-generators --force`` to regenerate this file.
+``create-generators`` creates a Python file called ``datafaker.py``.
+You can edit this file if you want, but it is much easier to edit ``config.yaml`` and call ``datafaker create-generators --force`` to regenerate this file.
 
-You will notice that ``create-tables`` produces a couple of warnings, and PostgreSQL complains when ``sqlsynthgen`` tries to create the data.
-The warnings are that ``sqlsynthgen`` doesn't understand the special PostgresSQL types ``TSVECTOR`` and ``ARRAY``, so it doesn't know how to generate data for those columns.
+You will notice that ``create-tables`` produces a couple of warnings, and PostgreSQL complains when ``datafaker`` tries to create the data.
+The warnings are that ``datafaker`` doesn't understand the special PostgresSQL types ``TSVECTOR`` and ``ARRAY``, so it doesn't know how to generate data for those columns.
 Because it doesn't know how to generate data for those columns it will just use NULLs, and the ``film.fulltext`` column cannot be NULL, so creating the data fails.
 
 Fixing the errors with the minimal example
@@ -125,8 +125,8 @@ Anyway, we now need to remake the generators (``create-generators``) and re-run 
 
 .. code-block:: console
   
-  $ sqlsynthgen create-generators --force
-  $ sqlsynthgen create-data --num-passes 15
+  $ datafaker create-generators --force
+  $ datafaker create-data --num-passes 15
 
 Now you can use ``psql --username tim fake_pagila`` to explore the data.
 
@@ -156,7 +156,7 @@ Fixing the problems with the minimal example #1: ignoring unwanted tables
 We fix these problems by adjusting the ``config.yaml`` file.
 We do not need to go back to the private network.
 First, let us remove all the ``payment_`` tables.
-This lowers the fidelity of the generated database, but ``sqlsynthgen`` cannot cope with partitioned tables
+This lowers the fidelity of the generated database, but ``datafaker`` cannot cope with partitioned tables
 so the best that we can do is pretend that ``payment`` is not a partitioned table.
 If we think that our users will not be interested in this implementation detail then this will be acceptable.
 So we edit the appropriate parts of the ``config.yaml`` file. You will see seven sections that look like this:
@@ -193,9 +193,9 @@ Now we can destroy the existing database and try again:
 
 .. code-block:: shell
 
-  sqlsynthgen remove-tables --yes
-  sqlsynthgen create-tables
-  sqlsynthgen create-data
+  datafaker remove-tables --yes
+  datafaker create-tables
+  datafaker create-data
 
 We don't need to regenerate the generators this time as we have not changed anything in the ``config.yaml`` file that affects generators.
 
@@ -227,7 +227,7 @@ and now we take this file into the private network (or pretend to) and run (in t
 
 .. code-block:: console
 
-  $ sqlsynthgen make-vocab --compress
+  $ datafaker make-vocab --compress
 
 This will produce four files: ``category.yaml.gz``, ``city.yaml.gz``, ``country.yaml.gz`` and ``language.yaml.gz``.
 If the ``--compress`` option is not passed it will produce ``.yaml`` files instead of ``.yaml.gz`` and this would be fine in this case.
@@ -236,7 +236,7 @@ Such huge YAML files can cause problems, but they compress very well, so the ``-
 Generating these huge vocabulary files can nevertheless take a very long time! Not in Pagila's case, though.
 
 Now your data privacy protocols will either require you to unzip and examine these files before taking them out of the private network
-or it will trust ``sqlsynthgen`` to produce only non-private output given certain inputs.
+or it will trust ``datafaker`` to produce only non-private output given certain inputs.
 In either case we take these files out of the private network.
 
 Using the same ``config.yaml`` file outside the private network (and with ``DST_DSN`` set as above) we delete the existing data in these vocabulary tables,
@@ -244,21 +244,21 @@ and fill them with the new data from the ``yaml.gz`` (or unzipped ``.yaml``) fil
 
 .. code-block:: console
 
-  $ sqlsynthgen remove-vocab
+  $ datafaker remove-vocab
   Are you sure? [y/N]: y
-  $ sqlsynthgen create-vocab
+  $ datafaker create-vocab
 
 More In-Depth Tutorial
 ======================
 
-`SqlSynthGen <https://github.com/alan-turing-institute/sqlsynthgen/>`_, or SSG for short, is a software package for synthetic data generation, focussed on relational data.
+`datafaker <https://github.com/alan-turing-institute/datafaker/>`_, or SSG for short, is a software package for synthetic data generation, focussed on relational data.
 When pointed to an existing relational database, SSG creates another database with the same database schema, and populates it with synthetic data.
 By default the synthetic data is crudely low fidelity, but the user is given various ways to configure the behavior of SSG to increase fidelity.
 This is done in a manner that maintains transparency and control over how the original data is used to inform the synthetic data, to control privacy risks.
 
 In this tutorial, we go through the different mechanisms SSG has for configuring the data generation, and the different levels of fidelity they can provide and different kinds of utility they can have.
 To showcase SSG, we will use the `AirBnb User Bookings dataset, available at Kaggle <https://www.kaggle.com/competitions/airbnb-recruiting-new-user-bookings/data>`_.
-The original dataset is a collection CSV files that can be ported to a relational database using `this Python script <https://github.com/alan-turing-institute/sqlsynthgen/blob/main/examples/airbnb/csv_to_database.py>`_ (it requires having SSG `previously installed <https://sqlsynthgen.readthedocs.io/en/latest/installation.html#enduser>`_).
+The original dataset is a collection CSV files that can be ported to a relational database using `this Python script <https://github.com/alan-turing-institute/datafaker/blob/main/examples/airbnb/csv_to_database.py>`_ (it requires having SSG `previously installed <https://datafaker.readthedocs.io/en/latest/installation.html#enduser>`_).
 The script assumes you have a local PostgresSQL server running at port 5432, username ``postgres`` and password ``password``, with a database called ``airbnb`` to upload the data to.
 These assumptions can be edited in the ``main`` function of the script.
 
@@ -285,20 +285,20 @@ First, we need to provide SSG with the connection parameters, using a ``.env`` f
 
 We can start the schema migration process by running the following command::
 
-    $ sqlsynthgen make-tables
+    $ datafaker make-tables
 
 This command makes an ``orm.py`` file containing the schema of the airbnb database.
 To use this file to replicate the schema in ``dst`` we run the following command::
 
-    $ sqlsynthgen create-tables
+    $ datafaker create-tables
 
 If you haven't created the destination database, you may first need to run a command like ``createdb --host localhost --user postgres dst``.
 
 We can also use the ``orm.py`` file to make a Python module that generates synthetic data::
 
-    $ sqlsynthgen create-generators
+    $ datafaker create-generators
 
-This creates an ``ssg.py`` file that contains one generator class (not to be confused with Python generator functions) per source database table.
+This creates an ``datafaker.py`` file that contains one generator class (not to be confused with Python generator functions) per source database table.
 By default, without any user configuration, the data produced by these generators fulfills the schema of the original data:
 the data types are correct and the foreign key and uniqueness constraints are respected.
 
@@ -308,7 +308,7 @@ However, this is not the case for the AirBnB dataset.
 For example, the ``users`` table’s primary key ``id`` column is of type ``VARCHAR``.
 Running the next command, ``create-data``, will produce an error::
 
-    $ sqlsynthgen create-data
+    $ datafaker create-data
     ...
     psycopg2.errors.NotNullViolation:
 
@@ -335,7 +335,7 @@ The ``generic`` object on line 9 is an instance of the Mimesis type `generic pro
 Mimesis is a package for creating random data and has a wide array of providers (the Mimesis term for data generators) for different scenarios, which SSG makes extensive use of.
 
 Similar edits as above for the ``users`` table need to be made for the primary key columns of the other tables.
-See `this Python file <https://github.com/alan-turing-institute/sqlsynthgen/blob/main/examples/airbnb/ssg_manual_edit.py>`_ for the full changes to the ``ssg.py`` file.
+See `this Python file <https://github.com/alan-turing-institute/datafaker/blob/main/examples/airbnb/ssg_manual_edit.py>`_ for the full changes to the ``ssg.py`` file.
 
 Now when we run ``create-data`` we get valid, if not very sensible, values in each of our tables. For example:
 
@@ -383,7 +383,7 @@ We identify ``countries`` as a vocabulary table in our ``config.yaml`` file:
 
 The vocabulary tables are exported from the source database when the generator module is made, so we overwrite ``ssg.py`` with one that includes the vocabulary import classes, using the ``--force`` option::
 
-    $ sqlsynthgen create-generators --config-file config.yaml --force
+    $ datafaker create-generators --config-file config.yaml --force
 
 This will export the ``countries`` table rows to a file called ``countries.yaml`` in your current working directory:
 
@@ -408,20 +408,20 @@ This will export the ``countries`` table rows to a file called ``countries.yaml`
 
 We need to truncate any tables in our destination database before importing the countries data with::
 
-    $ sqlsynthgen remove-data --config-file config.yaml
-    $ sqlsynthgen create-vocab --config-file config.yaml --orm-file orm.yaml
+    $ datafaker remove-data --config-file config.yaml
+    $ datafaker create-vocab --config-file config.yaml --orm-file orm.yaml
 
 Since ``create-generators`` rewrote ``ssg.py``, we must now re-edit it to add the primary key ``VARCHAR`` workarounds for the ``users`` and ``age_gender_bkts`` tables, as we did in section above.
 Once this is done, we can generate random data for the other three tables with::
 
-    $ sqlsynthgen create-data
+    $ datafaker create-data
 
 From now on, whenever we make a change to ``config.yaml``, we should re-run these steps to see the effects:
 
-1. Run ``sqlsynthgen create-generators --config-file config.yaml --force``.
+1. Run ``datafaker create-generators --config-file config.yaml --force``.
 2. If necessary, perform any manual edits to ``ssg.py``.
-3. Truncate the non-vocabulary database tables with ``sqlsynthgen remove-data --config-file config.yaml``.
-4. Run ``sqlsynthgen create-data``.
+3. Truncate the non-vocabulary database tables with ``datafaker remove-data --config-file config.yaml``.
+4. Run ``datafaker create-data``.
 
 Step 2. gets tedious to do every time, and in the next section we'll show how to automate it.
 
@@ -608,7 +608,7 @@ Let's first focus on the ``src-stats`` block where we define what queries to run
 In this case we run only one, called ``age_stats``, which you can see on lines 4 - 6.
 With this added to your ``config.yaml`` you need run ::
 
-    $ sqlsynthgen make-stats --config-file config.yaml
+    $ datafaker make-stats --config-file config.yaml
 
 which executes the query and writes the results to a ``src-stats.yaml`` file, which looks as follows:
 
@@ -624,7 +624,7 @@ which executes the query and writes the results to a ``src-stats.yaml`` file, wh
 This is the output of the SQL query in YAML format.
 To be able to use these numbers in our generators we need to regenerate ``ssg.py`` with ::
 
-    $ sqlsynthgen create-generators --config-file config.yaml --stats-file src-stats.yaml --force
+    $ datafaker create-generators --config-file config.yaml --stats-file src-stats.yaml --force
 
 The new option ``--stats-file src-stats.yaml`` makes it such that the ``SRC_STATS`` variable in ``ssg.py`` is populated with the concents of ``src-stats.yaml``, allowing you to pass them to your generators as arguments, as we do above in the ``config.yaml`` snippet on line 13.
 Note how the query name ``name: age_stats`` (line 2) is used in ``SRC_STATS["age_stats"]`` (line 13) to access the results of this particular query.
@@ -647,7 +647,7 @@ Finally, we need the custom generator function ``airbnb_generators.user_age_prov
 
 With that in place you can run ::
 
-    $ sqlsynthgen create-data
+    $ datafaker create-data
 
 as usual, and your newly created rows fill have the correct distribution of ages.
 
@@ -815,7 +815,7 @@ To use and get the most from story generators, we will need to make some changes
 
 After editing the ``config.yaml`` and ``airbnb_generators.py`` as above, you can run: ::
 
-  $ sqlsynthgen create-generators --config-file=config.yaml --stats-file=src-stats.yaml --force
+  $ datafaker create-generators --config-file=config.yaml --stats-file=src-stats.yaml --force
 
 This will regenerate the ``ssg.py`` file to incorporate your story generator, and running ``create-data`` as usual will then create some storied users and sessions.
 
@@ -832,4 +832,4 @@ Note that we make here the same trade off as we did before: generating very high
 * Full transparency and control over the ways in which the source data is utilised, and thus the ways in which privacy could in principle be at risk, including easy implementation of differential privacy guarantees.
 * The possibility of starting from very low fidelity data, and incrementally adding fidelity to particular aspects of the data, as is needed to serve the utility of whatever use case the synthetic data is created for.
 
-Examples of the complete files generated by the tutorial can be found at: ``/sqlsynthgen/examples/airbnb``.
+Examples of the complete files generated by the tutorial can be found at: ``/datafaker/examples/airbnb``.
