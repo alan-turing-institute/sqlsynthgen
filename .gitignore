@@ -143,6 +143,6 @@ docs/temp/*
 # vim swap files
 *.swp
 
-ssg.py
-orm.py
+# ssg.py
+# orm.py
 src-stats.yaml
