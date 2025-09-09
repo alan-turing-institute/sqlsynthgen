@@ -68,9 +68,6 @@ class Concept(Base):
     concept_class: Mapped[List["ConceptClass"]] = relationship(
         "ConceptClass", back_populates="concept_class_concept"
     )
-    concept_synonym: Mapped[List["ConceptSynonym"]] = relationship(
-        "ConceptSynonym", back_populates="language_concept"
-    )
     domain: Mapped[List["Domain"]] = relationship(
         "Domain", back_populates="domain_concept"
     )
@@ -566,29 +563,18 @@ class ConceptClass(Base):
     )
 
 
-class ConceptSynonym(Base):
-    __tablename__ = "concept_synonym"
-    __table_args__ = (
-        ForeignKeyConstraint(
-            ["language_concept_id"],
-            ["concept.concept_id"],
-            name="fpk_concept_synonym_language_concept_id",
-        ),
-        PrimaryKeyConstraint(
-            "concept_id",
-            "concept_synonym_name",
-            "language_concept_id",
-            name="pk_concept_synonym",
-        ),
-    )
-
-    concept_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    concept_synonym_name: Mapped[str] = mapped_column(String(1000), primary_key=True)
-    language_concept_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-
-    language_concept: Mapped["Concept"] = relationship(
-        "Concept", back_populates="concept_synonym"
-    )
+t_concept_synonym = Table(
+    "concept_synonym",
+    Base.metadata,
+    Column("concept_id", BigInteger, nullable=False),
+    Column("concept_synonym_name", String(1000), nullable=False),
+    Column("language_concept_id", BigInteger, nullable=False),
+    ForeignKeyConstraint(
+        ["language_concept_id"],
+        ["concept.concept_id"],
+        name="fpk_concept_synonym_language_concept_id",
+    ),
+)
 
 
 class Domain(Base):
@@ -2287,6 +2273,11 @@ class Observation(Base):
             name="fpk_observation_qualifier_concept_id",
         ),
         ForeignKeyConstraint(
+            ["value_as_concept_id"],
+            ["concept.concept_id"],
+            name="fpk_observation_value_as_concept_id",
+        ),
+        ForeignKeyConstraint(
             ["unit_concept_id"],
             ["concept.concept_id"],
             name="fpk_observation_unit_concept_id",
@@ -2366,6 +2357,11 @@ class ProcedureOccurrence(Base):
             ["person_id"],
             ["person.person_id"],
             name="fpk_procedure_occurrence_person_id",
+        ),
+        ForeignKeyConstraint(
+            ["procedure_concept_id"],
+            ["concept.concept_id"],
+            name="fpk_procedure_occurrence_procedure_concept_id",
         ),
         ForeignKeyConstraint(
             ["procedure_type_concept_id"],

@@ -31,27 +31,6 @@ generic.add_provider(WeightedBooleanProvider)
 import orm
 
 
-class cdm_sourceGenerator(TableGenerator):
-    num_rows_per_pass = 1
-
-    def __init__(self):
-        pass
-
-    def __call__(self, dst_db_conn):
-        result = {}
-        result["cdm_source_name"] = generic.person.password(255)
-        result["cdm_source_abbreviation"] = generic.person.password(25)
-        result["cdm_holder"] = generic.person.password(255)
-        result["source_description"] = generic.text.color()
-        result["source_documentation_reference"] = generic.person.password(255)
-        result["cdm_etl_reference"] = generic.person.password(255)
-        result["source_release_date"] = generic.datetime.date()
-        result["cdm_release_date"] = generic.datetime.date()
-        result["cdm_version"] = generic.person.password(10)
-        result["vocabulary_version"] = generic.person.password(20)
-        return result
-
-
 class cohortGenerator(TableGenerator):
     num_rows_per_pass = 1
 
@@ -64,84 +43,6 @@ class cohortGenerator(TableGenerator):
         result["subject_id"] = generic.numeric.integer_number()
         result["cohort_start_date"] = generic.datetime.date()
         result["cohort_end_date"] = generic.datetime.date()
-        return result
-
-
-class conceptGenerator(TableGenerator):
-    num_rows_per_pass = 1
-
-    def __init__(self):
-        pass
-
-    def __call__(self, dst_db_conn):
-        result = {}
-        result["concept_id"] = generic.numeric.integer_number()
-        result["concept_name"] = generic.person.password(255)
-        result["domain_id"] = generic.person.password(20)
-        result["vocabulary_id"] = generic.person.password(50)
-        result["concept_class_id"] = generic.person.password(20)
-        result["concept_code"] = generic.person.password(255)
-        result["valid_start_date"] = generic.datetime.date()
-        result["valid_end_date"] = generic.datetime.date()
-        result["standard_concept"] = generic.person.password(1)
-        result["invalid_reason"] = generic.person.password(1)
-        return result
-
-
-class concept_ancestorGenerator(TableGenerator):
-    num_rows_per_pass = 1
-
-    def __init__(self):
-        pass
-
-    def __call__(self, dst_db_conn):
-        result = {}
-        result["ancestor_concept_id"] = generic.numeric.integer_number()
-        result["descendant_concept_id"] = generic.numeric.integer_number()
-        result["min_levels_of_separation"] = generic.numeric.integer_number()
-        result["max_levels_of_separation"] = generic.numeric.integer_number()
-        return result
-
-
-class locationGenerator(TableGenerator):
-    num_rows_per_pass = 1
-
-    def __init__(self):
-        pass
-
-    def __call__(self, dst_db_conn):
-        result = {}
-        result["location_id"] = generic.numeric.integer_number()
-        result["address_1"] = generic.person.password(50)
-        result["address_2"] = generic.person.password(50)
-        result["city"] = generic.person.password(50)
-        result["state"] = generic.person.password(2)
-        result["zip"] = generic.person.password(9)
-        result["county"] = generic.person.password(20)
-        result["location_source_value"] = generic.person.password(50)
-        return result
-
-
-class care_siteGenerator(TableGenerator):
-    num_rows_per_pass = 1
-
-    def __init__(self):
-        pass
-
-    def __call__(self, dst_db_conn):
-        result = {}
-        result["care_site_id"] = generic.numeric.integer_number()
-        result["care_site_name"] = generic.person.password(255)
-        result[
-            "place_of_service_concept_id"
-        ] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Concept, "concept_id"
-        )
-        result["location_id"] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Location, "location_id"
-        )
-        result["care_site_source_value"] = generic.person.password(50)
-        result["place_of_service_source_value"] = generic.person.password(50)
         return result
 
 
@@ -169,7 +70,7 @@ class cohort_definitionGenerator(TableGenerator):
         return result
 
 
-class concept_classGenerator(TableGenerator):
+class costGenerator(TableGenerator):
     num_rows_per_pass = 1
 
     def __init__(self):
@@ -177,82 +78,38 @@ class concept_classGenerator(TableGenerator):
 
     def __call__(self, dst_db_conn):
         result = {}
-        result["concept_class_id"] = generic.numeric.integer_number()
-        result["concept_class_name"] = generic.person.password(255)
-        result["concept_class_concept_id"] = generic.column_value_provider.column_value(
+        result["cost_id"] = generic.numeric.integer_number()
+        result["cost_event_id"] = generic.numeric.integer_number()
+        result["cost_domain_id"] = generic.column_value_provider.column_value(
+            dst_db_conn, orm.Domain, "domain_id"
+        )
+        result["cost_type_concept_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Concept, "concept_id"
         )
-        return result
-
-
-class concept_synonymGenerator(TableGenerator):
-    num_rows_per_pass = 1
-
-    def __init__(self):
-        pass
-
-    def __call__(self, dst_db_conn):
-        result = {}
-        result["concept_synonym_name"] = generic.person.password(255)
-        result["language_concept_id"] = generic.column_value_provider.column_value(
+        result["currency_concept_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Concept, "concept_id"
         )
-        result["concept_id"] = generic.column_value_provider.column_value(
+        result["total_charge"] = generic.numeric.float_number()
+        result["total_cost"] = generic.numeric.float_number()
+        result["total_paid"] = generic.numeric.float_number()
+        result["paid_by_payer"] = generic.numeric.float_number()
+        result["paid_by_patient"] = generic.numeric.float_number()
+        result["paid_patient_copay"] = generic.numeric.float_number()
+        result["paid_patient_coinsurance"] = generic.numeric.float_number()
+        result["paid_patient_deductible"] = generic.numeric.float_number()
+        result["paid_by_primary"] = generic.numeric.float_number()
+        result["paid_ingredient_cost"] = generic.numeric.float_number()
+        result["paid_dispensing_fee"] = generic.numeric.float_number()
+        result["payer_plan_period_id"] = generic.numeric.integer_number()
+        result["amount_allowed"] = generic.numeric.float_number()
+        result["revenue_code_concept_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Concept, "concept_id"
         )
-        return result
-
-
-class domainGenerator(TableGenerator):
-    num_rows_per_pass = 1
-
-    def __init__(self):
-        pass
-
-    def __call__(self, dst_db_conn):
-        result = {}
-        result["domain_id"] = generic.numeric.integer_number()
-        result["domain_name"] = generic.person.password(255)
-        result["domain_concept_id"] = generic.column_value_provider.column_value(
+        result["revenue_code_source_value"] = generic.person.password(50)
+        result["drg_concept_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Concept, "concept_id"
         )
-        return result
-
-
-class drug_strengthGenerator(TableGenerator):
-    num_rows_per_pass = 1
-
-    def __init__(self):
-        pass
-
-    def __call__(self, dst_db_conn):
-        result = {}
-        result["drug_concept_id"] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Concept, "concept_id"
-        )
-        result["ingredient_concept_id"] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Concept, "concept_id"
-        )
-        result["amount_value"] = generic.numeric.float_number()
-        result["amount_unit_concept_id"] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Concept, "concept_id"
-        )
-        result["numerator_value"] = generic.numeric.float_number()
-        result[
-            "numerator_unit_concept_id"
-        ] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Concept, "concept_id"
-        )
-        result["denominator_value"] = generic.numeric.float_number()
-        result[
-            "denominator_unit_concept_id"
-        ] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Concept, "concept_id"
-        )
-        result["box_size"] = generic.numeric.integer_number()
-        result["valid_start_date"] = generic.datetime.date()
-        result["valid_end_date"] = generic.datetime.date()
-        result["invalid_reason"] = generic.person.password(1)
+        result["drg_source_value"] = generic.person.password(3)
         return result
 
 
@@ -334,167 +191,6 @@ class note_nlpGenerator(TableGenerator):
         result["term_exists"] = generic.person.password(1)
         result["term_temporal"] = generic.person.password(50)
         result["term_modifiers"] = generic.person.password(2000)
-        return result
-
-
-class relationshipGenerator(TableGenerator):
-    num_rows_per_pass = 1
-
-    def __init__(self):
-        pass
-
-    def __call__(self, dst_db_conn):
-        result = {}
-        result["relationship_id"] = generic.numeric.integer_number()
-        result["relationship_name"] = generic.person.password(255)
-        result["is_hierarchical"] = generic.person.password(1)
-        result["defines_ancestry"] = generic.person.password(1)
-        result["reverse_relationship_id"] = generic.person.password(20)
-        result["relationship_concept_id"] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Concept, "concept_id"
-        )
-        return result
-
-
-class vocabularyGenerator(TableGenerator):
-    num_rows_per_pass = 1
-
-    def __init__(self):
-        pass
-
-    def __call__(self, dst_db_conn):
-        result = {}
-        result["vocabulary_id"] = generic.numeric.integer_number()
-        result["vocabulary_name"] = generic.person.password(255)
-        result["vocabulary_concept_id"] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Concept, "concept_id"
-        )
-        result["vocabulary_reference"] = generic.person.password(255)
-        result["vocabulary_version"] = generic.person.password(255)
-        return result
-
-
-class concept_relationshipGenerator(TableGenerator):
-    num_rows_per_pass = 1
-
-    def __init__(self):
-        pass
-
-    def __call__(self, dst_db_conn):
-        result = {}
-        result["concept_id_1"] = generic.numeric.integer_number()
-        result["concept_id_2"] = generic.numeric.integer_number()
-        result["relationship_id"] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Relationship, "relationship_id"
-        )
-        result["valid_start_date"] = generic.datetime.date()
-        result["valid_end_date"] = generic.datetime.date()
-        result["invalid_reason"] = generic.person.password(1)
-        return result
-
-
-class costGenerator(TableGenerator):
-    num_rows_per_pass = 1
-
-    def __init__(self):
-        pass
-
-    def __call__(self, dst_db_conn):
-        result = {}
-        result["cost_id"] = generic.numeric.integer_number()
-        result["cost_event_id"] = generic.numeric.integer_number()
-        result["cost_domain_id"] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Domain, "domain_id"
-        )
-        result["cost_type_concept_id"] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Concept, "concept_id"
-        )
-        result["currency_concept_id"] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Concept, "concept_id"
-        )
-        result["total_charge"] = generic.numeric.float_number()
-        result["total_cost"] = generic.numeric.float_number()
-        result["total_paid"] = generic.numeric.float_number()
-        result["paid_by_payer"] = generic.numeric.float_number()
-        result["paid_by_patient"] = generic.numeric.float_number()
-        result["paid_patient_copay"] = generic.numeric.float_number()
-        result["paid_patient_coinsurance"] = generic.numeric.float_number()
-        result["paid_patient_deductible"] = generic.numeric.float_number()
-        result["paid_by_primary"] = generic.numeric.float_number()
-        result["paid_ingredient_cost"] = generic.numeric.float_number()
-        result["paid_dispensing_fee"] = generic.numeric.float_number()
-        result["payer_plan_period_id"] = generic.numeric.integer_number()
-        result["amount_allowed"] = generic.numeric.float_number()
-        result["revenue_code_concept_id"] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Concept, "concept_id"
-        )
-        result["revenue_code_source_value"] = generic.person.password(50)
-        result["drg_concept_id"] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Concept, "concept_id"
-        )
-        result["drg_source_value"] = generic.person.password(3)
-        return result
-
-
-class providerGenerator(TableGenerator):
-    num_rows_per_pass = 1
-
-    def __init__(self):
-        pass
-
-    def __call__(self, dst_db_conn):
-        result = {}
-        result["provider_id"] = generic.numeric.integer_number()
-        result["provider_name"] = generic.person.password(255)
-        result["npi"] = generic.person.password(20)
-        result["dea"] = generic.person.password(20)
-        result["specialty_concept_id"] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Concept, "concept_id"
-        )
-        result["care_site_id"] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.CareSite, "care_site_id"
-        )
-        result["year_of_birth"] = generic.numeric.integer_number()
-        result["gender_concept_id"] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Concept, "concept_id"
-        )
-        result["provider_source_value"] = generic.person.password(50)
-        result["specialty_source_value"] = generic.person.password(50)
-        result[
-            "specialty_source_concept_id"
-        ] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Concept, "concept_id"
-        )
-        result["gender_source_value"] = generic.person.password(50)
-        result["gender_source_concept_id"] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Concept, "concept_id"
-        )
-        return result
-
-
-class source_to_concept_mapGenerator(TableGenerator):
-    num_rows_per_pass = 1
-
-    def __init__(self):
-        pass
-
-    def __call__(self, dst_db_conn):
-        result = {}
-        result["source_code"] = generic.person.password(50)
-        result["source_concept_id"] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Concept, "concept_id"
-        )
-        result["source_vocabulary_id"] = generic.person.password(20)
-        result["source_code_description"] = generic.person.password(255)
-        result["target_concept_id"] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Concept, "concept_id"
-        )
-        result["target_vocabulary_id"] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Vocabulary, "vocabulary_id"
-        )
-        result["valid_start_date"] = generic.datetime.date()
-        result["valid_end_date"] = generic.datetime.date()
-        result["invalid_reason"] = generic.person.password(1)
         return result
 
 
@@ -1165,7 +861,9 @@ class observationGenerator(TableGenerator):
         result["observation_datetime"] = generic.datetime.datetime()
         result["value_as_number"] = generic.numeric.float_number()
         result["value_as_string"] = generic.person.password(120)
-        result["value_as_concept_id"] = generic.numeric.integer_number()
+        result["value_as_concept_id"] = generic.column_value_provider.column_value(
+            dst_db_conn, orm.Concept, "concept_id"
+        )
         result["qualifier_concept_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Concept, "concept_id"
         )
@@ -1204,7 +902,9 @@ class procedure_occurrenceGenerator(TableGenerator):
         result["person_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Person, "person_id"
         )
-        result["procedure_concept_id"] = generic.numeric.integer_number()
+        result["procedure_concept_id"] = generic.column_value_provider.column_value(
+            dst_db_conn, orm.Concept, "concept_id"
+        )
         result["procedure_date"] = generic.datetime.date()
         result[
             "procedure_type_concept_id"
@@ -1226,32 +926,20 @@ class procedure_occurrenceGenerator(TableGenerator):
             dst_db_conn, orm.VisitDetail, "visit_detail_id"
         )
         result["procedure_source_value"] = generic.person.password(50)
-        result["procedure_source_concept_id"] = generic.numeric.integer_number()
+        result["procedure_source_concept_id"] = generic.column_value_provider.column_value(
+            dst_db_conn, orm.Concept, "concept_id"
+        )
         result["modifier_source_value"] = generic.person.password(50)
         return result
 
 
 table_generator_dict = {
-    "cdm_source": cdm_sourceGenerator(),
     "cohort": cohortGenerator(),
-    "concept": conceptGenerator(),
-    "concept_ancestor": concept_ancestorGenerator(),
-    "location": locationGenerator(),
-    "care_site": care_siteGenerator(),
     "cohort_definition": cohort_definitionGenerator(),
-    "concept_class": concept_classGenerator(),
-    "concept_synonym": concept_synonymGenerator(),
-    "domain": domainGenerator(),
-    "drug_strength": drug_strengthGenerator(),
+    "cost": costGenerator(),
     "fact_relationship": fact_relationshipGenerator(),
     "metadata": metadataGenerator(),
     "note_nlp": note_nlpGenerator(),
-    "relationship": relationshipGenerator(),
-    "vocabulary": vocabularyGenerator(),
-    "concept_relationship": concept_relationshipGenerator(),
-    "cost": costGenerator(),
-    "provider": providerGenerator(),
-    "source_to_concept_map": source_to_concept_mapGenerator(),
     "person": personGenerator(),
     "condition_era": condition_eraGenerator(),
     "death": deathGenerator(),
