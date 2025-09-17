@@ -29,3 +29,11 @@ tables:
     ignore: true
   cdm_source:
     ignore: true
+
+  person:
+    num_rows_per_pass: 5
+    row_generators:
+      - name: generic.choice
+        kwargs:
+          items: [8507, 8532]
+        columns_assigned: gender_concept_id
