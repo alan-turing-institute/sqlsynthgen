@@ -29,7 +29,11 @@ from sqlsynthgen.providers import WeightedBooleanProvider
 generic.add_provider(WeightedBooleanProvider)
 
 import orm
+import yaml
+import person_generator
 
+with open("src-stats.yaml", "r", encoding="utf-8") as f:
+    SRC_STATS = yaml.unsafe_load(f)
 
 class cohortGenerator(TableGenerator):
     num_rows_per_pass = 1
@@ -203,16 +207,17 @@ class personGenerator(TableGenerator):
     def __call__(self, dst_db_conn):
         result = {}
         result["person_id"] = generic.numeric.integer_number()
-        result["gender_concept_id"] = generic.choice(items=[8507, 8532])
-        # result["gender_concept_id"] = generic.column_value_provider.column_value(
-        #     dst_db_conn, orm.Concept, "concept_id"
-        # )
-        result["year_of_birth"] = generic.numeric.integer_number()
-        result["race_concept_id"] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Concept, "concept_id"
+        result["gender_concept_id"] = person_generator.gender_provider(
+            query_results=SRC_STATS["gender_options"]
         )
-        result["ethnicity_concept_id"] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Concept, "concept_id"
+        result["race_concept_id"] = person_generator.race_provider(
+            query_results=SRC_STATS["race_options"]
+        )
+        result["ethnicity_concept_id"] = person_generator.ethnicity_provider(
+            query_results=SRC_STATS["ethnicity_options"]
+        )
+        result["year_of_birth"] = person_generator.year_of_birth_provider(
+            query_results=SRC_STATS["year_of_birth_stats"]
         )
         # result["month_of_birth"] = generic.numeric.integer_number()
         # result["day_of_birth"] = generic.numeric.integer_number()

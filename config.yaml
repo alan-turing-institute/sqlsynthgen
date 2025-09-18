@@ -1,4 +1,43 @@
+
+src-stats:
+  - name: gender_options
+    query: >
+      SELECT DISTINCT gender_concept_id as gender_options
+      FROM person
+  - name: race_options
+    query: >
+      SELECT DISTINCT race_concept_id as race_options
+      FROM person
+  - name: ethnicity_options
+    query: >
+      SELECT DISTINCT ethnicity_concept_id as ethnicity_options
+      FROM person
+  - name: year_of_birth_stats
+    query: >
+      SELECT AVG(year_of_birth)::int as mean, STDDEV(year_of_birth)::int as std_dev
+      FROM person
+
 tables:
+  person:
+    num_rows_per_pass: 5
+    row_generators:
+      - name: person_generator.gender_provider
+        kwargs:
+          query_results: SRC_STATS["gender_options"]
+        columns_assigned: gender_concept_id
+      - name: person_generator.race_provider
+        kwargs:
+          query_results: SRC_STATS["race_options"]
+        columns_assigned: race_concept_id
+      - name: person_generator.ethnicity_provider
+        kwargs:
+          query_results: SRC_STATS["ethnicity_options"]
+        columns_assigned: ethnicity_concept_id
+      - name: person_generator.year_of_birth_provider
+        kwargs:
+          query_results: SRC_STATS["year_of_birth_stats"]
+        columns_assigned: year_of_birth
+
   concept:
     # This one is a vocab, but its too big to handle the usual way
     ignore: true
@@ -30,10 +69,14 @@ tables:
   cdm_source:
     ignore: true
 
-  person:
-    num_rows_per_pass: 5
-    row_generators:
-      - name: generic.choice
-        kwargs:
-          items: [8507, 8532]
-        columns_assigned: gender_concept_id
+  # person:
+  #   num_rows_per_pass: 5
+  #   row_generators:
+  #     - name: generic.choice
+  #       kwargs:
+  #         items: [8507, 8532]
+  #       columns_assigned: gender_concept_id
+  #     - name: generic.choice
+  #       kwargs:
+  #         items: [8527, 0, 2000001405, 2000001402, 8516, 2000001401]
+  #       columns_assigned: race_concept_id

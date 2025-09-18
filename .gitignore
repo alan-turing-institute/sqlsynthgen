@@ -146,3 +146,4 @@ docs/temp/*
 # ssg.py
 # orm.py
 src-stats.yaml
+*.backup
