@@ -19,7 +19,7 @@ src-stats:
 
 tables:
   person:
-    num_rows_per_pass: 5
+    num_rows_per_pass: 0
     row_generators:
       - name: person_generator.gender_provider
         kwargs:
@@ -33,11 +33,9 @@ tables:
         kwargs:
           query_results: SRC_STATS["ethnicity_options"]
         columns_assigned: ethnicity_concept_id
-      - name: person_generator.year_of_birth_provider
-        kwargs:
-          query_results: SRC_STATS["year_of_birth_stats"]
+      - name: generic.null_provider.null
         columns_assigned: year_of_birth
-
+    
   concept:
     # This one is a vocab, but its too big to handle the usual way
     ignore: true

@@ -29,11 +29,7 @@ from sqlsynthgen.providers import WeightedBooleanProvider
 generic.add_provider(WeightedBooleanProvider)
 
 import orm
-import yaml
-import person_generator
 
-with open("src-stats.yaml", "r", encoding="utf-8") as f:
-    SRC_STATS = yaml.unsafe_load(f)
 
 class cohortGenerator(TableGenerator):
     num_rows_per_pass = 1
@@ -82,7 +78,6 @@ class costGenerator(TableGenerator):
 
     def __call__(self, dst_db_conn):
         result = {}
-        result["cost_id"] = generic.numeric.integer_number()
         result["cost_event_id"] = generic.numeric.integer_number()
         result["cost_domain_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Domain, "domain_id"
@@ -147,7 +142,6 @@ class metadataGenerator(TableGenerator):
 
     def __call__(self, dst_db_conn):
         result = {}
-        result["metadata_id"] = generic.numeric.integer_number()
         result["metadata_concept_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Concept, "concept_id"
         )
@@ -173,7 +167,6 @@ class note_nlpGenerator(TableGenerator):
 
     def __call__(self, dst_db_conn):
         result = {}
-        result["note_nlp_id"] = generic.numeric.integer_number()
         result["note_id"] = generic.numeric.integer_number()
         result["lexical_variant"] = generic.person.password(250)
         result["nlp_date"] = generic.datetime.date()
@@ -206,46 +199,41 @@ class personGenerator(TableGenerator):
 
     def __call__(self, dst_db_conn):
         result = {}
-        result["person_id"] = generic.numeric.integer_number()
-        result["gender_concept_id"] = person_generator.gender_provider(
-            query_results=SRC_STATS["gender_options"]
+        result["gender_concept_id"] = generic.choice(items=[8507, 8532])
+        result["race_concept_id"] = generic.choice(
+            items=[8527, 0, 2000001405, 2000001402, 8516, 2000001401]
         )
-        result["race_concept_id"] = person_generator.race_provider(
-            query_results=SRC_STATS["race_options"]
+        result["year_of_birth"] = generic.numeric.integer_number()
+        result["ethnicity_concept_id"] = generic.column_value_provider.column_value(
+            dst_db_conn, orm.Concept, "concept_id"
         )
-        result["ethnicity_concept_id"] = person_generator.ethnicity_provider(
-            query_results=SRC_STATS["ethnicity_options"]
+        result["month_of_birth"] = generic.numeric.integer_number()
+        result["day_of_birth"] = generic.numeric.integer_number()
+        result["birth_datetime"] = generic.datetime.datetime()
+        result["location_id"] = generic.column_value_provider.column_value(
+            dst_db_conn, orm.Location, "location_id"
         )
-        result["year_of_birth"] = person_generator.year_of_birth_provider(
-            query_results=SRC_STATS["year_of_birth_stats"]
+        result["provider_id"] = generic.column_value_provider.column_value(
+            dst_db_conn, orm.Provider, "provider_id"
         )
-        # result["month_of_birth"] = generic.numeric.integer_number()
-        # result["day_of_birth"] = generic.numeric.integer_number()
-        # result["birth_datetime"] = generic.datetime.datetime()
-        # result["location_id"] = generic.column_value_provider.column_value(
-        #     dst_db_conn, orm.Location, "location_id"
-        # )
-        # result["provider_id"] = generic.column_value_provider.column_value(
-        #     dst_db_conn, orm.Provider, "provider_id"
-        # )
-        # result["care_site_id"] = generic.column_value_provider.column_value(
-        #     dst_db_conn, orm.CareSite, "care_site_id"
-        # )
-        # result["person_source_value"] = generic.person.password(50)
-        # result["gender_source_value"] = generic.person.password(50)
-        # result["gender_source_concept_id"] = generic.column_value_provider.column_value(
-        #     dst_db_conn, orm.Concept, "concept_id"
-        # )
-        # result["race_source_value"] = generic.person.password(50)
-        # result["race_source_concept_id"] = generic.column_value_provider.column_value(
-        #     dst_db_conn, orm.Concept, "concept_id"
-        # )
-        # result["ethnicity_source_value"] = generic.person.password(50)
-        # result[
-        #     "ethnicity_source_concept_id"
-        # ] = generic.column_value_provider.column_value(
-        #     dst_db_conn, orm.Concept, "concept_id"
-        # )
+        result["care_site_id"] = generic.column_value_provider.column_value(
+            dst_db_conn, orm.CareSite, "care_site_id"
+        )
+        result["person_source_value"] = generic.person.password(50)
+        result["gender_source_value"] = generic.person.password(50)
+        result["gender_source_concept_id"] = generic.column_value_provider.column_value(
+            dst_db_conn, orm.Concept, "concept_id"
+        )
+        result["race_source_value"] = generic.person.password(50)
+        result["race_source_concept_id"] = generic.column_value_provider.column_value(
+            dst_db_conn, orm.Concept, "concept_id"
+        )
+        result["ethnicity_source_value"] = generic.person.password(50)
+        result[
+            "ethnicity_source_concept_id"
+        ] = generic.column_value_provider.column_value(
+            dst_db_conn, orm.Concept, "concept_id"
+        )
         return result
 
 
@@ -257,7 +245,6 @@ class condition_eraGenerator(TableGenerator):
 
     def __call__(self, dst_db_conn):
         result = {}
-        result["condition_era_id"] = generic.numeric.integer_number()
         result["person_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Person, "person_id"
         )
@@ -304,7 +291,6 @@ class dose_eraGenerator(TableGenerator):
 
     def __call__(self, dst_db_conn):
         result = {}
-        result["dose_era_id"] = generic.numeric.integer_number()
         result["person_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Person, "person_id"
         )
@@ -328,7 +314,6 @@ class drug_eraGenerator(TableGenerator):
 
     def __call__(self, dst_db_conn):
         result = {}
-        result["drug_era_id"] = generic.numeric.integer_number()
         result["person_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Person, "person_id"
         )
@@ -350,7 +335,6 @@ class episodeGenerator(TableGenerator):
 
     def __call__(self, dst_db_conn):
         result = {}
-        result["episode_id"]= generic.numeric.integer_number()
         result["person_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Person, "person_id"
         )
@@ -388,7 +372,6 @@ class observation_periodGenerator(TableGenerator):
 
     def __call__(self, dst_db_conn):
         result = {}
-        result["observation_period_id"] = generic.numeric.integer_number()
         result["person_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Person, "person_id"
         )
@@ -408,7 +391,6 @@ class payer_plan_periodGenerator(TableGenerator):
 
     def __call__(self, dst_db_conn):
         result = {}
-        result["payer_plan_period_id"] = generic.numeric.integer_number()
         result["person_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Person, "person_id"
         )
@@ -458,7 +440,6 @@ class specimenGenerator(TableGenerator):
 
     def __call__(self, dst_db_conn):
         result = {}
-        result["specimen_id"] = generic.numeric.integer_number()
         result["person_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Person, "person_id"
         )
@@ -498,7 +479,6 @@ class visit_occurrenceGenerator(TableGenerator):
 
     def __call__(self, dst_db_conn):
         result = {}
-        result["visit_occurrence_id"] = generic.numeric.integer_number()
         result["person_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Person, "person_id"
         )
@@ -566,7 +546,6 @@ class visit_detailGenerator(TableGenerator):
 
     def __call__(self, dst_db_conn):
         result = {}
-        result["visit_detail_id"] = generic.numeric.integer_number()
         result["person_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Person, "person_id"
         )
@@ -614,7 +593,6 @@ class condition_occurrenceGenerator(TableGenerator):
 
     def __call__(self, dst_db_conn):
         result = {}
-        result["condition_occurrence_id"] = generic.numeric.integer_number()
         result["person_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Person, "person_id"
         )
@@ -659,7 +637,6 @@ class device_exposureGenerator(TableGenerator):
 
     def __call__(self, dst_db_conn):
         result = {}
-        result["device_exposure_id"] = generic.numeric.integer_number()
         result["person_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Person, "person_id"
         )
@@ -699,7 +676,6 @@ class drug_exposureGenerator(TableGenerator):
 
     def __call__(self, dst_db_conn):
         result = {}
-        result["drug_exposure_id"] = generic.numeric.integer_number()
         result["person_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Person, "person_id"
         )
@@ -749,7 +725,6 @@ class measurementGenerator(TableGenerator):
 
     def __call__(self, dst_db_conn):
         result = {}
-        result["measurement_id"] = generic.numeric.integer_number()
         result["person_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Person, "person_id"
         )
@@ -804,7 +779,6 @@ class noteGenerator(TableGenerator):
 
     def __call__(self, dst_db_conn):
         result = {}
-        result["note_id"] = generic.numeric.integer_number()
         result["person_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Person, "person_id"
         )
@@ -851,7 +825,6 @@ class observationGenerator(TableGenerator):
 
     def __call__(self, dst_db_conn):
         result = {}
-        result["observation_id"] = generic.numeric.integer_number()
         result["person_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Person, "person_id"
         )
@@ -904,7 +877,6 @@ class procedure_occurrenceGenerator(TableGenerator):
 
     def __call__(self, dst_db_conn):
         result = {}
-        result["procedure_occurrence_id"] = generic.numeric.integer_number()
         result["person_id"] = generic.column_value_provider.column_value(
             dst_db_conn, orm.Person, "person_id"
         )
@@ -932,39 +904,37 @@ class procedure_occurrenceGenerator(TableGenerator):
             dst_db_conn, orm.VisitDetail, "visit_detail_id"
         )
         result["procedure_source_value"] = generic.person.password(50)
-        result["procedure_source_concept_id"] = generic.column_value_provider.column_value(
-            dst_db_conn, orm.Concept, "concept_id"
-        )
+        result["procedure_source_concept_id"] = generic.numeric.integer_number()
         result["modifier_source_value"] = generic.person.password(50)
         return result
 
 
 table_generator_dict = {
-    # "cohort": cohortGenerator(),
-    # "cohort_definition": cohort_definitionGenerator(),
-    # "cost": costGenerator(),
-    # "fact_relationship": fact_relationshipGenerator(),
-    # "metadata": metadataGenerator(),
-    # "note_nlp": note_nlpGenerator(),
+    "cohort": cohortGenerator(),
+    "cohort_definition": cohort_definitionGenerator(),
+    "cost": costGenerator(),
+    "fact_relationship": fact_relationshipGenerator(),
+    "metadata": metadataGenerator(),
+    "note_nlp": note_nlpGenerator(),
     "person": personGenerator(),
-    # "condition_era": condition_eraGenerator(),
-    # "death": deathGenerator(),
-    # "dose_era": dose_eraGenerator(),
-    # "drug_era": drug_eraGenerator(),
-    # "episode": episodeGenerator(),
-    # "observation_period": observation_periodGenerator(),
-    # "payer_plan_period": payer_plan_periodGenerator(),
-    # "specimen": specimenGenerator(),
-    # "visit_occurrence": visit_occurrenceGenerator(),
-    # "episode_event": episode_eventGenerator(),
-    # "visit_detail": visit_detailGenerator(),
+    "condition_era": condition_eraGenerator(),
+    "death": deathGenerator(),
+    "dose_era": dose_eraGenerator(),
+    "drug_era": drug_eraGenerator(),
+    "episode": episodeGenerator(),
+    "observation_period": observation_periodGenerator(),
+    "payer_plan_period": payer_plan_periodGenerator(),
+    "specimen": specimenGenerator(),
+    "visit_occurrence": visit_occurrenceGenerator(),
+    "episode_event": episode_eventGenerator(),
+    "visit_detail": visit_detailGenerator(),
     "condition_occurrence": condition_occurrenceGenerator(),
-    # "device_exposure": device_exposureGenerator(),
-    # "drug_exposure": drug_exposureGenerator(),
-    # "measurement": measurementGenerator(),
-    # "note": noteGenerator(),
-    # "observation": observationGenerator(),
-    # "procedure_occurrence": procedure_occurrenceGenerator(),
+    "device_exposure": device_exposureGenerator(),
+    "drug_exposure": drug_exposureGenerator(),
+    "measurement": measurementGenerator(),
+    "note": noteGenerator(),
+    "observation": observationGenerator(),
+    "procedure_occurrence": procedure_occurrenceGenerator(),
 }
 
 

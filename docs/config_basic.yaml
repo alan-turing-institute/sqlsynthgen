@@ -1,0 +1,31 @@
+tables:
+  concept:
+    # This one is a vocab, but its too big to handle the usual way
+    ignore: true
+    # vocabulary_table: true
+  concept_ancestor:
+    ignore: true
+  vocabulary:
+    ignore: true
+  domain:
+    ignore: true
+  concept_class:
+    ignore: true
+  concept_synonym:
+    ignore: true
+  concept_relationship:
+    ignore: true
+  drug_strength:
+    ignore: true
+  relationship:
+    ignore: true
+  source_to_concept_map:
+    ignore: true
+  location:
+    ignore: true
+  care_site:
+    ignore: true
+  provider:
+    ignore: true
+  cdm_source:
+    ignore: true
