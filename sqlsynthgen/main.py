@@ -88,7 +88,7 @@ def create_data(
         verbose (bool): Be verbose. Default to False.
     """
     conf_logger(verbose)
-    logger.debug("Creating data.")
+    logger.info("Creating data.")    
     orm_module = import_file(orm_file)
     ssg_module = import_file(ssg_file)
     config = read_config_file(config_file) if config_file is not None else {}
@@ -96,6 +96,8 @@ def create_data(
     orm_metadata = get_orm_metadata(orm_module, tables_config)
     table_generator_dict = ssg_module.table_generator_dict
     story_generator_list = ssg_module.story_generator_list
+    logger.debug(f"len(table_generator_dict): {len(table_generator_dict)}")
+    logger.debug(f"len(story_generator_list): {len(story_generator_list)}")
     row_counts = create_db_data(
         orm_metadata.sorted_tables,
         table_generator_dict,
@@ -372,7 +374,7 @@ def remove_tables(
 def version() -> None:
     """Display version information."""
     conf_logger(True)
-    logger.info("sqlsynthgen version %s", metadata.version(__package__))
+    logger.debug("sqlsynthgen version %s", metadata.version(__package__))
 
 
 if __name__ == "__main__":

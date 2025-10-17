@@ -1,3 +1,4 @@
+row_generators_module: person_row
 
 src-stats:
   - name: gender_options
@@ -21,15 +22,15 @@ tables:
   person:
     num_rows_per_pass: 0
     row_generators:
-      - name: person_generator.gender_provider
+      - name: person_row.gender_provider
         kwargs:
           query_results: SRC_STATS["gender_options"]
         columns_assigned: gender_concept_id
-      - name: person_generator.race_provider
+      - name: person_row.race_provider
         kwargs:
           query_results: SRC_STATS["race_options"]
         columns_assigned: race_concept_id
-      - name: person_generator.ethnicity_provider
+      - name: person_row.ethnicity_provider
         kwargs:
           query_results: SRC_STATS["ethnicity_options"]
         columns_assigned: ethnicity_concept_id

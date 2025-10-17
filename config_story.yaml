@@ -1,0 +1,119 @@
+row_generators_module: person_row
+story_generators_module: person_story
+
+src-stats:
+  - name: gender_options
+    query: >
+      SELECT DISTINCT gender_concept_id as gender_options
+      FROM person
+  - name: race_options
+    query: >
+      SELECT DISTINCT race_concept_id as race_options
+      FROM person
+  - name: ethnicity_options
+    query: >
+      SELECT DISTINCT ethnicity_concept_id as ethnicity_options
+      FROM person
+  - name: year_of_birth_stats
+    query: >
+      SELECT AVG(year_of_birth)::int as mean, STDDEV(year_of_birth)::int as std_dev
+      FROM person
+  - name: proportion_alive
+    query: >
+      SELECT 
+      CAST(COUNT(*) AS FLOAT) / (SELECT COUNT(*) FROM mimic.person) AS proportion_alive
+      FROM person p
+      WHERE NOT EXISTS (
+        SELECT 1 FROM death d WHERE d.person_id = p.person_id
+      )
+
+tables:
+  person:
+    num_rows_per_pass: 0
+    row_generators:
+      - name: person_row.gender_provider
+        kwargs:
+          query_results: SRC_STATS["gender_options"]
+        columns_assigned: gender_concept_id
+      - name: person_row.race_provider
+        kwargs:
+          query_results: SRC_STATS["race_options"]
+        columns_assigned: race_concept_id
+      - name: person_row.ethnicity_provider
+        kwargs:
+          query_results: SRC_STATS["ethnicity_options"]
+        columns_assigned: ethnicity_concept_id
+      - name: generic.null_provider.null
+        columns_assigned: year_of_birth
+  death:
+    num_rows_per_pass: 0
+    row_generators:
+      - name: generic.null_provider.null
+        columns_assigned: death_type_concept_id
+      - name: generic.null_provider.null
+        columns_assigned: cause_concept_id
+      - name: generic.null_provider.null
+        columns_assigned: cause_source_value
+      - name: generic.null_provider.null
+        columns_assigned: cause_source_concept_id
+  measurement:
+    num_rows_per_pass: 0
+    row_generators:
+      - name: generic.null_provider.null
+        columns_assigned: measurement_time
+      - name: generic.null_provider.null
+        columns_assigned: value_source_value
+      - name: generic.null_provider.null
+        columns_assigned: measurement_type_concept_id
+      - name: generic.null_provider.null
+        columns_assigned: measurement_source_concept_id
+      - name: generic.null_provider.null
+        columns_assigned: operator_concept_id
+      - name: generic.null_provider.null
+        columns_assigned: measurement_concept_id
+      - name: generic.null_provider.null
+        columns_assigned: person_id
+      - name: generic.null_provider.null
+        columns_assigned: provider_id
+      - name: generic.null_provider.null
+        columns_assigned: unit_concept_id
+      - name: generic.null_provider.null
+        columns_assigned: visit_occurrence_id
+
+    
+  concept:
+    # This one is a vocab, but its too big to handle the usual way
+    ignore: true
+    # vocabulary_table: true
+  concept_ancestor:
+    ignore: true
+  vocabulary:
+    ignore: true
+  domain:
+    ignore: true
+  concept_class:
+    ignore: true
+  concept_synonym:
+    ignore: true
+  concept_relationship:
+    ignore: true
+  drug_strength:
+    ignore: true
+  relationship:
+    ignore: true
+  source_to_concept_map:
+    ignore: true
+  location:
+    ignore: true
+  care_site:
+    ignore: true
+  provider:
+    ignore: true
+  cdm_source:
+    ignore: true
+
+story_generators:
+  - name: person_story.generate
+    kwargs:
+      src_stats: [generic, SRC_STATS]
+    num_stories_per_pass: 100

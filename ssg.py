@@ -30,7 +30,7 @@ generic.add_provider(WeightedBooleanProvider)
 
 import orm
 import yaml
-import person_generator
+import person_row
 
 with open("src-stats.yaml", "r", encoding="utf-8") as f:
     SRC_STATS = yaml.unsafe_load(f)
@@ -207,16 +207,16 @@ class personGenerator(TableGenerator):
     def __call__(self, dst_db_conn):
         result = {}
         result["person_id"] = generic.numeric.integer_number()
-        result["gender_concept_id"] = person_generator.gender_provider(
+        result["gender_concept_id"] = person_row.gender_provider(
             query_results=SRC_STATS["gender_options"]
         )
-        result["race_concept_id"] = person_generator.race_provider(
+        result["race_concept_id"] = person_row.race_provider(
             query_results=SRC_STATS["race_options"]
         )
-        result["ethnicity_concept_id"] = person_generator.ethnicity_provider(
+        result["ethnicity_concept_id"] = person_row.ethnicity_provider(
             query_results=SRC_STATS["ethnicity_options"]
         )
-        result["year_of_birth"] = person_generator.year_of_birth_provider(
+        result["year_of_birth"] = person_row.year_of_birth_provider(
             query_results=SRC_STATS["year_of_birth_stats"]
         )
         # result["month_of_birth"] = generic.numeric.integer_number()
@@ -958,7 +958,7 @@ table_generator_dict = {
     # "visit_occurrence": visit_occurrenceGenerator(),
     # "episode_event": episode_eventGenerator(),
     # "visit_detail": visit_detailGenerator(),
-    "condition_occurrence": condition_occurrenceGenerator(),
+    # "condition_occurrence": condition_occurrenceGenerator(),
     # "device_exposure": device_exposureGenerator(),
     # "drug_exposure": drug_exposureGenerator(),
     # "measurement": measurementGenerator(),
@@ -969,6 +969,5 @@ table_generator_dict = {
 
 
 vocab_dict = {}
-
 
 story_generator_list = []

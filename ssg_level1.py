@@ -1275,6 +1275,4 @@ table_generator_dict = {
 
 
 vocab_dict = {}
-
-
 story_generator_list = []
