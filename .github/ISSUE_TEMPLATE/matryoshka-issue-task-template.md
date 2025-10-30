@@ -8,15 +8,15 @@ assignees: ''
 ---
 # Issues/work items for project Matryoshka
 
-### Description
+## Description
 
-### Definition of Done / Acceptance Criteria:
+## Definition of Done / Acceptance Criteria:
 - [ ] ...
 - [ ] Documentation updated
 - [ ] Testing passed
 
-### Dependencies
+## Dependencies
 - #PR number
 - Other dependencies
 
-### Other Details
+## Other Details
