@@ -31,39 +31,20 @@ def gen_death(
         """Return True with probability p (0 ≤ p ≤ 1)."""
         return random.random() < p
 
-    print(src_stats["proportion_alive"][0]["proportion_alive"])
     if with_probability(src_stats["proportion_alive"][0]["proportion_alive"]):
         return None
     else:
-
-        death_datetime = dt.datetime(1960, 1, 1)
+        avg_age_at_death_days = 70*365
+        std_dev_age_at_death_days = 11*365
+        age_at_death_days = abs(random_normal(cast(float,avg_age_at_death_days), cast(float,std_dev_age_at_death_days)))
+        death_datetime = cast(dt.datetime, person["birth_datetime"]) + dt.timedelta(
+            days=age_at_death_days)
+        #     death_datetime = dt.datetime(1960, 1, 1)
         return "death", {
-        "person_id": person["person_id"],
-        "death_datetime": death_datetime,
-        "death_date": death_datetime.date(),
-    }
-
-    # alive = generic.sql_group_by_provider.sample(
-    #     src_stats["count_alive_by_birth_year"],
-    #     weights_column="num",
-    #     value_columns="alive",
-    #     filter_dict={"year_of_birth": person["year_of_birth"]},
-    # )
-    # if alive:
-    #     return None
-
-    # age_at_death_days = abs(
-    #     random_normal(cast(float, src_stats["avg_age_at_death"][0]["avg_age_days"]))
-    # )
-    # death_datetime = cast(dt.datetime, person["birth_datetime"]) + dt.timedelta(
-    #     days=age_at_death_days
-    # )
-    # return "death", {
-    #     "person_id": person["person_id"],
-    #     "death_datetime": death_datetime,
-    #     "death_date": death_datetime.date(),
-    # }
-
+            "person_id": person["person_id"],
+            "death_datetime": death_datetime,
+            "death_date": death_datetime.date(),
+        }
 
 def gen_visit_occurrence(
     person: SqlRow, death: Optional[SqlRow], src_stats: SrcStats
@@ -71,7 +52,7 @@ def gen_visit_occurrence(
     """Generate a row for the visit_occurrence table."""
     age_days_at_visit_start = abs(
         random_normal(
-            cast(float, src_stats["avg_age_at_visit_start"][0]["avg_age_days"])
+            cast(float, 63*365), cast(float, 13*365)
         )
     )
     visit_start_datetime = cast(dt.datetime, person["birth_datetime"]) + dt.timedelta(
@@ -79,7 +60,7 @@ def gen_visit_occurrence(
     )
     visit_length_hours = abs(
         random_normal(
-            cast(float, src_stats["avg_visit_length"][0]["avg_visit_length_hours"])
+            cast(float, 6), cast(float, 29*24)
         )
     )
     visit_end_datetime = visit_start_datetime + dt.timedelta(hours=visit_length_hours)
@@ -269,28 +250,28 @@ def generate(
     person = yield "person", {}
     death = gen_death(generic, person, src_stats)
     death_row = (yield death) if death else None
-    # visit_occurrence = yield gen_visit_occurrence(person, death_row, src_stats)
+    visit_occurrence = yield gen_visit_occurrence(person, death_row, src_stats)
     
-    # def gen_events_for_patient(
-    #     rate_query_name: str,
-    #     gen_func: Callable[
-    #         [Generic, int, int, dt.datetime, SrcStats], Optional[SqlRow]
-    #     ],
-    #     table_name: str,
-    # ) -> list[tuple[str, SqlRow]]:
-    #     return gen_events(
-    #         generic,
-    #         cast(float, src_stats[rate_query_name][0]["avg_per_hour"]),
-    #         visit_occurrence,
-    #         person,
-    #         gen_func,
-    #         table_name,
-    #         src_stats,
-    #     )
+    def gen_events_for_patient(
+        rate_query_name: str,
+        gen_func: Callable[
+            [Generic, int, int, dt.datetime, SrcStats], Optional[SqlRow]
+        ],
+        table_name: str,
+    ) -> list[tuple[str, SqlRow]]:
+        return gen_events(
+            generic,
+            cast(float, src_stats[rate_query_name][0]["avg_frequency_per_hour"]),
+            visit_occurrence,
+            person,
+            gen_func,
+            table_name,
+            src_stats,
+        )
 
-    # for event in gen_events_for_patient(
-    #     "avg_measurements_per_hour",
-    #     gen_measurement,
-    #     "measurement",
-    # ):
-    #     yield event
+    for event in gen_events_for_patient(
+        "bp_measurements",
+        gen_measurement,
+        "measurement",
+    ):
+        yield event

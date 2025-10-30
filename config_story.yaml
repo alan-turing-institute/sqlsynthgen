@@ -116,4 +116,4 @@ story_generators:
   - name: person_story.generate
     kwargs:
       src_stats: [generic, SRC_STATS]
-    num_stories_per_pass: 100
+    num_stories_per_pass: 5
