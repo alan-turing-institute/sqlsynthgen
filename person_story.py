@@ -128,105 +128,69 @@ def gen_events(  # pylint: disable=too-many-arguments
             events.append((table_name, event))
     return events
 
-
-def assign_categoricals(
-    generic: Generic,
-    row: SqlRow,
-    categoricals_result: SrcStatsResult,
-    categorical_columns: list[str],
-    filter_dict: dict[str, SqlValue],
-) -> SqlRow:
-    """Add to a row categorical variables sampled from a query result.
-
-    This is a utility function for sampling from a group by query and assigning the
-    results to a row dictionary, used by the event generators.
-    """
-    result = cast(
-        tuple[SqlValue, ...],
-        generic.sql_group_by_provider.sample(
-            categoricals_result,
-            weights_column="num",
-            value_columns=categorical_columns,
-            filter_dict=filter_dict,
-        ),
-    )
-    for column_name, value in zip(categorical_columns, result):
-        row[column_name] = value
-    return row
-
-def gen_measurement(
-    generic: Generic,
-    person_id: int,
-    visit_occurrence_id: int,
-    event_datetime: dt.datetime,
+def gen_blood_pressure_events(  # pylint: disable=too-many-arguments
+    avg_rate: float,
+    visit_occurrence: SqlRow,
+    person: SqlRow,
     src_stats: SrcStats,
-) -> Optional[SqlRow]:
-    """Generate a row for the measurement table."""
-    concept_id = cast(
-        int,
-        generic.sql_group_by_provider.sample(
-            src_stats["count_measurements"],
-            weights_column="num",
-            value_columns="measurement_concept_id",
-        ),
-    )
-    row: SqlRow = {
-        "measurement_concept_id": concept_id,
-        "person_id": person_id,
-        "visit_occurrence_id": visit_occurrence_id,
-        "measurement_datetime": event_datetime,
-        "measurement_date": event_datetime.date(),
-    }
+) -> list[tuple[str, SqlRow]]:
+    """Generate events for a visit occurrence, at a given rate with a given generator.
 
-    categorical_columns = [
-        "measurement_type_concept_id",
-        "operator_concept_id",
-        "value_as_concept_id",
-        "unit_concept_id",
-        "value_as_number_sign",
-        "range_low_sign",
-        "range_high_sign",
-        "provider_id",
-        "visit_detail_id",
-        "measurement_source_value",
-        "measurement_source_concept_id",
-        "unit_source_value",
-    ]
-    try:
-        assign_categoricals(
-            generic,
-            row,
-            src_stats["measurement_categoricals"],
-            categorical_columns,
-            filter_dict={"measurement_concept_id": concept_id},
-        )
-    except ValueError:
-        print(f"No data for measurement of id {concept_id}")
-        return None
+    This is a utility function for generating multiple rows for one of the "event"
+    tables (measurements, observation, etc.).
+    """
 
-    for key in ("value_as_number", "range_low", "range_high"):
-        key_sign = key + "_sign"
-        sign = cast(str, row[key_sign])
-        if sign == "NULL":
-            row[key] = None
-        else:
-            try:
-                avg = next(
-                    cast(float, row["avg_value"])
-                    for row in src_stats["avg_measurement_value_as_number"]
-                    if row["measurement_concept_id"] == concept_id
-                )
-            except StopIteration:
-                print(f"No mean value for measurement of id {concept_id}")
-                return None
-            # To fix: Improve generating negative values. This method produces too few
-            # negative values for variables that can be negative.
-            value = random_normal(avg)
-            if sign == ">=0":
-                value = abs(value)
-            row[key] = value
-        del row[key_sign]
-    return row
+    def gen_blood_pressure_measurement(
+        person_id: int,
+        visit_occurrence_id: int,
+        event_datetime: dt.datetime,
+    ) -> tuple[SqlRow, SqlRow]:
+        
+        Systolic_blood_pressure_by_Noninvasive = 21492239
+        Diastolic_blood_pressure_by_Noninvasive = 21492240
+        measurement_type_concept_id = 32817 # EHR measurement
+        avg_systolic = 114.236842
+        avg_diastolic = 74.447368
+        avg_difference = avg_systolic - avg_diastolic
+        unit_concept_id = 8876  # mmHg
+        
+        """Generate two rows for the measurement table."""
+        systolic: SqlRow = {
+            "measurement_concept_id": cast(int, Systolic_blood_pressure_by_Noninvasive),
+            "person_id": person_id,
+            "visit_occurrence_id": visit_occurrence_id,
+            "measurement_datetime": event_datetime,
+            "measurement_date": event_datetime.date(),
+            "measurement_type_concept_id": measurement_type_concept_id,
+            "unit_concept_id": unit_concept_id,
+            "unit_source_value": "mmHg",
+            "value_as_number": avg_systolic,
+        }
+
+        diastolic: SqlRow = {
+            "measurement_concept_id": cast(int, Diastolic_blood_pressure_by_Noninvasive),
+            "person_id": person_id,
+            "visit_occurrence_id": visit_occurrence_id,
+            "measurement_datetime": event_datetime,
+            "measurement_date": event_datetime.date(),
+            "measurement_type_concept_id": measurement_type_concept_id,
+            "unit_concept_id": unit_concept_id,
+            "unit_source_value": "mmHg",
+            "value_as_number": avg_diastolic,
+        }
+        return systolic, diastolic
+    
+    event_datetimes = random_event_times(avg_rate, visit_occurrence)
+    events: list[tuple[str, SqlRow]] = []
+    for event_datetime in sorted(event_datetimes):
+        systolic, diastolic = gen_blood_pressure_measurement(cast(int, person["person_id"]),
+            cast(int, visit_occurrence["visit_occurrence_id"]),
+            event_datetime)
+        events.append(("measurement", systolic))
+        events.append(("measurement", diastolic))
+    return events
+
+
 
 def generate(
     generic: Generic,
@@ -251,27 +215,12 @@ def generate(
     death = gen_death(generic, person, src_stats)
     death_row = (yield death) if death else None
     visit_occurrence = yield gen_visit_occurrence(person, death_row, src_stats)
-    
-    def gen_events_for_patient(
-        rate_query_name: str,
-        gen_func: Callable[
-            [Generic, int, int, dt.datetime, SrcStats], Optional[SqlRow]
-        ],
-        table_name: str,
-    ) -> list[tuple[str, SqlRow]]:
-        return gen_events(
-            generic,
-            cast(float, src_stats[rate_query_name][0]["avg_frequency_per_hour"]),
-            visit_occurrence,
-            person,
-            gen_func,
-            table_name,
-            src_stats,
-        )
 
-    for event in gen_events_for_patient(
-        "bp_measurements",
-        gen_measurement,
-        "measurement",
-    ):
+    events = gen_blood_pressure_events(
+        cast(float, src_stats["bp_measurements"][0]["avg_frequency_per_hour"]),
+        visit_occurrence,
+        person,
+        src_stats,
+    )
+    for event in events:
         yield event
