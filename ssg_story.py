@@ -483,7 +483,7 @@ class specimenGenerator(TableGenerator):
 
 
 class visit_occurrenceGenerator(TableGenerator):
-    num_rows_per_pass = 1
+    num_rows_per_pass = 0
 
     def __init__(self):
         pass
@@ -939,7 +939,7 @@ def run_person_story_generate(dst_db_conn):
 story_generator_list = [
     {
         "function": run_person_story_generate,
-        "num_stories_per_pass": 100,
+        "num_stories_per_pass": 1,
         "name": "person_story.generate",
     },
 ]

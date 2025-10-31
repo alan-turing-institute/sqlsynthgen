@@ -26,6 +26,44 @@ src-stats:
       WHERE NOT EXISTS (
         SELECT 1 FROM death d WHERE d.person_id = p.person_id
       )
+  - name: age_first_admission
+    query: >
+      SELECT
+        sub.gender_concept_id,
+        AVG(sub.age)::int AS average_age_years,
+        STDDEV(sub.age)::int AS stddev_age_years
+      FROM (
+        SELECT
+          DISTINCT p.person_id,
+          p.gender_concept_id,
+          EXTRACT(YEAR FROM MIN(v.visit_start_datetime)) - p.year_of_birth AS age
+        FROM person p
+        JOIN visit_occurrence v ON p.person_id = v.person_id
+        GROUP BY p.person_id, p.gender_concept_id, p.year_of_birth
+      ) sub
+      GROUP BY sub.gender_concept_id
+  - name: age_at_death
+    query: >
+      SELECT
+      AVG(EXTRACT(YEAR FROM AGE(
+        d.death_datetime, 
+        TO_TIMESTAMP(p.year_of_birth || '-01-01', 'YYYY-MM-DD')
+        )))::int AS average_age_years,
+      STDDEV(EXTRACT(YEAR FROM AGE(
+        d.death_datetime, 
+        TO_TIMESTAMP(p.year_of_birth || '-01-01', 'YYYY-MM-DD')
+        )))::int AS stddev_age_years
+      FROM person p
+      INNER JOIN death d ON d.person_id = p.person_id
+  - name: visit_duration
+    query: >
+      SELECT
+      AVG(EXTRACT(EPOCH FROM (v.visit_end_datetime - v.visit_start_datetime)) /3600)::int AS average_hours,
+      STDDEV(EXTRACT(EPOCH FROM (v.visit_end_datetime - v.visit_start_datetime)) /3600)::int AS stddev_hours
+      FROM person p
+      JOIN visit_occurrence v ON p.person_id = v.person_id;
+      
+    
 
 tables:
   person:
@@ -79,8 +117,9 @@ tables:
         columns_assigned: unit_concept_id
       - name: generic.null_provider.null
         columns_assigned: visit_occurrence_id
-
-    
+  visit_occurrence:
+    num_rows_per_pass: 0
+  
   concept:
     # This one is a vocab, but its too big to handle the usual way
     ignore: true
@@ -116,4 +155,4 @@ story_generators:
   - name: person_story.generate
     kwargs:
       src_stats: [generic, SRC_STATS]
-    num_stories_per_pass: 5
+    num_stories_per_pass: 1

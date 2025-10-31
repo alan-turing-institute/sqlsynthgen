@@ -34,12 +34,11 @@ def gen_death(
     if with_probability(src_stats["proportion_alive"][0]["proportion_alive"]):
         return None
     else:
-        avg_age_at_death_days = 70*365
-        std_dev_age_at_death_days = 11*365
+        avg_age_at_death_days = src_stats["age_at_death"][0]["average_age_years"] * 365
+        std_dev_age_at_death_days = src_stats["age_at_death"][0]["stddev_age_years"] * 365
         age_at_death_days = abs(random_normal(cast(float,avg_age_at_death_days), cast(float,std_dev_age_at_death_days)))
         death_datetime = cast(dt.datetime, person["birth_datetime"]) + dt.timedelta(
             days=age_at_death_days)
-        #     death_datetime = dt.datetime(1960, 1, 1)
         return "death", {
             "person_id": person["person_id"],
             "death_datetime": death_datetime,
@@ -55,12 +54,28 @@ def gen_visit_occurrence(
             cast(float, 63*365), cast(float, 13*365)
         )
     )
+    if person["gender_concept_id"] == 8532:
+        age_days_at_visit_start = abs(
+            random_normal(
+                cast(float, src_stats["age_first_admission"][0]["average_age_years"]*365), 
+                cast(float, src_stats["age_first_admission"][0]["stddev_age_years"]*365)
+            )
+        )
+    if person["gender_concept_id"] == 8507:
+        age_days_at_visit_start = abs(
+            random_normal(
+                cast(float, src_stats["age_first_admission"][1]["average_age_years"]*365), 
+                cast(float, src_stats["age_first_admission"][1]["stddev_age_years"]*365)
+            )
+        )
     visit_start_datetime = cast(dt.datetime, person["birth_datetime"]) + dt.timedelta(
         days=age_days_at_visit_start
     )
     visit_length_hours = abs(
         random_normal(
-            cast(float, 6), cast(float, 29*24)
+            cast(float, src_stats["visit_duration"][0]["average_hours"]), 
+            cast(float, src_stats["visit_duration"][0]["stddev_hours"])
+            # cast(float, 6), cast(float, 29*24)
         )
     )
     visit_end_datetime = visit_start_datetime + dt.timedelta(hours=visit_length_hours)
@@ -140,7 +155,7 @@ def gen_blood_pressure_events(  # pylint: disable=too-many-arguments
     tables (measurements, observation, etc.).
     """
 
-    def gen_blood_pressure_measurement(
+    def populate_blood_pressure_values(
         person_id: int,
         visit_occurrence_id: int,
         event_datetime: dt.datetime,
@@ -183,14 +198,12 @@ def gen_blood_pressure_events(  # pylint: disable=too-many-arguments
     event_datetimes = random_event_times(avg_rate, visit_occurrence)
     events: list[tuple[str, SqlRow]] = []
     for event_datetime in sorted(event_datetimes):
-        systolic, diastolic = gen_blood_pressure_measurement(cast(int, person["person_id"]),
+        systolic, diastolic = populate_blood_pressure_values(cast(int, person["person_id"]),
             cast(int, visit_occurrence["visit_occurrence_id"]),
             event_datetime)
         events.append(("measurement", systolic))
         events.append(("measurement", diastolic))
     return events
-
-
 
 def generate(
     generic: Generic,
@@ -216,11 +229,10 @@ def generate(
     death_row = (yield death) if death else None
     visit_occurrence = yield gen_visit_occurrence(person, death_row, src_stats)
 
-    events = gen_blood_pressure_events(
+    for event in gen_blood_pressure_events(
         cast(float, src_stats["bp_measurements"][0]["avg_frequency_per_hour"]),
         visit_occurrence,
         person,
         src_stats,
-    )
-    for event in events:
+    ):
         yield event
