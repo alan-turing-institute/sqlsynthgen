@@ -168,7 +168,18 @@ def gen_blood_pressure_events(  # pylint: disable=too-many-arguments
         avg_diastolic = 74.447368
         avg_difference = avg_systolic - avg_diastolic
         unit_concept_id = 8876  # mmHg
-        
+
+        gender = cast(int, person["gender_concept_id"])
+        if gender == 8507:
+            systolic_value = random_normal(src_stats["bp_profile"][0]["average_under_60_systolic"],src_stats["bp_profile"][0]["stddev_under_60_systolic"])
+            diastolic_value = src_stats["bp_profile"][0]["average_systolic_diastolic_difference"] + systolic_value
+        elif gender == 8532:
+            systolic_value = random_normal(src_stats["bp_profile"][1]["average_under_60_systolic"],src_stats["bp_profile"][1]["stddev_under_60_systolic"])
+            diastolic_value = src_stats["bp_profile"][1]["average_systolic_diastolic_difference"] + systolic_value
+        else:
+            systolic_value = avg_systolic
+            diastolic_value = avg_diastolic
+
         """Generate two rows for the measurement table."""
         systolic: SqlRow = {
             "measurement_concept_id": cast(int, Systolic_blood_pressure_by_Noninvasive),
@@ -179,7 +190,7 @@ def gen_blood_pressure_events(  # pylint: disable=too-many-arguments
             "measurement_type_concept_id": measurement_type_concept_id,
             "unit_concept_id": unit_concept_id,
             "unit_source_value": "mmHg",
-            "value_as_number": avg_systolic,
+            "value_as_number": systolic_value,
         }
 
         diastolic: SqlRow = {
@@ -191,7 +202,7 @@ def gen_blood_pressure_events(  # pylint: disable=too-many-arguments
             "measurement_type_concept_id": measurement_type_concept_id,
             "unit_concept_id": unit_concept_id,
             "unit_source_value": "mmHg",
-            "value_as_number": avg_diastolic,
+            "value_as_number": diastolic_value,
         }
         return systolic, diastolic
     
@@ -230,7 +241,7 @@ def generate(
     visit_occurrence = yield gen_visit_occurrence(person, death_row, src_stats)
 
     for event in gen_blood_pressure_events(
-        cast(float, src_stats["bp_measurements"][0]["avg_frequency_per_hour"]),
+        10.0,
         visit_occurrence,
         person,
         src_stats,

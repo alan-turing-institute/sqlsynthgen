@@ -62,8 +62,30 @@ src-stats:
       STDDEV(EXTRACT(EPOCH FROM (v.visit_end_datetime - v.visit_start_datetime)) /3600)::int AS stddev_hours
       FROM person p
       JOIN visit_occurrence v ON p.person_id = v.person_id;
+  - name: bp_profile     
+    query: >
+      SELECT
+      gender_concept_id,
+      AVG(CASE WHEN (measurement_concept_id = 21492239 AND age > 60) THEN value_as_number END )::int AS average_over_60_systolic,
+      AVG(CASE WHEN (measurement_concept_id = 21492239 AND age <= 60) THEN value_as_number END )::int AS average_under_60_systolic,
+      STDDEV(CASE WHEN (measurement_concept_id = 21492239 AND age > 60) THEN value_as_number END )::int AS stddev_over_60_systolic,
+      STDDEV(CASE WHEN (measurement_concept_id = 21492239 AND age <= 60)  THEN value_as_number END )::int AS stddev_under_60_systolic,
+      AVG(CASE WHEN measurement_concept_id = 21492239 THEN value_as_number END )::int -
+      AVG(CASE WHEN measurement_concept_id = 21492240 THEN value_as_number END )::int AS average_systolic_diastolic_difference
+      FROM (
+          SELECT
+              p.person_id,
+              p.gender_concept_id,
+              EXTRACT(YEAR FROM v.visit_start_datetime) - p.year_of_birth AS age,
+              m.value_as_number,
+              m.measurement_concept_id
+          FROM mimic.person p
+          JOIN mimic.visit_occurrence v ON p.person_id = v.person_id
+          JOIN mimic.measurement m ON p.person_id = m.person_id
+          WHERE m.measurement_concept_id IN (21492239, 21492240)
+          ) sub
+      GROUP BY sub.gender_concept_id;
       
-    
 
 tables:
   person:
