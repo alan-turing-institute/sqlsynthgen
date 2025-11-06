@@ -240,8 +240,15 @@ def generate(
     death_row = (yield death) if death else None
     visit_occurrence = yield gen_visit_occurrence(person, death_row, src_stats)
 
+    # abs to avoid negative rates due to random normal variation
+    avg_rate = abs(random_normal(
+        src_stats["blood_pressure_event_rate"][0]["average_events_per_hour"],
+        src_stats["blood_pressure_event_rate"][0]["stddev_events_per_hour"]
+    ))
+
+    print(f"Generating blood pressure events at an average rate of {avg_rate} per hour.")
     for event in gen_blood_pressure_events(
-        10.0,
+        avg_rate,
         visit_occurrence,
         person,
         src_stats,
