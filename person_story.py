@@ -242,11 +242,9 @@ def generate(
 
     # abs to avoid negative rates due to random normal variation
     avg_rate = abs(random_normal(
-        src_stats["blood_pressure_event_rate"][0]["average_events_per_hour"],
-        src_stats["blood_pressure_event_rate"][0]["stddev_events_per_hour"]
-    ))
+        src_stats["avg_measurements_per_visit_hour"][0]['avg_measurements_per_hour'],
+        src_stats["avg_measurements_per_visit_hour"][0]['stddev_measurements_per_hour'] ))
 
-    print(f"Generating blood pressure events at an average rate of {avg_rate} per hour.")
     for event in gen_blood_pressure_events(
         avg_rate,
         visit_occurrence,
