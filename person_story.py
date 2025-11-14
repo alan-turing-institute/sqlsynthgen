@@ -1,7 +1,7 @@
 """Story generators for the CC HIC OMOP schema."""
 import datetime as dt
 from typing import Callable, Generator, Optional, Union, cast
-
+from sqlsynthgen.utils import generate_time_series
 import numpy as np
 from mimesis import Generic
 import random
@@ -155,65 +155,84 @@ def gen_blood_pressure_events(  # pylint: disable=too-many-arguments
     tables (measurements, observation, etc.).
     """
 
-    def populate_blood_pressure_values(
+
+    def generate_paired_measurement(
         person_id: int,
         visit_occurrence_id: int,
         event_datetime: dt.datetime,
+        values: tuple[float, float],
+        measurement_concept_id: tuple[int,int],
+        measurement_type_concept_ids: int,
+        unit_concept_id: int,
+        unit_source_value: str,
     ) -> tuple[SqlRow, SqlRow]:
-        
-        Systolic_blood_pressure_by_Noninvasive = 21492239
-        Diastolic_blood_pressure_by_Noninvasive = 21492240
-        measurement_type_concept_id = 32817 # EHR measurement
-        avg_systolic = 114.236842
-        avg_diastolic = 74.447368
-        avg_difference = avg_systolic - avg_diastolic
-        unit_concept_id = 8876  # mmHg
 
-        gender = cast(int, person["gender_concept_id"])
-        if gender == 8507:
-            systolic_value = random_normal(src_stats["bp_profile"][0]["average_under_60_systolic"],src_stats["bp_profile"][0]["stddev_under_60_systolic"])
-            diastolic_value = src_stats["bp_profile"][0]["average_systolic_diastolic_difference"] + systolic_value
-        elif gender == 8532:
-            systolic_value = random_normal(src_stats["bp_profile"][1]["average_under_60_systolic"],src_stats["bp_profile"][1]["stddev_under_60_systolic"])
-            diastolic_value = src_stats["bp_profile"][1]["average_systolic_diastolic_difference"] + systolic_value
-        else:
-            systolic_value = avg_systolic
-            diastolic_value = avg_diastolic
 
+        ### This can be abastracted to generate any number of set of measurements
         """Generate two rows for the measurement table."""
-        systolic: SqlRow = {
-            "measurement_concept_id": cast(int, Systolic_blood_pressure_by_Noninvasive),
+        measurement1: SqlRow = {
+            "measurement_concept_id": cast(int, measurement_concept_id[0]),
             "person_id": person_id,
             "visit_occurrence_id": visit_occurrence_id,
             "measurement_datetime": event_datetime,
             "measurement_date": event_datetime.date(),
-            "measurement_type_concept_id": measurement_type_concept_id,
+            "measurement_type_concept_id": measurement_type_concept_ids,
             "unit_concept_id": unit_concept_id,
-            "unit_source_value": "mmHg",
-            "value_as_number": systolic_value,
+            "unit_source_value": unit_source_value,
+            "value_as_number": values[0],
         }
 
-        diastolic: SqlRow = {
-            "measurement_concept_id": cast(int, Diastolic_blood_pressure_by_Noninvasive),
+        measurement2: SqlRow = {
+            "measurement_concept_id": cast(int, measurement_concept_id[1]),
             "person_id": person_id,
             "visit_occurrence_id": visit_occurrence_id,
             "measurement_datetime": event_datetime,
             "measurement_date": event_datetime.date(),
-            "measurement_type_concept_id": measurement_type_concept_id,
+            "measurement_type_concept_id": measurement_type_concept_ids,
             "unit_concept_id": unit_concept_id,
-            "unit_source_value": "mmHg",
-            "value_as_number": diastolic_value,
+            "unit_source_value": unit_source_value,
+            "value_as_number": values[1],
         }
-        return systolic, diastolic
+        return measurement1, measurement2
     
     event_datetimes = random_event_times(avg_rate, visit_occurrence)
+
+    avg_systolic = 114.236842
+    avg_diastolic = 74.447368
+    sys_bp_non_invasive_concept_id = 21492239
+    dias_bp_non_invasive_concept_id = 21492240
+    measurement_type_concept_id = 32817  # EHR measurement
+    unit_source_value = "mmHg"
+    unit_concept_id = 8876  # mmHg
+
+    gender = cast(int, person["gender_concept_id"])
+    if gender == 8507:
+        systolic_value = np.round(generate_time_series(len(event_datetimes), 'iid',
+                                        {'mean': src_stats["bp_profile"][0]["average_under_60_systolic"],
+                                         'std': src_stats["bp_profile"][0]["stddev_under_60_systolic"]},
+                                        random_state=42))
+        diastolic_value = np.round(random_normal(src_stats["bp_profile"][0]["average_systolic_diastolic_difference"],src_stats["bp_profile"][0]["average_systolic_diastolic_difference"]*0.1) + systolic_value)
+    elif gender == 8532:
+        systolic_value = np.round(generate_time_series(len(event_datetimes), 'iid',
+                                              {'mean': src_stats["bp_profile"][1]["average_under_60_systolic"],
+                                               'std': src_stats["bp_profile"][1]["stddev_under_60_systolic"]},
+                                              random_state=42))
+        diastolic_value = np.round(random_normal(src_stats["bp_profile"][1]["average_systolic_diastolic_difference"],
+                                        src_stats["bp_profile"][1][
+                                            "average_systolic_diastolic_difference"] * 0.1) + systolic_value)
+    else:
+        systolic_value = avg_systolic
+        diastolic_value = avg_diastolic
+
     events: list[tuple[str, SqlRow]] = []
-    for event_datetime in sorted(event_datetimes):
-        systolic, diastolic = populate_blood_pressure_values(cast(int, person["person_id"]),
+    for index, event_datetime in enumerate(sorted(event_datetimes)):
+        systolic_dict, diastolic_dict = generate_paired_measurement(cast(int, person["person_id"]),
             cast(int, visit_occurrence["visit_occurrence_id"]),
-            event_datetime)
-        events.append(("measurement", systolic))
-        events.append(("measurement", diastolic))
+            event_datetime,(systolic_value[index], diastolic_value[index]),
+        (sys_bp_non_invasive_concept_id,dias_bp_non_invasive_concept_id),
+                                                                    measurement_type_concept_id,unit_concept_id,unit_source_value)
+        events.append(("measurement", systolic_dict)),
+        events.append(("measurement", diastolic_dict))
     return events
 
 def generate(
@@ -241,10 +260,14 @@ def generate(
     visit_occurrence = yield gen_visit_occurrence(person, death_row, src_stats)
 
     # abs to avoid negative rates due to random normal variation
+    # abs to avoid negative rates due to random normal variation
     avg_rate = abs(random_normal(
         src_stats["avg_measurements_per_visit_hour"][0]['avg_measurements_per_hour'],
-        src_stats["avg_measurements_per_visit_hour"][0]['stddev_measurements_per_hour'] ))
+        src_stats["avg_measurements_per_visit_hour"][0]['stddev_measurements_per_hour'] )
+    )
 
+
+    print(f"Generating blood pressure events at an average rate of {avg_rate} per hour.")
     for event in gen_blood_pressure_events(
         avg_rate,
         visit_occurrence,
