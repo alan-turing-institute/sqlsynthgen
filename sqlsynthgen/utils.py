@@ -339,7 +339,7 @@ def random_walk_with_drift(
     x = np.empty(N)
     x[0] = x0
     for t in range(1, N):
-        x[t] = x[t-1] + drift + rng.normal(0.0, sigma_eps)
+        x[t] = x[t-1] + drift + rng.normal(0.0, sigma_eps)*100
     return x
 
 

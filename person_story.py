@@ -246,9 +246,9 @@ def gen_blood_pressure_events(  # pylint: disable=too-many-arguments
 
     # diastolic value is calculated based on systolic value plus the average difference extrated from data
     # we add some variation to the difference between systolic and diastolic
-    diastolic_value = np.round(random_normal(src_stats[main_key][index_gender]['average_systolic_diastolic_difference'],
+    diastolic_value = np.round(systolic_value - random_normal(src_stats[main_key][index_gender]['average_systolic_diastolic_difference'],
                                              src_stats[main_key][index_gender][
-                                                 "average_systolic_diastolic_difference"] * 0.1) + systolic_value)
+                                                 "average_systolic_diastolic_difference"] * 0.1) )
 
     events: list[tuple[str, SqlRow]] = []
     for index, event_datetime in enumerate(sorted(event_datetimes)):
