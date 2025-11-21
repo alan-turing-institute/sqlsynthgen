@@ -1,6 +1,6 @@
 """Story generators for the CC HIC OMOP schema."""
 import datetime as dt
-from typing import Callable, Generator, Optional, Union, cast
+from typing import Callable, Generator, List, Optional, Union, cast
 
 import numpy as np
 from mimesis import Generic
@@ -10,6 +10,18 @@ SqlValue = Union[float, int, str, bool, dt.datetime, dt.date, None]
 SqlRow = dict[str, SqlValue]
 SrcStatsResult = list[SqlRow]
 SrcStats = dict[str, SrcStatsResult]
+from typing import TypedDict, Callable, List, Optional, Dict, Union
+
+class SingularMeasurement(TypedDict):
+    values: list[float] | list[int]
+
+class GroupedMeasurements(TypedDict):
+    datetime: dt.datetime
+    person_id: int
+    visit_occurrence_id: int
+    concepts: Dict[int, tuple[int, int]]
+    values: Dict[int, List[SingularMeasurement]]
+    generators: Dict[int, Callable[[int|float], int|float]]
 
 
 def random_normal(mean: float, std_dev: Optional[float] = None) -> float:
@@ -210,6 +222,81 @@ def gen_blood_pressure_events(  # pylint: disable=too-many-arguments
     events: list[tuple[str, SqlRow]] = []
     for event_datetime in sorted(event_datetimes):
         systolic, diastolic = populate_blood_pressure_values(cast(int, person["person_id"]),
+            cast(int, visit_occurrence["visit_occurrence_id"]),
+            event_datetime)
+        events.append(("measurement", systolic))
+        events.append(("measurement", diastolic))
+    return events
+
+def populate_group_measurement(
+    person: SqlRow,
+    visit_occurrence: SqlRow,
+    src_stats: SrcStats,
+) -> List[tuple[str, SqlRow]]:
+    """Generate events for a visit occurrence, at a given rate with a given generator.
+
+    This is a utility function for generating multiple rows for one of the "event"
+    tables (measurements, observation, etc.).
+    """
+
+    Systolic_blood_pressure_by_Noninvasive = 21492239
+    Diastolic_blood_pressure_by_Noninvasive = 21492240
+    measurement_type_concept_id = 32817 # EHR measurement
+    avg_systolic = 114.236842
+    avg_diastolic = 74.447368
+    avg_difference = avg_systolic - avg_diastolic
+    unit_concept_id = 8876  # mmHg
+    
+    def get_diastolic_from_systolic(systolic: List[float]) -> float:
+        """Estimate diastolic value from systolic value."""
+        return [s - avg_difference for s in systolic]
+
+    def timeseries(length: int) -> float:
+        """Estimate diastolic value from systolic value."""
+        return [0] * length
+
+    generators: dict[str, Callable[[int|float], int|float]] = {
+        "timeseries": timeseries,
+        "diastolic": get_diastolic_from_systolic
+    }
+
+    m: GroupedMeasurements = {
+        "concepts": {Systolic_blood_pressure_by_Noninvasive: (measurement_type_concept_id, unit_concept_id),
+                     Diastolic_blood_pressure_by_Noninvasive: (measurement_type_concept_id, unit_concept_id)},
+        "values": {Systolic_blood_pressure_by_Noninvasive: [], 
+                   Diastolic_blood_pressure_by_Noninvasive: []},
+        "generators": {Systolic_blood_pressure_by_Noninvasive: generators["timeseries"],
+                       Diastolic_blood_pressure_by_Noninvasive: generators["diastolic"]},
+        "datetime": dt.datetime.now(),
+        "person_id": cast(int, person["person_id"]),
+        "visit_occurrence_id": cast(int, visit_occurrence["visit_occurrence_id"]),
+    }
+
+    m["values"][Systolic_blood_pressure_by_Noninvasive] = generators["timeseries"](10)
+    m["values"][Diastolic_blood_pressure_by_Noninvasive] = generators["diastolic"](m["values"][Systolic_blood_pressure_by_Noninvasive])
+
+    def populate_values(
+        event_datetime: dt.datetime,
+    ) -> dict[int, SqlRow]:
+        
+        """Generate two rows for the measurement table."""
+        r: SqlRow = {
+            "measurement_concept_id": m.concept_id,
+            "person_id": m.person_id,
+            "visit_occurrence_id": visit_occurrence_id,
+            "measurement_datetime": event_datetime,
+            "measurement_date": event_datetime.date(),
+            "measurement_type_concept_id": m.type_concept_id,
+            "unit_concept_id": m.unit_concept_id,
+            "value_as_number": abs(random_normal(m.properties["average_value"], m.properties["stddev_value"])),
+        }
+
+        return r
+    
+    event_datetimes = random_event_times(10.0, visit_occurrence)
+    events: list[tuple[str, SqlRow]] = []
+    for event_datetime in sorted(event_datetimes):
+        systolic, diastolic = populate_values(cast(int, person["person_id"]),
             cast(int, visit_occurrence["visit_occurrence_id"]),
             event_datetime)
         events.append(("measurement", systolic))
