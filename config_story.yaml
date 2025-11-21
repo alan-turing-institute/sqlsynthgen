@@ -85,8 +85,24 @@ src-stats:
           WHERE m.measurement_concept_id IN (21492239, 21492240)
           ) sub
       GROUP BY sub.gender_concept_id;
-      
-
+  - name: avg_measurements_per_visit_hour
+    query: >
+      SELECT
+          AVG(subquery.measurements_per_hour)::float4 AS avg_measurements_per_hour,
+          stddev(subquery.measurements_per_hour)::float4 AS stddev_measurements_per_hour
+      FROM
+      (SELECT
+              COUNT(*)/2
+                / (EXTRACT(EPOCH FROM (v.visit_end_datetime - v.visit_start_datetime)) / 3600.0)
+                AS measurements_per_hour
+      FROM mimic.measurement m
+      JOIN mimic.visit_occurrence v ON m.visit_occurrence_id = v.visit_occurrence_id
+      WHERE m.measurement_concept_id IN (21492239, 21492240)
+      GROUP BY
+              m.person_id,
+              m.visit_occurrence_id,
+              v.visit_start_datetime,
+              v.visit_end_datetime) subquery;
 tables:
   person:
     num_rows_per_pass: 0
