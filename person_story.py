@@ -236,13 +236,12 @@ def gen_blood_pressure_events(  # pylint: disable=too-many-arguments
         index_gender = 1
 
     sample_epsilon = np.random.normal(src_stats[relative_change_key][index_gender][key_epsilon_mean],
-                                      src_stats[relative_change_key][index_gender][key_epsilon_std], 1)
+                                      src_stats[relative_change_key][index_gender][key_epsilon_std], 1)[0]
 
     systolic_value = np.round(generate_time_series(len(event_datetimes), 'random_walk',
                                                    {'mean': src_stats[main_key][index_gender][key_mean],
-                                                    'std': src_stats[main_key][0][key_std],
-                                                    'epsilon_std': sample_epsilon, 'drift': 0},
-                                                   random_state=42))
+                                                    'std': src_stats[main_key][index_gender][key_std],
+                                                    'epsilon_std': sample_epsilon, 'drift': 0}))
 
     # diastolic value is calculated based on systolic value plus the average difference extrated from data
     # we add some variation to the difference between systolic and diastolic
@@ -296,7 +295,7 @@ def generate(
         src_stats["avg_measurements_per_visit_hour"][0]['stddev_measurements_per_hour'])
     )
 
-    print(f"Generating blood pressure events at an average rate of {avg_rate} per hour.")
+    print(f"Generating blood pressure events at an average rate of {avg_rate} per hour. Using IID sampling.")
     for event in gen_blood_pressure_events(
             avg_rate,
             visit_occurrence,

@@ -185,7 +185,6 @@ def generate_time_series(
     N: int,
     model_option: Literal["iid", "random_walk", "ar1"],
     model_params: Dict[str, Any],
-    random_state: int  = 42
 ) -> np.ndarray:
     """
     Generate a synthetic time series using one of three simple models.
@@ -221,13 +220,7 @@ def generate_time_series(
         Synthetic time series of length N.
     """
 
-    rng = np.random.default_rng(random_state)
-
-    # Initialise x0 from marginal distribution
-    x0: float = rng.normal(
-        loc=model_params["mean"],
-        scale=model_params["std"]
-    )
+    rng = np.random.default_rng(None)
 
     # ----------------------------
     # MODEL 1: IID Gaussian
@@ -243,6 +236,11 @@ def generate_time_series(
     # ----------------------------
     # MODEL 2: Random Walk
     # ----------------------------
+
+    x0: float = rng.normal(
+        loc=model_params["mean"],
+        scale=model_params["std"]
+    )
     if model_option == "random_walk":
         required = ["drift", "epsilon_std"]
         for key in required:
