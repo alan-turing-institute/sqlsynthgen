@@ -103,68 +103,6 @@ src-stats:
               m.visit_occurrence_id,
               v.visit_start_datetime,
               v.visit_end_datetime) subquery;
-  - name: bp_sys_relative_change_stats
-    #For each patient + visit + BP type, sort measurements in time,
-    #compute |xₜ − xₜ₋₁| / xₜ₋₁ for each step,
-    #then average those within that visit.
-    #Finally, average that visit-level metric across the population.
-    query: >
-      WITH bp AS (
-          SELECT
-              p.person_id,
-              p.gender_concept_id,
-              v.visit_occurrence_id,
-              EXTRACT(YEAR FROM v.visit_start_datetime) - p.year_of_birth AS age,
-              m.measurement_concept_id,
-              m.value_as_number,
-              m.measurement_datetime
-          FROM mimic.person p
-          JOIN mimic.visit_occurrence v
-              ON p.person_id = v.person_id
-          JOIN mimic.measurement m
-              ON m.visit_occurrence_id = v.visit_occurrence_id
-          WHERE m.measurement_concept_id IN (21492239)  -- systolic
-      ),
-      bp_with_lag AS (
-          SELECT
-              bp.*,
-              LAG(value_as_number) OVER (
-                  PARTITION BY person_id, visit_occurrence_id, measurement_concept_id
-                  ORDER BY measurement_datetime
-              ) AS prev_value
-          FROM bp
-      ),
-      visit_level_rel_var AS (
-          SELECT
-              person_id,
-              gender_concept_id,
-              age,
-              visit_occurrence_id,
-              measurement_concept_id,
-              -- average relative change within this visit
-              AVG( ABS(value_as_number - prev_value)
-                   / NULLIF(prev_value, 0) ) AS avg_rel_var
-          FROM bp_with_lag
-          WHERE prev_value IS NOT NULL          -- skip first measurement in each visit
-          GROUP BY
-              person_id,
-              gender_concept_id,
-              age,
-              visit_occurrence_id,
-              measurement_concept_id
-      )
-      SELECT
-          gender_concept_id,
-          AVG(CASE WHEN measurement_concept_id = 21492239 AND age > 60
-                   THEN avg_rel_var END)::float4 AS avg_over_60_systolic_rel_var,
-          AVG(CASE WHEN measurement_concept_id = 21492239 AND age <= 60
-                   THEN avg_rel_var END)::float4  AS avg_under_60_systolic_rel_var,
-          STDDEV(CASE WHEN measurement_concept_id = 21492239 AND age > 60
-                      THEN avg_rel_var END)::float4  AS stddev_over_60_systolic_rel_var,
-          STDDEV(CASE WHEN measurement_concept_id = 21492239 AND age <= 60
-                      THEN avg_rel_var END)::float4 AS stddev_under_60_systolic_rel_var
-      FROM visit_level_rel_var
-      GROUP BY gender_concept_id;
 tables:
   person:
     num_rows_per_pass: 0
