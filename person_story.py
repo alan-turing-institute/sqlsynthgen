@@ -1,29 +1,12 @@
 """Story generators for the CC HIC OMOP schema."""
 import datetime as dt
-from typing import Callable, Generator, List, Optional, Union, cast
-
+from typing import Generator,Optional, cast
+from sqlsynthgen.utils import generate_time_series
 import numpy as np
 from mimesis import Generic
 import random
-
-SqlValue = Union[float, int, str, bool, dt.datetime, dt.date, None]
-SqlRow = dict[str, SqlValue]
-SrcStatsResult = list[SqlRow]
-SrcStats = dict[str, SrcStatsResult]
-from typing import TypedDict, Callable, List, Optional, Dict, Union
-
-class MeasurementItem(TypedDict):
-    unit_concept_id: int
-    measurement_type_concept_id: int
-    generator: Callable[[int|float], int|float]
-    event_datetime: dt.datetime
-    value: Union[float, int, None]
-
-class GroupedMeasurements(TypedDict):
-    person_id: int
-    visit_occurrence_id: int
-    measurements: Dict[int, MeasurementItem]
-   
+from blood_pressure_story import generate_bp_rows_for_dates
+import story_types as stypes
 
 def random_normal(mean: float, std_dev: Optional[float] = None) -> float:
     """Return a normal distributed value with the given mean and standard deviation.
@@ -37,9 +20,10 @@ def random_normal(mean: float, std_dev: Optional[float] = None) -> float:
 
 
 def gen_death(
-    generic: Generic, person: SqlRow, src_stats: SrcStats
-) -> Optional[tuple[str, SqlRow]]:
+        generic: Generic, person: stypes.SqlRow, src_stats: stypes.SrcStats
+) -> Optional[tuple[str, stypes.SqlRow]]:
     """Generate a row for the death table."""
+
     def with_probability(p: float) -> bool:
         """Return True with probability p (0 ≤ p ≤ 1)."""
         return random.random() < p
@@ -49,7 +33,8 @@ def gen_death(
     else:
         avg_age_at_death_days = src_stats["age_at_death"][0]["average_age_years"] * 365
         std_dev_age_at_death_days = src_stats["age_at_death"][0]["stddev_age_years"] * 365
-        age_at_death_days = abs(random_normal(cast(float,avg_age_at_death_days), cast(float,std_dev_age_at_death_days)))
+        age_at_death_days = abs(
+            random_normal(cast(float, avg_age_at_death_days), cast(float, std_dev_age_at_death_days)))
         death_datetime = cast(dt.datetime, person["birth_datetime"]) + dt.timedelta(
             days=age_at_death_days)
         return "death", {
@@ -58,27 +43,28 @@ def gen_death(
             "death_date": death_datetime.date(),
         }
 
+
 def gen_visit_occurrence(
-    person: SqlRow, death: Optional[SqlRow], src_stats: SrcStats
-) -> tuple[str, SqlRow]:
+        person: stypes.SqlRow, death: Optional[stypes.SqlRow], src_stats: stypes.SrcStats
+) -> tuple[str, stypes.SqlRow]:
     """Generate a row for the visit_occurrence table."""
     age_days_at_visit_start = abs(
         random_normal(
-            cast(float, 63*365), cast(float, 13*365)
+            cast(float, 63 * 365), cast(float, 13 * 365)
         )
     )
     if person["gender_concept_id"] == 8532:
         age_days_at_visit_start = abs(
             random_normal(
-                cast(float, src_stats["age_first_admission"][0]["average_age_years"]*365), 
-                cast(float, src_stats["age_first_admission"][0]["stddev_age_years"]*365)
+                cast(float, src_stats["age_first_admission"][0]["average_age_years"] * 365),
+                cast(float, src_stats["age_first_admission"][0]["stddev_age_years"] * 365)
             )
         )
     if person["gender_concept_id"] == 8507:
         age_days_at_visit_start = abs(
             random_normal(
-                cast(float, src_stats["age_first_admission"][1]["average_age_years"]*365), 
-                cast(float, src_stats["age_first_admission"][1]["stddev_age_years"]*365)
+                cast(float, src_stats["age_first_admission"][1]["average_age_years"] * 365),
+                cast(float, src_stats["age_first_admission"][1]["stddev_age_years"] * 365)
             )
         )
     visit_start_datetime = cast(dt.datetime, person["birth_datetime"]) + dt.timedelta(
@@ -86,7 +72,7 @@ def gen_visit_occurrence(
     )
     visit_length_hours = abs(
         random_normal(
-            cast(float, src_stats["visit_duration"][0]["average_hours"]), 
+            cast(float, src_stats["visit_duration"][0]["average_hours"]),
             cast(float, src_stats["visit_duration"][0]["stddev_hours"])
             # cast(float, 6), cast(float, 29*24)
         )
@@ -111,7 +97,7 @@ def gen_visit_occurrence(
     )
 
 
-def random_event_times(avg_rate: float, visit_occurrence: SqlRow) -> list[dt.datetime]:
+def random_event_times(avg_rate: float, visit_occurrence: stypes.SqlRow) -> list[dt.datetime]:
     """Return random times during a visit, occurring roughly at the given rate."""
     start = cast(dt.datetime, visit_occurrence["visit_start_datetime"])
     end = cast(dt.datetime, visit_occurrence["visit_end_datetime"])
@@ -126,227 +112,10 @@ def random_event_times(avg_rate: float, visit_occurrence: SqlRow) -> list[dt.dat
     return datetimes
 
 
-def gen_events(  # pylint: disable=too-many-arguments
-    generic: Generic,
-    avg_rate: float,
-    visit_occurrence: SqlRow,
-    person: SqlRow,
-    generator_function: Callable[
-        [Generic, int, int, dt.datetime, SrcStats], Optional[SqlRow]
-    ],
-    table_name: str,
-    src_stats: SrcStats,
-) -> list[tuple[str, SqlRow]]:
-    """Generate events for a visit occurrence, at a given rate with a given generator.
-
-    This is a utility function for generating multiple rows for one of the "event"
-    tables (measurements, observation, etc.).
-    """
-    event_datetimes = random_event_times(avg_rate, visit_occurrence)
-    events: list[tuple[str, SqlRow]] = []
-    for event_datetime in sorted(event_datetimes):
-        event = generator_function(
-            generic,
-            cast(int, person["person_id"]),
-            cast(int, visit_occurrence["visit_occurrence_id"]),
-            event_datetime,
-            src_stats,
-        )
-        if event is not None:
-            events.append((table_name, event))
-    return events
-
-def gen_blood_pressure_events(  # pylint: disable=too-many-arguments
-    avg_rate: float,
-    visit_occurrence: SqlRow,
-    person: SqlRow,
-    src_stats: SrcStats,
-) -> list[tuple[str, SqlRow]]:
-    """Generate events for a visit occurrence, at a given rate with a given generator.
-
-    This is a utility function for generating multiple rows for one of the "event"
-    tables (measurements, observation, etc.).
-    """
-
-    def populate_blood_pressure_values(
-        person_id: int,
-        visit_occurrence_id: int,
-        event_datetime: dt.datetime,
-    ) -> tuple[SqlRow, SqlRow]:
-        
-        Systolic_blood_pressure_by_Noninvasive = 21492239
-        Diastolic_blood_pressure_by_Noninvasive = 21492240
-        measurement_type_concept_id = 32817 # EHR measurement
-        avg_systolic = 114.236842
-        avg_diastolic = 74.447368
-        avg_difference = avg_systolic - avg_diastolic
-        unit_concept_id = 8876  # mmHg
-
-        gender = cast(int, person["gender_concept_id"])
-        if gender == 8507:
-            systolic_value = random_normal(src_stats["bp_profile"][0]["average_under_60_systolic"],src_stats["bp_profile"][0]["stddev_under_60_systolic"])
-            diastolic_value = src_stats["bp_profile"][0]["average_systolic_diastolic_difference"] + systolic_value
-        elif gender == 8532:
-            systolic_value = random_normal(src_stats["bp_profile"][1]["average_under_60_systolic"],src_stats["bp_profile"][1]["stddev_under_60_systolic"])
-            diastolic_value = src_stats["bp_profile"][1]["average_systolic_diastolic_difference"] + systolic_value
-        else:
-            systolic_value = avg_systolic
-            diastolic_value = avg_diastolic
-
-        """Generate two rows for the measurement table."""
-        systolic: SqlRow = {
-            "measurement_concept_id": cast(int, Systolic_blood_pressure_by_Noninvasive),
-            "person_id": person_id,
-            "visit_occurrence_id": visit_occurrence_id,
-            "measurement_datetime": event_datetime,
-            "measurement_date": event_datetime.date(),
-            "measurement_type_concept_id": measurement_type_concept_id,
-            "unit_concept_id": unit_concept_id,
-            "unit_source_value": "mmHg",
-            "value_as_number": systolic_value,
-        }
-
-        diastolic: SqlRow = {
-            "measurement_concept_id": cast(int, Diastolic_blood_pressure_by_Noninvasive),
-            "person_id": person_id,
-            "visit_occurrence_id": visit_occurrence_id,
-            "measurement_datetime": event_datetime,
-            "measurement_date": event_datetime.date(),
-            "measurement_type_concept_id": measurement_type_concept_id,
-            "unit_concept_id": unit_concept_id,
-            "unit_source_value": "mmHg",
-            "value_as_number": diastolic_value,
-        }
-        return systolic, diastolic
-    
-    event_datetimes = random_event_times(avg_rate, visit_occurrence)
-    events: list[tuple[str, SqlRow]] = []
-    for event_datetime in sorted(event_datetimes):
-        systolic, diastolic = populate_blood_pressure_values(cast(int, person["person_id"]),
-            cast(int, visit_occurrence["visit_occurrence_id"]),
-            event_datetime)
-        events.append(("measurement", systolic))
-        events.append(("measurement", diastolic))
-    return events
-
-def populate_group_measurement(
-    person: SqlRow,
-    visit_occurrence: SqlRow,
-    src_stats: SrcStats,
-) -> List[tuple[str, SqlRow]]:
-    """Generate events for a visit occurrence, at a given rate with a given generator.
-
-    This is a utility function for generating multiple rows for one of the "event"
-    tables (measurements, observation, etc.).
-    """
-
-    Systolic_blood_pressure_by_Noninvasive = 21492239
-    Diastolic_blood_pressure_by_Noninvasive = 21492240
-    measurement_type_concept_id_bp = 32817 # EHR measurement
-    avg_systolic = 114.236842
-    avg_diastolic = 74.447368
-    avg_difference = avg_systolic - avg_diastolic
-    unit_concept_id_bp = 8876  # mmHg
-
-    Body_temperature = 3025315
-    measurement_type_concept_id_temp = 32817 # EHR measurement
-    unit_concept_id_temp = 9289  # degree Celsius
-    
-    def get_diastolic_from_systolic(systolic:float) -> float:
-        """Estimate diastolic value from systolic value."""
-        return systolic - avg_difference
-
-    def timeseries(length: int) -> float:
-        """Estimate diastolic value from systolic value."""
-        return [0] * length
-
-    generators: dict[str, Callable[[int|float], int|float]] = {
-        "timeseries": timeseries,
-        "diastolic": get_diastolic_from_systolic
-    }
-
-    def generate_group_values(
-        m: GroupedMeasurements,
-    ) -> GroupedMeasurements:
-        for measurement_id in m["measurements"].keys():
-            if m["measurements"][measurement_id]["generator"] == generators["timeseries"]:
-                m["values"][measurement_id] = m["measurements"][measurement_id]["generator"](1)
-            if m["measurements"][measurement_id]["generator"] == generators["diastolic"]:
-                m["values"][measurement_id] = m["measurements"][measurement_id]["generator"](m["values"][Systolic_blood_pressure_by_Noninvasive])
-        return m
-    
-    def toSqlRows(
-        group: GroupedMeasurements,
-    ) -> List[SqlRow]:
-        
-        """Generate two rows for the measurement table."""
-        rows:List[SqlRow] = []
-        visit_occurrence_id = group["visit_occurrence_id"]
-        person_id = group["person_id"]
-        event_datetime = group["event_datetime"]
-        for (concept_id, value) in zip(group["concepts"], group["values"]):
-            r: SqlRow = {
-                "measurement_concept_id": concept_id,
-                "person_id": person_id,
-                "visit_occurrence_id": visit_occurrence_id,
-                "measurement_datetime": event_datetime,
-                "measurement_date": event_datetime.date(),
-                "measurement_type_concept_id": group["concepts"][concept_id][0],
-                "unit_concept_id": group["concepts"][concept_id][1],
-                "value_as_number": value,
-            }
-            rows.append(r)
-        return rows
-
-    def populate_group_values_on_date(
-        person_id: int,
-        visit_occurrence_id: int,
-        event_datetime: dt.datetime,
-    ) -> List[SqlRow]:
-
-        rows: List[SqlRow] = []
-        blood_pressure: GroupedMeasurements = {
-            "person_id": person_id,
-            "visit_occurrence_id": visit_occurrence_id,
-            "measurements": {Systolic_blood_pressure_by_Noninvasive: {"measurement_type_concept_id": measurement_type_concept_id_bp, 
-                                                                      "unit_concept_id": unit_concept_id_bp, 
-                                                                      "event_datetime": event_datetime,
-                                                                    "value": None,
-                                                                    "generator": generators["timeseries"]},
-                                Diastolic_blood_pressure_by_Noninvasive: {"measurement_type_concept_id": measurement_type_concept_id_bp, 
-                                                                         "unit_concept_id": unit_concept_id_bp, 
-                                                                         "event_datetime": event_datetime,
-                                                                        "value": None,
-                                                                        "generator": generators["diastolic"]}}
-        }
-
-        body_temperature: GroupedMeasurements = {
-            "person_id": person_id,
-            "visit_occurrence_id": visit_occurrence_id,
-            "measurements": {Body_temperature: {"measurement_type_concept_id": measurement_type_concept_id_temp,
-                                                "unit_concept_id": unit_concept_id_temp,
-                                                "event_datetime": event_datetime,
-                                                "value": None,
-                                                "generator": generators["timeseries"]}}
-        }
-
-        rows: List[SqlRow] = toSqlRows(generate_group_values(blood_pressure)) + toSqlRows(generate_group_values(body_temperature))
-        return rows
-    
-    event_datetimes = random_event_times(10.0, visit_occurrence)
-    events: list[tuple[str, SqlRow]] = []
-    for event_datetime in sorted(event_datetimes):
-        systolic, diastolic = populate_group_values_on_date(cast(int, person["person_id"]),
-            cast(int, visit_occurrence["visit_occurrence_id"]),
-            event_datetime)
-        events.append(("measurement", systolic))
-        events.append(("measurement", diastolic))
-    return events
-
 def generate(
-    generic: Generic,
-    src_stats: SrcStats,
-) -> Generator[tuple[str, SqlRow], SqlRow, None]:
+        generic: Generic,
+        src_stats: stypes.SrcStats,
+) -> Generator[tuple[str, stypes.SqlRow], stypes.SqlRow, None]:
     """Yield all the data related to a single patient.
 
     This includes, in order
@@ -370,12 +139,14 @@ def generate(
     # abs to avoid negative rates due to random normal variation
     avg_rate = abs(random_normal(
         src_stats["avg_measurements_per_visit_hour"][0]['avg_measurements_per_hour'],
-        src_stats["avg_measurements_per_visit_hour"][0]['stddev_measurements_per_hour'] ))
+        src_stats["avg_measurements_per_visit_hour"][0]['stddev_measurements_per_hour'])
+    )
 
-    for event in gen_blood_pressure_events(
-        avg_rate,
-        visit_occurrence,
-        person,
-        src_stats,
-    ):
-        yield event
+    print(f"Generating blood pressure events at an average rate of {avg_rate} per hour. Using IID sampling.")
+    bp_rows = generate_bp_rows_for_dates(
+        person=person,  
+        visit_occurrence=visit_occurrence,
+        event_datetimes=random_event_times(avg_rate, visit_occurrence),
+        src_stats=src_stats,
+    )
+    yield [("measurement", row) for row in bp_rows]
