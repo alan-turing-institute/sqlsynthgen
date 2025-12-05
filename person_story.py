@@ -109,7 +109,7 @@ def random_event_times(avg_rate: float, visit_occurrence: stypes.SqlRow) -> list
         start + period * cast(float, fraction)
         for fraction in np.random.uniform(size=num_events)
     ]
-    return datetimes
+    return sorted(datetimes)
 
 
 def generate(

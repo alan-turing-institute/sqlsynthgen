@@ -4,7 +4,6 @@ from typing import List,cast, TypedDict, Callable, ParamSpec, TypeVar, Optional
 import datetime as dt
 import numpy as np
 from sqlsynthgen.utils import generate_time_series
-
 Body_temperature = 3025315
 measurement_type_concept_id_temp = 32817 # EHR measurement
 unit_concept_id_temp = 9289  # degree Celsius
@@ -28,8 +27,14 @@ class exposure(TypedDict):
     generator_name: str
     parameters: Optional[dict[str, float]]
 
+class treatment(TypedDict):
+    drug_concept_id: int
+    exposure_type_concept_id: int
+    threshold: float
+    consecutive_exposure_readings: int
+
 generators:dict[str, Generator_Func[[int], List[float]]] = {
-    "body_temperature": random_normal
+    "body_temperature": time_series
 }    
 
 def run_generator(name: str, *args, **kwargs) -> float:
@@ -67,7 +72,15 @@ def generate_measurement_rows_for_dates(
             "measurement_type_concept_id": measurement_type_concept_id_temp,
             "generator_name": "body_temperature",
             "rate": rate,
-            "parameters": {"loc": 37.0, "scale": 0.5}
+            "parameters": {"mean": 37.0, "std": 0.5, "epsilon_std": 0.1, "drift": 0.05}
+        }
+    ]
+
+    list_of_treatments:List[treatment] = [
+        {
+            "drug_concept_id": unit_concept_id_temp,
+            "exposure_type_concept_id": measurement_type_concept_id_temp,
+            "threshold": 38.0
         }
     ]
     

@@ -331,8 +331,6 @@ def random_walk_with_drift(
     -------
     np.ndarray
         Generated random walk time series of length N
-
-
     """
     x = np.empty(N)
     x[0] = x0
