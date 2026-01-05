@@ -2,22 +2,13 @@
 from asyncio import events
 import datetime as dt
 from typing import Generator,Optional, cast
-from sqlsynthgen.utils import generate_time_series, logger
+from sqlsynthgen.utils import logger
+from sqlsynthgen.utils_values import random_normal, random_event_times
 import numpy as np
 from mimesis import Generic
 import random
-from blood_pressure_story import generate_bp_rows_for_dates
+from blood_pressure_story import generate_bp_rows
 import story_types as stypes
-
-def random_normal(mean: float, std_dev: Optional[float] = None) -> float:
-    """Return a normal distributed value with the given mean and standard deviation.
-
-    If no standard devation is given, we assume it to be sqrt(abs(mean)).
-    """
-    return cast(
-        float,
-        np.random.normal(mean, std_dev if std_dev is not None else np.sqrt(abs(mean))),
-    )
 
 
 def gen_death(
@@ -97,22 +88,6 @@ def gen_visit_occurrence(
         },
     )
 
-
-def random_event_times(avg_rate: float, visit_occurrence: stypes.SqlRow) -> list[dt.datetime]:
-    """Return random times during a visit, occurring roughly at the given rate."""
-    start = cast(dt.datetime, visit_occurrence["visit_start_datetime"])
-    end = cast(dt.datetime, visit_occurrence["visit_end_datetime"])
-    period = end - start
-    events_per_hour = abs(random_normal(avg_rate))
-    period_hours = period.seconds / 3600
-    num_events = int(round(events_per_hour * period_hours))
-    datetimes = [
-        start + period * cast(float, fraction)
-        for fraction in np.random.uniform(size=num_events)
-    ]
-    return sorted(datetimes)
-
-
 def generate(
         generic: Generic,
         src_stats: stypes.SrcStats,
@@ -137,19 +112,9 @@ def generate(
     death_row = (yield death) if death else None
     visit_occurrence = yield gen_visit_occurrence(person, death_row, src_stats)
     
-    # abs to avoid negative rates due to random normal variation
-    avg_rate = abs(random_normal(
-        src_stats["avg_measurements_per_visit_hour"][0]['avg_measurements_per_hour'],
-        src_stats["avg_measurements_per_visit_hour"][0]['stddev_measurements_per_hour'])
-    )
-
-    # print(f"\nGenerating blood pressure events at an average rate of {avg_rate} per hour. Using IID sampling.")
-    blood_pressure_datetimes = random_event_times(avg_rate, visit_occurrence)
-    
-    bp_rows = generate_bp_rows_for_dates(
+    bp_rows = generate_bp_rows(
         person=person,  
         visit_occurrence=visit_occurrence,
-        event_datetimes=blood_pressure_datetimes,
         src_stats=src_stats,
     )
     for row in bp_rows:

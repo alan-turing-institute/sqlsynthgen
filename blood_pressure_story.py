@@ -1,7 +1,8 @@
 import datetime as dt
 from typing import Callable, List, Union, cast, TypedDict, Dict
-from sqlsynthgen.utils import generate_time_series, logger
-
+from sqlsynthgen.utils_timeseries import generate_time_series
+from sqlsynthgen.utils import logger
+from sqlsynthgen.utils_values import random_normal, random_event_times
 import numpy as np
 import story_types as stypes
 
@@ -40,10 +41,9 @@ def get_diastolic_from_systolic(systolic:List[float], avg_difference: float) -> 
     """Estimate diastolic value from systolic value."""
     return [s - avg_difference for s in systolic]
 
-def generate_bp_rows_for_dates(
+def generate_bp_rows(
     person: stypes.SqlRow,
     visit_occurrence: stypes.SqlRow,
-    event_datetimes: List[dt.datetime],
     src_stats: stypes.SrcStats,
 ) -> List[tuple[str, stypes.SqlRow]]:
     """Generate events for a visit occurrence, at a given rate with a given generator.
@@ -51,6 +51,15 @@ def generate_bp_rows_for_dates(
     This is a utility function for generating multiple rows for one of the "event"
     tables (measurements, observation, etc.).
     """
+
+    avg_rate_bp = abs(random_normal(
+        src_stats["avg_measurements_per_visit_hour"][0]['avg_measurements_per_hour'],
+        src_stats["avg_measurements_per_visit_hour"][0]['stddev_measurements_per_hour'])
+    )
+
+    # print(f"\nGenerating blood pressure events at an average rate of {avg_rate} per hour. Using IID sampling.")
+    event_datetimes = random_event_times(avg_rate_bp, visit_occurrence)
+
     person_id = cast(int, person["person_id"])
     visit_occurrence_id = cast(int, visit_occurrence["visit_occurrence_id"])
     gender = cast(int, person["gender_concept_id"])
@@ -104,7 +113,5 @@ def generate_bp_rows_for_dates(
     }
     
     bp_rows = toSqlRows(bp_group)
-    # events: list[tuple[str, stypes.SqlRow]] = [("measurement", row) for row in bp_rows]
-    # for idx, (table_name, row) in enumerate(events[:1]):
-    #     logger.debug(f"\nSample {idx} of {len(events)}: {table_name} {row}")
-    return [("measurement", bp_rows[0])]
+    events: list[tuple[str, stypes.SqlRow]] = [("measurement", row) for row in bp_rows]
+    return events
