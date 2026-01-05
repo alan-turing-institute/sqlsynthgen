@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Any, Dict, Literal
 
+
 def generate_time_series(
     N: int,
     model_option: Literal["iid", "random_walk", "ar1"],
@@ -57,10 +58,7 @@ def generate_time_series(
     # MODEL 2: Random Walk
     # ----------------------------
 
-    x0: float = rng.normal(
-        loc=model_params["mean"],
-        scale=model_params["std"]
-    )
+    x0: float = rng.normal(loc=model_params["mean"], scale=model_params["std"])
     if model_option == "random_walk":
         required = ["drift", "epsilon_std"]
         for key in required:
@@ -98,12 +96,9 @@ def generate_time_series(
 
 
 def sample_iid_gaussian(
-    N: int,
-    mu: float,
-    sigma: float,
-    rng: np.random.Generator
+    N: int, mu: float, sigma: float, rng: np.random.Generator
 ) -> np.ndarray:
-    """"
+    """ "
     Generate an IID Gaussian time series.
 
     Parameters
@@ -124,13 +119,8 @@ def sample_iid_gaussian(
     return rng.normal(loc=mu, scale=sigma, size=N)
 
 
-
 def random_walk_with_drift(
-    N: int,
-    x0: float,
-    drift: float,
-    sigma_eps: float,
-    rng: np.random.Generator
+    N: int, x0: float, drift: float, sigma_eps: float, rng: np.random.Generator
 ) -> np.ndarray:
     """
     Generate a random walk time series with drift.
@@ -154,22 +144,17 @@ def random_walk_with_drift(
     """
 
     if sigma_eps < 0 or not np.isfinite(sigma_eps):
-       sigma_eps = 0.0
-    
+        sigma_eps = 0.0
+
     x = np.empty(N)
     x[0] = x0
     for t in range(1, N):
-        x[t] = x[t-1] + drift + rng.normal(0.0, sigma_eps)
+        x[t] = x[t - 1] + drift + rng.normal(0.0, sigma_eps)
     return x
 
 
 def ar1_process(
-    N: int,
-    x0: float,
-    mu: float,
-    phi: float,
-    sigma_eps: float,
-    rng: np.random.Generator
+    N: int, x0: float, mu: float, phi: float, sigma_eps: float, rng: np.random.Generator
 ) -> np.ndarray:
     """
     Generate an AR(1) time series.
@@ -200,5 +185,5 @@ def ar1_process(
     x[0] = x0
     for t in range(1, N):
         eps = rng.normal(0.0, sigma_eps)
-        x[t] = mu + phi * (x[t-1] - mu) + eps
+        x[t] = mu + phi * (x[t - 1] - mu) + eps
     return x

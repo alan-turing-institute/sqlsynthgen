@@ -1,7 +1,7 @@
 """Story generators for the CC HIC OMOP schema."""
 from asyncio import events
 import datetime as dt
-from typing import Generator,Optional, cast
+from typing import Generator, Optional, cast
 from sqlsynthgen.utils import logger
 from sqlsynthgen.utils_values import random_normal, random_event_times
 import numpy as np
@@ -12,7 +12,7 @@ import story_types as stypes
 
 
 def gen_death(
-        generic: Generic, person: stypes.SqlRow, src_stats: stypes.SrcStats
+    generic: Generic, person: stypes.SqlRow, src_stats: stypes.SrcStats
 ) -> Optional[tuple[str, stypes.SqlRow]]:
     """Generate a row for the death table."""
 
@@ -24,11 +24,18 @@ def gen_death(
         return None
     else:
         avg_age_at_death_days = src_stats["age_at_death"][0]["average_age_years"] * 365
-        std_dev_age_at_death_days = src_stats["age_at_death"][0]["stddev_age_years"] * 365
+        std_dev_age_at_death_days = (
+            src_stats["age_at_death"][0]["stddev_age_years"] * 365
+        )
         age_at_death_days = abs(
-            random_normal(cast(float, avg_age_at_death_days), cast(float, std_dev_age_at_death_days)))
+            random_normal(
+                cast(float, avg_age_at_death_days),
+                cast(float, std_dev_age_at_death_days),
+            )
+        )
         death_datetime = cast(dt.datetime, person["birth_datetime"]) + dt.timedelta(
-            days=age_at_death_days)
+            days=age_at_death_days
+        )
         return "death", {
             "person_id": person["person_id"],
             "death_datetime": death_datetime,
@@ -37,26 +44,34 @@ def gen_death(
 
 
 def gen_visit_occurrence(
-        person: stypes.SqlRow, death: Optional[stypes.SqlRow], src_stats: stypes.SrcStats
+    person: stypes.SqlRow, death: Optional[stypes.SqlRow], src_stats: stypes.SrcStats
 ) -> tuple[str, stypes.SqlRow]:
     """Generate a row for the visit_occurrence table."""
     age_days_at_visit_start = abs(
-        random_normal(
-            cast(float, 63 * 365), cast(float, 13 * 365)
-        )
+        random_normal(cast(float, 63 * 365), cast(float, 13 * 365))
     )
     if person["gender_concept_id"] == 8532:
         age_days_at_visit_start = abs(
             random_normal(
-                cast(float, src_stats["age_first_admission"][0]["average_age_years"] * 365),
-                cast(float, src_stats["age_first_admission"][0]["stddev_age_years"] * 365)
+                cast(
+                    float,
+                    src_stats["age_first_admission"][0]["average_age_years"] * 365,
+                ),
+                cast(
+                    float, src_stats["age_first_admission"][0]["stddev_age_years"] * 365
+                ),
             )
         )
     if person["gender_concept_id"] == 8507:
         age_days_at_visit_start = abs(
             random_normal(
-                cast(float, src_stats["age_first_admission"][1]["average_age_years"] * 365),
-                cast(float, src_stats["age_first_admission"][1]["stddev_age_years"] * 365)
+                cast(
+                    float,
+                    src_stats["age_first_admission"][1]["average_age_years"] * 365,
+                ),
+                cast(
+                    float, src_stats["age_first_admission"][1]["stddev_age_years"] * 365
+                ),
             )
         )
     visit_start_datetime = cast(dt.datetime, person["birth_datetime"]) + dt.timedelta(
@@ -88,9 +103,10 @@ def gen_visit_occurrence(
         },
     )
 
+
 def generate(
-        generic: Generic,
-        src_stats: stypes.SrcStats,
+    generic: Generic,
+    src_stats: stypes.SrcStats,
 ) -> Generator[tuple[str, stypes.SqlRow], stypes.SqlRow, None]:
     """Yield all the data related to a single patient.
 
@@ -111,12 +127,11 @@ def generate(
     death = gen_death(generic, person, src_stats)
     death_row = (yield death) if death else None
     visit_occurrence = yield gen_visit_occurrence(person, death_row, src_stats)
-    
+
     bp_rows = generate_bp_rows(
-        person=person,  
+        person=person,
         visit_occurrence=visit_occurrence,
         src_stats=src_stats,
     )
     for row in bp_rows:
         yield row
-

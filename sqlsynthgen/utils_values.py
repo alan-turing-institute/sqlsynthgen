@@ -14,7 +14,10 @@ def random_normal(mean: float, std_dev: Optional[float] = None) -> float:
         np.random.normal(mean, std_dev if std_dev is not None else np.sqrt(abs(mean))),
     )
 
-def random_event_times(avg_rate: float, visit_occurrence: stypes.SqlRow) -> list[dt.datetime]:
+
+def random_event_times(
+    avg_rate: float, visit_occurrence: stypes.SqlRow
+) -> list[dt.datetime]:
     """Return random times during a visit, occurring roughly at the given rate."""
     start = cast(dt.datetime, visit_occurrence["visit_start_datetime"])
     end = cast(dt.datetime, visit_occurrence["visit_end_datetime"])
