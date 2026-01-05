@@ -1,7 +1,8 @@
 """Story generators for the CC HIC OMOP schema."""
+from asyncio import events
 import datetime as dt
 from typing import Generator,Optional, cast
-from sqlsynthgen.utils import generate_time_series
+from sqlsynthgen.utils import generate_time_series, logger
 import numpy as np
 from mimesis import Generic
 import random
@@ -135,18 +136,22 @@ def generate(
     death = gen_death(generic, person, src_stats)
     death_row = (yield death) if death else None
     visit_occurrence = yield gen_visit_occurrence(person, death_row, src_stats)
-
+    
     # abs to avoid negative rates due to random normal variation
     avg_rate = abs(random_normal(
         src_stats["avg_measurements_per_visit_hour"][0]['avg_measurements_per_hour'],
         src_stats["avg_measurements_per_visit_hour"][0]['stddev_measurements_per_hour'])
     )
 
-    print(f"Generating blood pressure events at an average rate of {avg_rate} per hour. Using IID sampling.")
+    # print(f"\nGenerating blood pressure events at an average rate of {avg_rate} per hour. Using IID sampling.")
+    blood_pressure_datetimes = random_event_times(avg_rate, visit_occurrence)
+    
     bp_rows = generate_bp_rows_for_dates(
         person=person,  
         visit_occurrence=visit_occurrence,
-        event_datetimes=random_event_times(avg_rate, visit_occurrence),
+        event_datetimes=blood_pressure_datetimes,
         src_stats=src_stats,
     )
-    yield [("measurement", row) for row in bp_rows]
+    for row in bp_rows:
+        yield row
+

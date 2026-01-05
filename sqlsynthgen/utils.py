@@ -332,10 +332,14 @@ def random_walk_with_drift(
     np.ndarray
         Generated random walk time series of length N
     """
+
+    if sigma_eps < 0 or not np.isfinite(sigma_eps):
+       sigma_eps = 0.0
+    
     x = np.empty(N)
     x[0] = x0
     for t in range(1, N):
-        x[t] = x[t-1] + drift + rng.normal(0.0, sigma_eps)*100
+        x[t] = x[t-1] + drift + rng.normal(0.0, sigma_eps)
     return x
 
 

@@ -1,6 +1,6 @@
 import datetime as dt
 from typing import Callable, List, Union, cast, TypedDict, Dict
-from sqlsynthgen.utils import generate_time_series
+from sqlsynthgen.utils import generate_time_series, logger
 
 import numpy as np
 import story_types as stypes
@@ -36,7 +36,7 @@ def toSqlRows(
             rows.append(r)
     return rows
 
-def get_diastolic_from_systolic(systolic:List[float]) -> float:
+def get_diastolic_from_systolic(systolic:List[float], avg_difference: float) -> float:
     """Estimate diastolic value from systolic value."""
     return [s - avg_difference for s in systolic]
 
@@ -45,7 +45,7 @@ def generate_bp_rows_for_dates(
     visit_occurrence: stypes.SqlRow,
     event_datetimes: List[dt.datetime],
     src_stats: stypes.SrcStats,
-) -> List[stypes.SqlRow]:
+) -> List[tuple[str, stypes.SqlRow]]:
     """Generate events for a visit occurrence, at a given rate with a given generator.
 
     This is a utility function for generating multiple rows for one of the "event"
@@ -82,7 +82,7 @@ def generate_bp_rows_for_dates(
                                                 {'mean': src_stats[main_key][index_gender][key_mean],
                                                     'std': src_stats[main_key][index_gender][key_std],
                                                     'epsilon_std': sample_epsilon, 'drift': 0}))
-    diastolic_values = get_diastolic_from_systolic(systolic_values, avg_difference)
+    diastolic_values = get_diastolic_from_systolic(systolic_values, src_stats[main_key][index_gender]["average_systolic_diastolic_difference"])
 
     bp_group: stypes.GroupedMeasurements = {
         "person_id": person_id,
@@ -102,5 +102,9 @@ def generate_bp_rows_for_dates(
             }
         }
     }
-    return toSqlRows(bp_group)
-        
+    
+    bp_rows = toSqlRows(bp_group)
+    # events: list[tuple[str, stypes.SqlRow]] = [("measurement", row) for row in bp_rows]
+    # for idx, (table_name, row) in enumerate(events[:1]):
+    #     logger.debug(f"\nSample {idx} of {len(events)}: {table_name} {row}")
+    return [("measurement", bp_rows[0])]

@@ -742,10 +742,14 @@ class measurementGenerator(TableGenerator):
         result["measurement_source_concept_id"] = generic.null_provider.null()
         result["operator_concept_id"] = generic.null_provider.null()
         result["measurement_concept_id"] = generic.null_provider.null()
-        result["person_id"] = generic.null_provider.null()
+        result["person_id"] = generic.column_value_provider.column_value(
+            dst_db_conn, orm.Person, "person_id"
+        )
         result["provider_id"] = generic.null_provider.null()
         result["unit_concept_id"] = generic.null_provider.null()
-        result["visit_occurrence_id"] = generic.null_provider.null()
+        result["visit_occurrence_id"] =  generic.column_value_provider.column_value(
+            dst_db_conn, orm.VisitOccurrence, "visit_occurrence_id"
+        )
         result["measurement_date"] = generic.datetime.date()
         result["measurement_datetime"] = generic.datetime.datetime()
         result["value_as_number"] = generic.numeric.float_number()
@@ -922,7 +926,7 @@ table_generator_dict = {
     # "condition_occurrence": condition_occurrenceGenerator(),
     # "device_exposure": device_exposureGenerator(),
     # "drug_exposure": drug_exposureGenerator(),
-    # "measurement": measurementGenerator(),
+    "measurement": measurementGenerator(),
     # "note": noteGenerator(),
     # "observation": observationGenerator(),
     # "procedure_occurrence": procedure_occurrenceGenerator(),

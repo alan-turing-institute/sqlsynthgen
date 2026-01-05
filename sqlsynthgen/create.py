@@ -97,6 +97,7 @@ def _populate_story(
         table_name, provided_values = next(story)
         while True:
             table = table_dict[table_name]
+            logger.debug("\nProviding into table %s / %s : %s", table_name, table.name, provided_values)
             if table.name in table_generator_dict:
                 table_generator = table_generator_dict[table.name]
                 default_values = table_generator(dst_conn)
@@ -117,6 +118,7 @@ def _populate_story(
                 return_values = {}
             final_values = {**insert_values, **return_values}
             row_counts[table_name] = row_counts.get(table_name, 0) + 1
+            logger.debug("\nFinalised into table %s / %s : %s", table_name, table.name, final_values)
             table_name, provided_values = story.send(final_values)
     except StopIteration:
         # The story has finished, it has no more rows to generate
