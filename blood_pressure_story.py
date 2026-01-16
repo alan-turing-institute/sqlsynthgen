@@ -1,74 +1,30 @@
+from typing import Sequence, cast
 import datetime as dt
-from typing import Callable, List, Union, cast, TypedDict, Dict
-from sqlsynthgen.utils_timeseries import generate_time_series
-from sqlsynthgen.utils import logger
-from sqlsynthgen.utils_values import random_normal, random_event_times
 import numpy as np
-from measurement_registry import register_measurement_generator
+
+import measurement_registry
 import story_types as stypes
+from measurement_registry import register_measurement_generator
+from measurement_story import (
+    build_measurement_rows,
+    sample_measurement_datetimes,
+    sample_measurement_values,
+)
 
 Systolic_blood_pressure_by_Noninvasive = 21492239
 Diastolic_blood_pressure_by_Noninvasive = 21492240
 measurement_type_concept_id_bp = 32817  # EHR measurement
-avg_systolic = 114.236842
-avg_diastolic = 74.447368
-avg_difference = avg_systolic - avg_diastolic
 unit_concept_id_bp = 8876  # mmHg
 
 
-def toSqlRows(
-    group: stypes.GroupedMeasurements,
-) -> List[stypes.SqlRow]:
-    """Generate SqlRows for the measurement table."""
-    rows: List[stypes.SqlRow] = []
-    visit_occurrence_id = group["visit_occurrence_id"]
-    person_id = group["person_id"]
-    for concept_id, item in group["measurements"].items():
-        for event_datetime, value in item["datetime_value"].items():
-            r: stypes.SqlRow = {
-                "measurement_concept_id": concept_id,
-                "person_id": person_id,
-                "visit_occurrence_id": visit_occurrence_id,
-                "measurement_datetime": event_datetime,
-                "measurement_date": event_datetime.date(),
-                "measurement_type_concept_id": item["measurement_type_concept_id"],
-                "unit_concept_id": item["unit_concept_id"],
-                "value_as_number": value,
-            }
-            rows.append(r)
-    return rows
-
-
-def get_diastolic_from_systolic(systolic: List[float], avg_difference: float) -> float:
-    """Estimate diastolic value from systolic value."""
-    return [s - avg_difference for s in systolic]
-
-
-
 def _generate_bp_events(
+    tokens: Sequence[measurement_registry.MeasurementKey],
     person: stypes.SqlRow,
     visit_occurrence: stypes.SqlRow,
     src_stats: stypes.SrcStats,
+    visit_unique: bool = False,
 ) -> list[tuple[str, stypes.SqlRow]]:
-    """Generate events for a visit occurrence, at a given rate with a given generator.
-
-    This is a utility function for generating multiple rows for one of the "event"
-    tables (measurements, observation, etc.).
-    """
-
-    avg_rate_bp = abs(
-        random_normal(
-            src_stats["avg_measurements_per_visit_hour"][0][
-                "avg_measurements_per_hour"
-            ],
-            src_stats["avg_measurements_per_visit_hour"][0][
-                "stddev_measurements_per_hour"
-            ],
-        )
-    )
-
-    # print(f"\nGenerating blood pressure events at an average rate of {avg_rate} per hour. Using IID sampling.")
-    event_datetimes = random_event_times(avg_rate_bp, visit_occurrence)
+    """Generate blood pressure measurement rows using shared measurement helpers."""
 
     person_id = cast(int, person["person_id"])
     visit_occurrence_id = cast(int, visit_occurrence["visit_occurrence_id"])
@@ -77,6 +33,17 @@ def _generate_bp_events(
         cast(dt.datetime, visit_occurrence["visit_start_datetime"])
         - cast(dt.datetime, person["birth_datetime"])
     ).days / 365.25
+
+    event_count = max(1, len(tokens))
+
+    # add some randomness to the number of events
+    if visit_unique and event_count > 1:
+        event_count = max(1, int(event_count * (1 + np.random.uniform(-0.2, 0.2))))
+
+    event_datetimes = sample_measurement_datetimes(event_count, visit_occurrence)
+    if not event_datetimes:
+        return []
+    value_count = len(event_datetimes)
 
     main_key = "bp_profile"
     relative_change_key = "bp_sys_relative_change_stats"
@@ -101,50 +68,45 @@ def _generate_bp_events(
         src_stats[relative_change_key][index_gender][key_epsilon_std],
     )
 
-    systolic_values = np.round(
-        generate_time_series(
-            len(event_datetimes),
-            "random_walk",
-            {
-                "mean": src_stats[main_key][index_gender][key_mean],
-                "std": src_stats[main_key][index_gender][key_std],
-                "epsilon_std": sample_epsilon,
-                "drift": 0,
-            },
+    systolic_values = np.asarray(
+        sample_measurement_values(
+            value_count,
+            mean=src_stats[main_key][index_gender][key_mean],
+            std=src_stats[main_key][index_gender][key_std],
+            epsilon_override=float(abs(sample_epsilon)),
         )
     )
-    diastolic_values = get_diastolic_from_systolic(
-        systolic_values,
-        src_stats[main_key][index_gender]["average_systolic_diastolic_difference"],
+    diastolic_values = (
+        systolic_values
+        - src_stats[main_key][index_gender][
+            "average_systolic_diastolic_difference"
+        ]
     )
 
-    bp_group: stypes.GroupedMeasurements = {
-        "person_id": person_id,
-        "visit_occurrence_id": visit_occurrence_id,
-        "measurements": {
-            Systolic_blood_pressure_by_Noninvasive: {
-                "unit_concept_id": unit_concept_id_bp,
-                "measurement_type_concept_id": measurement_type_concept_id_bp,
-                "generator": lambda x: x,
-                "datetime_value": {
-                    event_datetimes[i]: systolic_values[i]
-                    for i in range(len(event_datetimes))
-                },
-            },
-            Diastolic_blood_pressure_by_Noninvasive: {
-                "unit_concept_id": unit_concept_id_bp,
-                "measurement_type_concept_id": measurement_type_concept_id_bp,
-                "generator": lambda x: x,
-                "datetime_value": {
-                    event_datetimes[i]: diastolic_values[i]
-                    for i in range(len(event_datetimes))
-                },
-            },
+    series = [
+        {
+            "measurement_concept_id": Systolic_blood_pressure_by_Noninvasive,
+            "measurement_type_concept_id": measurement_type_concept_id_bp,
+            "unit_concept_id": unit_concept_id_bp,
+            "datetimes": event_datetimes,
+            "values": systolic_values.tolist(),
         },
-    }
+        {
+            "measurement_concept_id": Diastolic_blood_pressure_by_Noninvasive,
+            "measurement_type_concept_id": measurement_type_concept_id_bp,
+            "unit_concept_id": unit_concept_id_bp,
+            "datetimes": event_datetimes,
+            "values": diastolic_values.tolist(),
+        },
+    ]
 
-    bp_rows = toSqlRows(bp_group)
-    return [("measurement", row) for row in bp_rows]
+    return build_measurement_rows(series, person_id, visit_occurrence_id)
+
+def _generate_bp_diastolic(tokens: Sequence[measurement_registry.MeasurementKey], person: stypes.SqlRow, visit_occurrence: stypes.SqlRow, src_stats: stypes.SrcStats, visit_unique: bool = False,
+) -> list[tuple[str, stypes.SqlRow]]:
+    "Do not generate blood pressure diastolic measurement as is already generated in _generate_bp_events."
+    return []
 
 
-register_measurement_generator([measurement_type_concept_id_bp, "blood_pressure"], _generate_bp_events)
+register_measurement_generator([Systolic_blood_pressure_by_Noninvasive, "blood_pressure_all"], _generate_bp_events)
+register_measurement_generator([Diastolic_blood_pressure_by_Noninvasive, "blood_pressure_diastolic"], _generate_bp_diastolic)

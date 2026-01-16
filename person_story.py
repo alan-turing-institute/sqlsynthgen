@@ -142,7 +142,12 @@ def generate(
         "measurement_types"
     ].split(",")
 
+    visit_unique = True if src_stats["measurements_in_visits"][choice_idx][
+        "visit_count"] < 2 else False
+
     for event in dispatch_measurement_generators(
-        measurement_tokens, person, visit_occurrence, src_stats
+        measurement_tokens, person, visit_occurrence, src_stats, visit_unique
     ):
         yield event
+
+

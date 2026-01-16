@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import datetime as dt
 from collections import Counter
-from typing import List, Sequence, cast
+from typing import Iterable, List, Sequence, cast
 
 import numpy as np
 
@@ -12,7 +12,7 @@ from measurement_registry import register_default_measurement_generator
 from sqlsynthgen.utils import logger
 from sqlsynthgen.utils_timeseries import generate_time_series
 
-DEFAULT_MEASUREMENT_TYPE_CONCEPT_ID = 32817  # EHR measurement
+DEFAULT_MEASUREMENT_TYPE_CONCEPT_ID = 0  # EHR measurement
 DEFAULT_UNIT_CONCEPT_ID = 0
 _DEFAULT_MEAN = 1.0
 _DEFAULT_STD = 0.25
@@ -33,23 +33,34 @@ def _to_int(token: int | str) -> int | None:
             return None
 
 
-def _sample_values(count: int, mean: float, std: float) -> List[float]:
+def sample_measurement_values(
+    count: int,
+    mean: float = _DEFAULT_MEAN,
+    std: float = _DEFAULT_STD,
+    epsilon_override: float | None = None,
+    drift: float = _DEFAULT_DRIFT,
+) -> List[float]:
     if count <= 0:
         return []
+    epsilon_std = (
+        epsilon_override
+        if epsilon_override is not None
+        else max(std * 0.2, _DEFAULT_EPSILON)
+    )
     series = generate_time_series(
         count,
         "random_walk",
         {
             "mean": mean,
             "std": std,
-            "epsilon_std": max(std * 0.2, _DEFAULT_EPSILON),
-            "drift": _DEFAULT_DRIFT,
+            "epsilon_std": epsilon_std,
+            "drift": drift,
         },
     )
     return np.asarray(series, dtype=float).tolist()
 
 
-def _random_datetimes_for_count(
+def sample_measurement_datetimes(
     count: int, visit_occurrence: stypes.SqlRow
 ) -> List[dt.datetime]:
     start = cast(dt.datetime, visit_occurrence["visit_start_datetime"])
@@ -63,11 +74,42 @@ def _random_datetimes_for_count(
     return sorted(start + period * float(fraction) for fraction in fractions)
 
 
+def build_measurement_rows(
+    series_list: Iterable[stypes.MeasurementSeries],
+    person_id: int,
+    visit_occurrence_id: int,
+) -> List[tuple[str, stypes.SqlRow]]:
+    rows: List[tuple[str, stypes.SqlRow]] = []
+    for series in series_list:
+        datetimes = series["datetimes"]
+        values = series["values"]
+        for measurement_datetime, value in zip(datetimes, values):
+            rows.append(
+                (
+                    "measurement",
+                    {
+                        "measurement_concept_id": series["measurement_concept_id"],
+                        "person_id": person_id,
+                        "visit_occurrence_id": visit_occurrence_id,
+                        "measurement_datetime": measurement_datetime,
+                        "measurement_date": measurement_datetime.date(),
+                        "measurement_type_concept_id": series[
+                            "measurement_type_concept_id"
+                        ],
+                        "unit_concept_id": series["unit_concept_id"],
+                        "value_as_number": value,
+                    },
+                )
+            )
+    return rows
+
+
 def _fallback_measurement_generator(
     tokens: Sequence[int | str],
     person: stypes.SqlRow,
     visit_occurrence: stypes.SqlRow,
     src_stats: stypes.SrcStats,
+    visit_unique: bool = False,
 ) -> List[tuple[str, stypes.SqlRow]]:
     person_id = cast(int, person["person_id"])
     visit_occurrence_id = cast(int, visit_occurrence["visit_occurrence_id"])
@@ -79,27 +121,37 @@ def _fallback_measurement_generator(
             continue
         counts[concept_id] += 1
 
-    rows: list[tuple[str, stypes.SqlRow]] = []
+    series_list: list[stypes.MeasurementSeries] = []
     for concept_id, count in counts.items():
-        event_datetimes = _random_datetimes_for_count(count, visit_occurrence)
-        values = _sample_values(count, _DEFAULT_MEAN, _DEFAULT_STD)
-        for measurement_datetime, value in zip(event_datetimes, values):
-            rows.append(
-                (
-                    "measurement",
-                    {
-                        "measurement_concept_id": concept_id,
-                        "person_id": person_id,
-                        "visit_occurrence_id": visit_occurrence_id,
-                        "measurement_datetime": measurement_datetime,
-                        "measurement_date": measurement_datetime.date(),
-                        "measurement_type_concept_id": concept_id,
-                        "unit_concept_id": None,
-                        "value_as_number": value,
-                    },
-                )
-            )
-    return rows
+        # add random noise to the count values
+        if visit_unique and count > 1:
+            noise = np.random.uniform(-0.2, 0.2)
+            count = max(1, int(round(count * (1 + noise))))
+
+        event_datetimes = sample_measurement_datetimes(count, visit_occurrence)
+
+        measurement_values = [i for i in src_stats['measurement_stats'] if i['measurement_concept_id'] == concept_id]
+        if len(measurement_values)> 0:
+            mean_value = measurement_values[0]['measurement_mean']
+            std_value = measurement_values[0]['measurement_stddev']
+            values = sample_measurement_values(count, mean_value, std_value)
+            measurement_type_concept_id = measurement_values[0]['measurement_type_concept_id']
+            unit_concept_id = DEFAULT_UNIT_CONCEPT_ID
+        else:
+            values = sample_measurement_values(count)
+            measurement_type_concept_id = DEFAULT_MEASUREMENT_TYPE_CONCEPT_ID
+            unit_concept_id = DEFAULT_UNIT_CONCEPT_ID
+
+        series_list.append(
+            {
+                "measurement_concept_id": concept_id,
+                "measurement_type_concept_id": measurement_type_concept_id,
+                "unit_concept_id": unit_concept_id,
+                "datetimes": event_datetimes,
+                "values": values,
+            }
+        )
+    return build_measurement_rows(series_list, person_id, visit_occurrence_id)
 
 
 register_default_measurement_generator(_fallback_measurement_generator)
