@@ -4,6 +4,7 @@ from sqlsynthgen.utils_timeseries import generate_time_series
 from sqlsynthgen.utils import logger
 from sqlsynthgen.utils_values import random_normal, random_event_times
 import numpy as np
+from measurement_registry import register_measurement_generator
 import story_types as stypes
 
 Systolic_blood_pressure_by_Noninvasive = 21492239
@@ -43,11 +44,12 @@ def get_diastolic_from_systolic(systolic: List[float], avg_difference: float) ->
     return [s - avg_difference for s in systolic]
 
 
-def generate_bp_rows(
+
+def _generate_bp_events(
     person: stypes.SqlRow,
     visit_occurrence: stypes.SqlRow,
     src_stats: stypes.SrcStats,
-) -> List[tuple[str, stypes.SqlRow]]:
+) -> list[tuple[str, stypes.SqlRow]]:
     """Generate events for a visit occurrence, at a given rate with a given generator.
 
     This is a utility function for generating multiple rows for one of the "event"
@@ -142,5 +144,7 @@ def generate_bp_rows(
     }
 
     bp_rows = toSqlRows(bp_group)
-    events: list[tuple[str, stypes.SqlRow]] = [("measurement", row) for row in bp_rows]
-    return events
+    return [("measurement", row) for row in bp_rows]
+
+
+register_measurement_generator([measurement_type_concept_id_bp, "blood_pressure"], _generate_bp_events)

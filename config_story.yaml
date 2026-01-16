@@ -103,6 +103,32 @@ src-stats:
               m.visit_occurrence_id,
               v.visit_start_datetime,
               v.visit_end_datetime) subquery;
+  - name: measurements_in_visits
+    query: >
+      WITH types_per_visit AS (
+      SELECT
+        m.visit_occurrence_id,
+        COUNT(*) AS measurements_count,
+        string_agg(
+          COALESCE(m.measurement_source_value, c.concept_name, m.measurement_concept_id::text),
+          ',' ORDER BY COALESCE(m.measurement_source_value, c.concept_name, m.measurement_concept_id::text)
+        ) AS measurement_types,
+        string_agg(
+          COALESCE(c.concept_name, 'UNKNOWN'),
+          ',' ORDER BY COALESCE(m.measurement_source_value, c.concept_name, m.measurement_concept_id::text)
+        ) AS measurement_vocabularies
+      FROM mimic.measurement m
+      LEFT JOIN concept c ON m.measurement_concept_id = c.concept_id
+      WHERE m.visit_occurrence_id IS NOT NULL
+      GROUP BY m.visit_occurrence_id
+      )
+      SELECT
+      measurement_types,
+      ROUND(COUNT(*) / SUM(COUNT(*)) OVER (), 23)::float4 AS percent_of_total
+      FROM types_per_visit
+      GROUP BY measurements_count, measurement_types, measurement_vocabularies
+      HAVING COUNT(*) >= 1
+      ORDER BY measurements_count;
   - name: bp_sys_relative_change_stats
     #For each patient + visit + BP type, sort measurements in time,
     #compute |xₜ − xₜ₋₁| / xₜ₋₁ for each step,

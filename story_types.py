@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Callable, Generator, List, Optional, Union, cast
 from typing import TypedDict, Callable, List, Optional, Dict, Union
 import datetime as dt

@@ -7,7 +7,9 @@ from sqlsynthgen.utils_values import random_normal, random_event_times
 import numpy as np
 from mimesis import Generic
 import random
-from blood_pressure_story import generate_bp_rows
+from measurement_registry import dispatch_measurement_generators
+import blood_pressure_story  # ensures measurement generators register
+import measurement_story  # registers fallback measurement generator
 import story_types as stypes
 
 
@@ -128,10 +130,19 @@ def generate(
     death_row = (yield death) if death else None
     visit_occurrence = yield gen_visit_occurrence(person, death_row, src_stats)
 
-    bp_rows = generate_bp_rows(
-        person=person,
-        visit_occurrence=visit_occurrence,
-        src_stats=src_stats,
-    )
-    for row in bp_rows:
-        yield row
+    # generate measurements that occur during the visit
+    choice_idx = random.choices(
+        range(len(src_stats["measurements_in_visits"])),
+        weights=[
+            src_stats["measurements_in_visits"][i]["percent_of_total"]
+            for i in range(len(src_stats["measurements_in_visits"]))
+        ],
+    )[0]
+    measurement_tokens = src_stats["measurements_in_visits"][choice_idx][
+        "measurement_types"
+    ].split(",")
+
+    for event in dispatch_measurement_generators(
+        measurement_tokens, person, visit_occurrence, src_stats
+    ):
+        yield event

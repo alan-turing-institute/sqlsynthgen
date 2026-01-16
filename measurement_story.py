@@ -1,92 +1,105 @@
+"""Generic measurement story used as a fallback for non-specialized concepts."""
+from __future__ import annotations
+
+import datetime as dt
+from collections import Counter
+from typing import List, Sequence, cast
+
+import numpy as np
 
 import story_types as stypes
-from typing import List,cast, TypedDict, Callable, ParamSpec, TypeVar, Optional
-import datetime as dt
-import numpy as np
-from sqlsynthgen.utils import generate_time_series
+from measurement_registry import register_default_measurement_generator
+from sqlsynthgen.utils import logger
+from sqlsynthgen.utils_timeseries import generate_time_series
 
-Body_temperature = 3025315
-measurement_type_concept_id_temp = 32817 # EHR measurement
-unit_concept_id_temp = 9289  # degree Celsius
+DEFAULT_MEASUREMENT_TYPE_CONCEPT_ID = 32817  # EHR measurement
+DEFAULT_UNIT_CONCEPT_ID = 0
+_DEFAULT_MEAN = 1.0
+_DEFAULT_STD = 0.25
+_DEFAULT_EPSILON = 0.05
+_DEFAULT_DRIFT = 0.0
 
-P = ParamSpec("P")
-R = TypeVar("R", bound=List[float])
-Generator_Func = Callable[P, R]
 
-def random_normal(len:int, loc:float, scale:float) -> List[float]:
-    return [np.random.normal(loc, scale) for _ in range(len)]
+def _to_int(token: int | str) -> int | None:
+    try:
+        return int(token)
+    except (TypeError, ValueError):
+        try:
+            return int(str(token).strip())
+        except (TypeError, ValueError):
+            logger.warning(
+                "Unable to coerce measurement token '%s' to concept_id", token
+            )
+            return None
 
-def time_series(len:int, mean: float, std: float, epsilon_std: float, drift: float) -> List[float]:
-    return np.round(generate_time_series(len, 'random_walk',
-                                                {'mean': mean,
-                                                'std': std,
-                                                'epsilon_std': epsilon_std, 'drift': drift})).tolist()
-class exposure(TypedDict):
-    unit_concept_id: int
-    measurement_type_concept_id: int
-    rate: float
-    generator_name: str
-    parameters: Optional[dict[str, float]]
 
-generators:dict[str, Generator_Func[[int], List[float]]] = {
-    "body_temperature": random_normal
-}    
+def _sample_values(count: int, mean: float, std: float) -> List[float]:
+    if count <= 0:
+        return []
+    series = generate_time_series(
+        count,
+        "random_walk",
+        {
+            "mean": mean,
+            "std": std,
+            "epsilon_std": max(std * 0.2, _DEFAULT_EPSILON),
+            "drift": _DEFAULT_DRIFT,
+        },
+    )
+    return np.asarray(series, dtype=float).tolist()
 
-def run_generator(name: str, *args, **kwargs) -> float:
-    fn = generators[name]       # get the function
-    return fn(*args, **kwargs)  # call it with arbitrary args
 
-def random_event_times(avg_rate: float, visit_occurrence: stypes.SqlRow) -> list[dt.datetime]:
-    """Return random times during a visit, occurring roughly at the given rate."""
+def _random_datetimes_for_count(
+    count: int, visit_occurrence: stypes.SqlRow
+) -> List[dt.datetime]:
     start = cast(dt.datetime, visit_occurrence["visit_start_datetime"])
     end = cast(dt.datetime, visit_occurrence["visit_end_datetime"])
+    if count <= 0:
+        return []
+    if end <= start:
+        return [start for _ in range(count)]
     period = end - start
-    events_per_hour = abs(random_normal(avg_rate))
-    period_hours = period.seconds / 3600
-    num_events = int(round(events_per_hour * period_hours))
-    datetimes = [
-        start + period * cast(float, fraction)
-        for fraction in np.random.uniform(size=num_events)
-    ]
-    return datetimes
+    fractions = np.random.uniform(size=count)
+    return sorted(start + period * float(fraction) for fraction in fractions)
 
-def generate_measurement_rows_for_dates(
+
+def _fallback_measurement_generator(
+    tokens: Sequence[int | str],
     person: stypes.SqlRow,
     visit_occurrence: stypes.SqlRow,
-    rate: float,
     src_stats: stypes.SrcStats,
-) -> List[stypes.SqlRow]:
-    """Generate measurement rows for a visit occurrence at specific event datetimes."""
-    rows = []
+) -> List[tuple[str, stypes.SqlRow]]:
     person_id = cast(int, person["person_id"])
     visit_occurrence_id = cast(int, visit_occurrence["visit_occurrence_id"])
 
-    list_of_exposures:List[exposure] = [
-        {
-            "unit_concept_id": unit_concept_id_temp,
-            "measurement_type_concept_id": measurement_type_concept_id_temp,
-            "generator_name": "body_temperature",
-            "rate": rate,
-            "parameters": {"loc": 37.0, "scale": 0.5}
-        }
-    ]
-    
-    for exp in list_of_exposures:
-        event_datetimes = random_event_times(exp["rate"], visit_occurrence)
-        values = run_generator(generators[exp["generator_name"]], len(event_datetimes), **exp["parameters"])
+    counts: Counter[int] = Counter()
+    for raw_token in tokens:
+        concept_id = _to_int(raw_token)
+        if concept_id is None:
+            continue
+        counts[concept_id] += 1
 
-        for event_datetime, v in zip(event_datetimes, values):
-            r: stypes.SqlRow = {
-                "measurement_concept_id": Body_temperature,
-                "person_id": person_id,
-                "visit_occurrence_id": visit_occurrence_id,
-                "measurement_datetime": event_datetime,
-                "measurement_date": event_datetime.date(),
-                "measurement_type_concept_id": exp["measurement_type_concept_id"],
-                "unit_concept_id": exp["unit_concept_id"],
-                "value_as_number": v,
-            }
-            rows.append(r)
-
-        
+    rows: list[tuple[str, stypes.SqlRow]] = []
+    for concept_id, count in counts.items():
+        event_datetimes = _random_datetimes_for_count(count, visit_occurrence)
+        values = _sample_values(count, _DEFAULT_MEAN, _DEFAULT_STD)
+        for measurement_datetime, value in zip(event_datetimes, values):
+            rows.append(
+                (
+                    "measurement",
+                    {
+                        "measurement_concept_id": concept_id,
+                        "person_id": person_id,
+                        "visit_occurrence_id": visit_occurrence_id,
+                        "measurement_datetime": measurement_datetime,
+                        "measurement_date": measurement_datetime.date(),
+                        "measurement_type_concept_id": concept_id,
+                        "unit_concept_id": None,
+                        "value_as_number": value,
+                    },
+                )
+            )
     return rows
+
+
+register_default_measurement_generator(_fallback_measurement_generator)
