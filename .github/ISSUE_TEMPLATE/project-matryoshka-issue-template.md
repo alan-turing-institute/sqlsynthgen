@@ -7,12 +7,12 @@ assignees: ''
 
 ---
 
-# Description #
+# Description
 
-## Definition of Done ##
+## Definition of Done
 
 - [ ] ...
 
-## Dependencies ##
+## Dependencies
 
-## Comments ##
+## Comments
