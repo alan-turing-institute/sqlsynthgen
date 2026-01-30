@@ -7,6 +7,8 @@ from mimesis import Generic
 import random
 from measurement_registry import dispatch_measurement_generators
 from procedure_registry import dispatch_procedure_generators
+import measurement_story  # noqa: F401
+import procedure_story  # noqa: F401
 import story_types as stypes
 
 
