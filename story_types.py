@@ -25,3 +25,8 @@ class MeasurementSeries(TypedDict):
     unit_concept_id: Optional[int]
     datetimes: Sequence[dt.datetime]
     values: Sequence[float]
+
+class ProcedureSeries(TypedDict):
+    procedure_concept_id: int
+    procedure_type_concept_id: int
+    datetimes: Sequence[dt.datetime]

@@ -2,14 +2,11 @@
 from asyncio import events
 import datetime as dt
 from typing import Generator, Optional, cast
-from sqlsynthgen.utils import logger
 from sqlsynthgen.utils_values import random_normal, random_event_times
-import numpy as np
 from mimesis import Generic
 import random
 from measurement_registry import dispatch_measurement_generators
-import blood_pressure_story  # ensures measurement generators register
-import measurement_story  # registers fallback measurement generator
+from procedure_registry import dispatch_procedure_generators
 import story_types as stypes
 
 
@@ -55,25 +52,15 @@ def gen_visit_occurrence(
     if person["gender_concept_id"] == 8532:
         age_days_at_visit_start = abs(
             random_normal(
-                cast(
-                    float,
-                    src_stats["age_first_admission"][0]["average_age_years"] * 365,
-                ),
-                cast(
-                    float, src_stats["age_first_admission"][0]["stddev_age_years"] * 365
-                ),
+                src_stats["age_first_admission"][0]["average_age_years"] * 365,
+                src_stats["age_first_admission"][0]["stddev_age_years"] * 365,
             )
         )
     if person["gender_concept_id"] == 8507:
         age_days_at_visit_start = abs(
             random_normal(
-                cast(
-                    float,
-                    src_stats["age_first_admission"][1]["average_age_years"] * 365,
-                ),
-                cast(
-                    float, src_stats["age_first_admission"][1]["stddev_age_years"] * 365
-                ),
+                src_stats["age_first_admission"][1]["average_age_years"] * 365,
+                src_stats["age_first_admission"][1]["stddev_age_years"] * 365,
             )
         )
     visit_start_datetime = cast(dt.datetime, person["birth_datetime"]) + dt.timedelta(
@@ -81,8 +68,8 @@ def gen_visit_occurrence(
     )
     visit_length_hours = abs(
         random_normal(
-            cast(float, src_stats["visit_duration"][0]["average_hours"]),
-            cast(float, src_stats["visit_duration"][0]["stddev_hours"])
+            src_stats["visit_duration"][0]["average_hours"],
+            src_stats["visit_duration"][0]["stddev_hours"]
             # cast(float, 6), cast(float, 29*24)
         )
     )
@@ -132,22 +119,39 @@ def generate(
 
     # generate measurements that occur during the visit
     choice_idx = random.choices(
-        range(len(src_stats["measurements_in_visits"])),
+        range(len(src_stats["unique_measurements_in_visits"])),
         weights=[
-            src_stats["measurements_in_visits"][i]["percent_of_total"]
-            for i in range(len(src_stats["measurements_in_visits"]))
+            src_stats["unique_measurements_in_visits"][i]["percent_of_total"]
+            for i in range(len(src_stats["unique_measurements_in_visits"]))
         ],
     )[0]
-    measurement_tokens = src_stats["measurements_in_visits"][choice_idx][
-        "measurement_types"
-    ].split(",")
-
-    visit_unique = True if src_stats["measurements_in_visits"][choice_idx][
-        "visit_count"] < 2 else False
+    measurement_tokens = [
+        token for token in src_stats["unique_measurements_in_visits"][choice_idx][
+            "measurement_type_ids"
+        ].split(",")
+        if token
+    ]
 
     for event in dispatch_measurement_generators(
-        measurement_tokens, person, visit_occurrence, src_stats, visit_unique
+        measurement_tokens, person, visit_occurrence, src_stats
     ):
         yield event
 
+    # generate procedures that occur during the visit, these keep a relationship to the measurements
+    procedure_tokens = [
+        token
+        for token in src_stats["unique_measurements_in_visits"][choice_idx][
+            "procedure_type_ids"
+        ].split(",")
+        if token
+    ]
 
+    print(procedure_tokens)
+
+    #TODO: UNDERSTAND WHY PROCEDURES ARE NOT BEING RECORDED
+    # not all visits have procedures, but if they do, generate them
+    if procedure_tokens:
+        for event in dispatch_procedure_generators(
+            procedure_tokens, person, visit_occurrence, src_stats
+        ):
+            yield event

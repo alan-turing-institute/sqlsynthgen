@@ -64,16 +64,45 @@ src-stats:
       JOIN visit_occurrence v ON p.person_id = v.person_id;
   - name: measurement_stats
     query: >
+      WITH filtered AS (
+        SELECT
+          measurement_concept_id,
+          visit_occurrence_id,
+          value_as_number
+        FROM mimic.measurement
+        WHERE value_as_number IS NOT NULL
+          AND measurement_concept_id <> 0
+      ),
+      measurement_stats AS (
+        SELECT
+          measurement_concept_id,
+          AVG(value_as_number)::float4 AS measurement_mean,
+          STDDEV_SAMP(value_as_number)::float4 AS measurement_stddev
+        FROM filtered
+        GROUP BY measurement_concept_id
+      ),
+      visit_counts AS (
+        SELECT
+          measurement_concept_id,
+          visit_occurrence_id,
+          COUNT(*) AS measurements_per_visit
+        FROM filtered
+        WHERE visit_occurrence_id IS NOT NULL
+        GROUP BY measurement_concept_id, visit_occurrence_id
+      )
       SELECT
-        m.measurement_concept_id,
-        m.measurement_type_concept_id,
-        AVG(m.value_as_number)::float4 AS measurement_mean,
-        STDDEV_SAMP(m.value_as_number)::float4 AS measurement_stddev
-      FROM mimic.measurement as m
-      WHERE m.value_as_number IS NOT NULL
-      AND m.measurement_concept_id <> 0
-      GROUP BY m.measurement_concept_id, m.measurement_type_concept_id
-      ORDER BY m.measurement_concept_id;
+        ms.measurement_concept_id,
+        ms.measurement_mean,
+        ms.measurement_stddev,
+        AVG(vc.measurements_per_visit)::float4 AS measurements_per_visit_avg,
+        STDDEV_SAMP(vc.measurements_per_visit)::float4 AS measurements_per_visit_std
+      FROM measurement_stats ms
+      JOIN visit_counts vc USING (measurement_concept_id)
+      GROUP BY
+        ms.measurement_concept_id,
+        ms.measurement_mean,
+        ms.measurement_stddev
+      ORDER BY ms.measurement_concept_id;
   - name: bp_profile     
     query: >
       SELECT
@@ -97,33 +126,60 @@ src-stats:
           WHERE m.measurement_concept_id IN (21492239, 21492240)
           ) sub
       GROUP BY sub.gender_concept_id;
-  - name: measurements_in_visits
+  - name: unique_measurements_in_visits
     query: >
-      WITH types_per_visit AS (
-            SELECT
+      WITH measurement_per_visit AS (
+          SELECT
               m.visit_occurrence_id,
-              COUNT(*) AS measurements_count,
-              string_agg(
-                COALESCE(m.measurement_concept_id::text),
-                ',' ORDER BY COALESCE(m.measurement_concept_id::text)
-              ) AS measurement_types
-            FROM mimic.measurement m
-            LEFT JOIN concept c ON m.measurement_concept_id = c.concept_id
-            WHERE m.visit_occurrence_id IS NOT NULL
-              AND m.measurement_concept_id <> 0
-            GROUP BY m.visit_occurrence_id
-            )
-            SELECT
-            measurement_types,
-            COUNT(*) AS visit_count,
-            ROUND(
-              COUNT(*)::numeric / SUM(COUNT(*)) OVER (),
-              23
-            )::float4 AS percent_of_total
-            FROM types_per_visit
-            GROUP BY measurement_types
-            HAVING COUNT(*) >= 1
-            ORDER BY visit_count DESC, measurement_types;
+              COUNT(DISTINCT m.measurement_concept_id) AS measurement_types_count,
+              ARRAY_TO_STRING(
+                  ARRAY_AGG(DISTINCT m.measurement_concept_id::text ORDER BY m.measurement_concept_id::text),
+                  ','
+              ) AS measurement_type_ids
+          FROM mimic.measurement m
+          JOIN mimic.concept mc
+              ON mc.concept_id = m.measurement_concept_id
+          WHERE m.visit_occurrence_id IS NOT NULL
+          AND m.measurement_concept_id <> 0
+          GROUP BY m.visit_occurrence_id
+      ),
+      unique_measurement_sets AS (
+          SELECT
+              measurement_types_count,
+              measurement_type_ids,
+              COUNT(*) AS visits,
+              ARRAY_AGG(DISTINCT visit_occurrence_id) AS visit_ids
+          FROM measurement_per_visit
+          GROUP BY measurement_types_count, measurement_type_ids
+      ),
+      procedures_per_measurement_set AS (
+          SELECT
+              ums.measurement_types_count,
+              ums.measurement_type_ids,
+              ums.visits,
+              COALESCE(
+                  ARRAY_TO_STRING(
+                      ARRAY_AGG(DISTINCT p.procedure_concept_id::text ORDER BY p.procedure_concept_id::text),
+                      ','
+                  ),
+                  ''
+              ) AS procedure_type_ids
+          FROM unique_measurement_sets ums
+          CROSS JOIN UNNEST(ums.visit_ids) AS visit_id
+          LEFT JOIN mimic.procedure_occurrence p
+              ON p.visit_occurrence_id = visit_id
+          GROUP BY
+              ums.measurement_types_count,
+              ums.measurement_type_ids,
+              ums.visits
+      )
+      SELECT
+          measurement_type_ids,
+          procedure_type_ids,
+          visits,
+          ROUND(100.0 * visits::numeric / SUM(visits) OVER (), 2)::float AS percent_of_total
+      FROM procedures_per_measurement_set
+      ORDER BY measurement_types_count DESC, visits DESC;
   - name: bp_sys_relative_change_stats
     #For each patient + visit + BP type, sort measurements in time,
     #compute |xₜ − xₜ₋₁| / xₜ₋₁ for each step,
@@ -186,6 +242,32 @@ src-stats:
                       THEN avg_rel_var END)::float4 AS stddev_under_60_systolic_rel_var
       FROM visit_level_rel_var
       GROUP BY gender_concept_id;
+  - name: procedure_stats
+    query: >
+      WITH filtered AS (
+        SELECT
+          procedure_concept_id,
+          visit_occurrence_id
+        FROM mimic.procedure_occurrence
+        WHERE procedure_concept_id <> 0
+          AND visit_occurrence_id IS NOT NULL
+      ),
+      visit_counts AS (
+        SELECT
+          procedure_concept_id,
+          visit_occurrence_id,
+          COUNT(*) AS procedures_per_visit
+        FROM filtered
+        GROUP BY procedure_concept_id, visit_occurrence_id
+      )
+      SELECT
+        procedure_concept_id,
+        AVG(procedures_per_visit)::float4 AS procedures_per_visit_avg,
+        STDDEV_SAMP(procedures_per_visit)::float4 AS procedures_per_visit_std
+      FROM visit_counts
+      GROUP BY procedure_concept_id
+      ORDER BY procedure_concept_id;
+
 tables:
   person:
     num_rows_per_pass: 0
