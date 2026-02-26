@@ -2,17 +2,24 @@
 import itertools as itt
 import os
 import random
+import tempfile
 from collections import Counter
 from pathlib import Path
 from typing import Any, Generator, Mapping, Tuple
 from unittest.mock import MagicMock, call, patch
 
-from sqlalchemy import Connection, select
+import duckdb
+import pandas as pd
+from sqlalchemy import Connection, Engine, select
 from sqlalchemy.schema import MetaData, Table
 
 from datafaker.base import TableGenerator
-from datafaker.create import create_db_vocab, populate
-from datafaker.remove import remove_db_vocab
+from datafaker.create import (
+    create_db_data_into,
+    create_db_tables,
+    create_db_vocab,
+    populate,
+)
 from datafaker.serialize_metadata import metadata_to_dict
 from tests.utils import DatafakerTestCase, GeneratesDBTestCase
 
@@ -28,7 +35,7 @@ class TestCreate(GeneratesDBTestCase):
         """Test the create_db_vocab function."""
         with patch.dict(
             os.environ,
-            {"DST_DSN": self.dsn, "DST_SCHEMA": self.schema_name},
+            {"DST_DSN": self.dst_dsn},
             clear=True,
         ):
             config = {
@@ -42,10 +49,9 @@ class TestCreate(GeneratesDBTestCase):
             meta_dict = metadata_to_dict(
                 self.metadata, self.schema_name, self.sync_engine
             )
-            self.remove_data(config)
-            remove_db_vocab(self.metadata, meta_dict, config)
+            create_db_tables(self.metadata)
             create_db_vocab(self.metadata, meta_dict, config, Path("./tests/examples"))
-        with self.sync_engine.connect() as conn:
+        with self.dst_sync_engine.connect() as conn:
             stmt = select(self.metadata.tables["player"])
             rows = list(conn.execute(stmt).mappings().fetchall())
             self.assertEqual(len(rows), 3)
@@ -64,7 +70,7 @@ class TestCreate(GeneratesDBTestCase):
         random.seed(56)
         config: Mapping[str, Any] = {}
         self.generate_data(config, num_passes=2)
-        with self.sync_engine.connect() as conn:
+        with self.dst_sync_engine.connect() as conn:
             stmt = select(self.metadata.tables["string"])
             rows = list(conn.execute(stmt).mappings().fetchall())
             a = rows[0]
@@ -183,3 +189,152 @@ class TestPopulate(DatafakerTestCase):
 
         mock_gen_two.assert_called_once()
         mock_gen_three.assert_called_once()
+
+
+class MockFunctionUsingConnection:
+    """Base mock callable that should not be permitted to read parquet files."""
+
+    @classmethod
+    def is_parquet_permitted(cls, connection: Any) -> bool:
+        """Test if a normal DuckDB can access the ``fruit.parquet`` file."""
+        try:
+            connection.execute("SELECT * FROM fruit.parquet")
+        except duckdb.PermissionException:
+            return False
+        return True
+
+    def __init__(self) -> None:
+        """Initialize as uncalled."""
+        self.called = False
+
+    def do_call(self, connection: Any) -> None:
+        """Test for parquet access not being permitted."""
+        assert not self.is_parquet_permitted(connection)
+        self.called = True
+
+
+class CreateReadsNoParquetTestCase(DatafakerTestCase):
+    """
+    Output to the database should not have access to parquet files.
+
+    Otherwise there is a risk of leakage of source data.
+    """
+
+    examples_dir = Path("tests/examples/duckdb")
+    parquet_name = "fruit.parquet"
+
+    def setUp(self) -> None:
+        """Go to the directory where there are parquet files."""
+        super().setUp()
+        self.start_dir = os.getcwd()
+        self.parquet_dir = Path(tempfile.mkdtemp("parq"))
+        os.chdir(self.parquet_dir)
+        self.write_parquet()
+        assert MockFunctionUsingConnection.is_parquet_permitted(duckdb.connect())
+
+    def tearDown(self) -> None:
+        """Return to the start directory."""
+        os.chdir(self.start_dir)
+        return super().tearDown()
+
+    def write_parquet(self) -> None:
+        """Write a parquet file into the current directory."""
+        fruit: dict[str, list[Any]] = {
+            "id": [1, 2, 3],
+            "orange": [True, True, False],
+            "banana": ["one", "two", "three"],
+        }
+        pd.DataFrame.from_dict(fruit).to_parquet(self.parquet_name)
+
+    class MockCreateAll(MockFunctionUsingConnection):
+        """Mock for the MetaData.create_all function."""
+
+        def __call__(self, engine: Engine) -> None:
+            self.do_call(engine.raw_connection())
+
+    def test_create_db_tables_cannot_access_parquet(self) -> None:
+        """Test the database connection cannot access parquet file."""
+        meta_data = MagicMock()
+        meta_data.create_all = self.MockCreateAll()
+        with patch.dict(
+            os.environ,
+            {"DST_DSN": "duckdb:///:memory:tables"},
+            clear=True,
+        ):
+            create_db_tables(meta_data)
+        assert meta_data.create_all.called
+
+    def test_create_db_tables_cannot_access_parquet_with_schema(self) -> None:
+        """
+        Test the database connection cannot access parquet file.
+
+        We use a schema because this activates a different code path.
+        """
+        meta_data = MagicMock()
+        meta_data.create_all = self.MockCreateAll()
+        testdb = duckdb.connect("./test.db")
+        testdb.execute("CREATE SCHEMA fruity")
+        testdb.close()
+        with patch.dict(
+            os.environ,
+            {"DST_SCHEMA": "fruity", "DST_DSN": "duckdb:///./test.db"},
+            clear=True,
+        ):
+            create_db_tables(meta_data)
+        assert meta_data.create_all.called
+
+    @patch("datafaker.create.populate")
+    def test_create_db_data_cannot_access_parquet(
+        self, mock_populate: MagicMock
+    ) -> None:
+        """Test the database connection cannot access parquet file while creating data."""
+
+        class MockPopulate(MockFunctionUsingConnection):
+            """Mock ``populate`` function."""
+
+            def __call__(
+                self, connection: Connection, _a2: Any, _a3: Any, _a4: Any, _a5: Any
+            ) -> dict[str, Any]:
+                super().do_call(connection.connection.dbapi_connection)
+                return {"vocab1": 1}
+
+        mock_populate.side_effect = MockPopulate()
+        create_db_data_into(
+            [MagicMock()],
+            MagicMock(),
+            1,
+            "duckdb:///:memory:data",
+            None,
+            MagicMock(),
+        )
+        assert mock_populate.side_effect.called
+
+    @patch("datafaker.create.FileUploader")
+    def test_create_db_vocab_cannot_access_parquet(
+        self, file_uploader: MagicMock
+    ) -> None:
+        """Test we cannot access parquet file while populating vocabulary tables."""
+
+        class MockLoader(MockFunctionUsingConnection):
+            """Mock ``FileUploader.load`` function."""
+
+            def __call__(self, connection: Connection, base_path: Path) -> None:
+                assert str(base_path) == "base"
+                super().do_call(connection.connection.dbapi_connection)
+
+        file_uploader.return_value.load = MockLoader()
+        assert not file_uploader.return_value.load.called
+        meta_data = MetaData()
+        Table("table1", meta_data)
+        with patch.dict(
+            os.environ,
+            {"DST_DSN": "duckdb:///:memory:vocab"},
+            clear=True,
+        ):
+            create_db_vocab(
+                meta_data,
+                {"tables": {"table1": {"columns": {}}}},
+                {"tables": {"table1": {"vocabulary_table": True}}},
+                base_path=Path("base"),
+            )
+        assert file_uploader.return_value.load.called

@@ -22,14 +22,14 @@ import yaml
 from sqlalchemy import Engine, MetaData
 
 from datafaker import settings
-from datafaker.create import create_db_data_into
+from datafaker.create import create_db_data_into, create_db_tables_into
 from datafaker.interactive.base import DbCmd
 from datafaker.make import make_src_stats, make_table_generators, make_tables_file
-from datafaker.remove import remove_db_data_from
 from datafaker.utils import (
     MaybeAsyncEngine,
     T,
     create_db_engine,
+    create_db_engine_dst,
     get_sync_engine,
     import_file,
     sorted_non_vocabulary_tables,
@@ -194,8 +194,8 @@ class TestDuckDb(TestDatabaseBase):
         self.close()
         self._make_con_string()
         # create the database (must be non-read-only)
-        duckdb_con = duckdb.connect(self._db_path)
-        duckdb_con.close()
+        # duckdb_con = duckdb.connect(self._db_path)
+        # duckdb_con.close()
 
     def close(self) -> None:
         """Tear down the test database."""
@@ -237,6 +237,9 @@ class DatafakerTestCase(TestCase):
     examples_dir = Path("tests/examples")
     dump_file_path: str | None = None
     database_name: str | None = None
+
+    def setUp(self) -> None:
+        settings.get_settings.cache_clear()
 
     def assertReturnCode(  # pylint: disable=invalid-name
         self, result: Any, expected_code: int
@@ -350,7 +353,6 @@ class RequiresDBTestCase(DatafakerTestCase):
         self.sync_engine: Engine
 
     def setUp(self) -> None:
-        settings.get_settings.cache_clear()
         super().setUp()
         if self.database is None:
             self.database = self.database_type()
@@ -378,8 +380,11 @@ class RequiresDBTestCase(DatafakerTestCase):
         return self.database.get_dsn(self.database_name)
 
 
+# pylint: disable=too-many-instance-attributes
 class GeneratesDBTestCase(RequiresDBTestCase):
     """A test case for which a database is generated."""
+
+    dst_schema_name: str | None = None
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialise a GeneratedDB test case."""
@@ -389,10 +394,29 @@ class GeneratesDBTestCase(RequiresDBTestCase):
         self.stats_file_path = ""
         self.config_file_path = ""
         self.config_fd = 0
+        self.dst_database: TestDatabaseBase | None = None
+        self.dst_engine: MaybeAsyncEngine
+        self.dst_sync_engine: Engine
+
+    @property
+    def dst_dsn(self) -> str:
+        """Get the database connection string."""
+        assert self.dst_database is not None
+        return self.dst_database.get_dsn(None)
 
     def setUp(self) -> None:
         """Set up the test case with an actual orm.yaml file."""
         super().setUp()
+        if self.dst_database is None:
+            self.dst_database = self.database_type()
+        else:
+            self.dst_database.open()
+        self.dst_engine = create_db_engine_dst(
+            self.dst_dsn,
+            schema_name=self.dst_schema_name,
+            use_asyncio=self.use_asyncio,
+        )
+        self.dst_sync_engine = get_sync_engine(self.dst_engine)
         # Generate the `orm.yaml` from the database
         (self.orm_fd, self.orm_file_path) = mkstemp(".yaml", "orm_", text=True)
         with os.fdopen(self.orm_fd, "w", encoding="utf-8") as orm_fh:
@@ -435,10 +459,9 @@ class GeneratesDBTestCase(RequiresDBTestCase):
         with os.fdopen(generators_fd, "w", encoding="utf-8") as datafaker_fh:
             datafaker_fh.write(datafaker_content)
 
-    def remove_data(self, config: Mapping[str, Any]) -> None:
-        """Remove source data from the DB."""
-        # `remove-data` so we don't have to use a separate database for the destination
-        remove_db_data_from(self.metadata, config, self.dsn, self.schema_name)
+    def create_tables(self) -> None:
+        """Create tables in the output DB."""
+        create_db_tables_into(self.metadata, self.dst_dsn, self.dst_schema_name)
 
     def create_data(self, config: Mapping[str, Any], num_passes: int = 1) -> None:
         """Create fake data in the DB."""
@@ -448,8 +471,8 @@ class GeneratesDBTestCase(RequiresDBTestCase):
             sorted_non_vocabulary_tables(self.metadata, config),
             datafaker_module,
             num_passes,
-            self.dsn,
-            self.schema_name,
+            self.dst_dsn,
+            self.dst_schema_name,
             self.metadata,
         )
 
@@ -463,7 +486,7 @@ class GeneratesDBTestCase(RequiresDBTestCase):
         self.set_configuration(config)
         src_stats = self.get_src_stats(config)
         self.create_generators(config)
-        self.remove_data(config)
+        self.create_tables()
         self.create_data(config, num_passes)
         return src_stats
 

@@ -146,6 +146,7 @@ class EndToEndParquetTestCase(DatafakerTestCase):
         # Dump the fake tables
         outdir = Path(tempfile.mkdtemp("dump"))
         result = runner.invoke(app, ["dump-data", "--output", str(outdir), "--parquet"])
+        print(result)
         self.assertSuccess(result)
 
         # Check the dumped files

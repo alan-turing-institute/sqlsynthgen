@@ -203,6 +203,35 @@ def create_db_engine(
     return engine
 
 
+def create_db_engine_dst(
+    db_dsn: str,
+    schema_name: Optional[str] = None,
+    use_asyncio: bool = False,
+) -> MaybeAsyncEngine:
+    """
+    Create a SQLAlchemy Engine suitable for output.
+
+    This prevents DuckDB from reading any parquet files avoiding any
+    possible leakage from existing source files into the destination database.
+    :param db_dsn: The database connection string.
+    :param schema_name: The name of the schema within the database to use.
+    :param use_asyncio: True if an asynchronous connection is required.
+    :return: The ``Engine`` or ``AsyncEngine``.
+    """
+    if db_dsn.startswith("duckdb:"):
+        return create_db_engine(
+            db_dsn,
+            schema_name,
+            use_asyncio,
+            connect_args={
+                "config": {
+                    "enable_external_access": False,
+                }
+            },
+        )
+    return create_db_engine(db_dsn, schema_name, use_asyncio)
+
+
 def set_search_path(connection: DBAPIConnection, schema: str) -> None:
     """Set the SEARCH_PATH for a PostgreSQL connection."""
     # https://docs.sqlalchemy.org/en/20/dialects/postgresql.html#remote-schema-table-introspection-and-postgresql-search-path
