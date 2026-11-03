@@ -26,7 +26,7 @@ class ConfigureCopyGeneratorsWithDateTests(GeneratesDBTestCase):
         )
 
     def test_same_table_copy(self) -> None:
-        """Test that the same-table copy is proposed and compared."""
+        """Test that the same-table copy is proposed and compared if appropriate."""
         config = {
             "tables": {
                 "happening": {
@@ -51,6 +51,13 @@ class ConfigureCopyGeneratorsWithDateTests(GeneratesDBTestCase):
             gc.do_compare(str(prop[0]))
             self.assertEqual(gc.messages[0][0], gc.NOT_PRIVATE_TEXT)
             self.assertEqual(gc.messages[1][0], gc.REQUIRES_NO_SOURCE_DATA_TEXT)
+            # and test that copies between columns that have incompatible
+            # types are not proposed
+            gc.do_next("happening.at_time")
+            gc.reset()
+            gc.do_propose("all")
+            proposals = gc.get_proposals()
+            self.assertNotIn(provider_name, proposals.keys())
 
     def test_cross_table_copy(self) -> None:
         """Test that the cross-table copy is proposed and compared."""
