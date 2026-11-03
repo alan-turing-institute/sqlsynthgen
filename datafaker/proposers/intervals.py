@@ -29,13 +29,9 @@ def _set_roles_for_column(
     """
     Set new entries in ``out`` based on the roles ``column`` has.
 
-    :param out: Mapping to be updated of role to related columns. A related
-        colomn is a pair ``(fk, fcol)`` where ``fcol`` is the column that has
-        that role and ``fk`` is the foreign key in the table ``column`` appears
-        in that points to the table ``fcol`` appears in, or None if ``column``
-        and ``fcol`` are in the same table.
+    :param out: Mapping to be updated of role to related columns.
     :param fk: Foreign key relationship to the table ``column`` appears in
-        (appears in new entries set in ``out``).
+        (this will be set in new entries added to ``out``).
     :param column: The column to be checked for roles.
     :param columns_config: The ``tables: <table-name>: columns:`` section
         of the ``config.yaml`` file.
@@ -116,7 +112,13 @@ def _not_anchoring_nonnullable_to_nullable(
 
 
 def _not_copying_incompatible_fk(column: Column, fk_col: RelatedColumn) -> bool:
-    """Return True if ``column`` and ``fk_col`` are incompatible foreign key types."""
+    """
+    Return False if ``column`` and ``fk_col`` are incompatible foreign keys.
+
+    So, returns True if neither argument is a foreign key, or if both are and they
+    reference the same table. So, True implies that copying might be possible,
+    False asserts that copying is not possible.
+    """
     target = fk_col.target
     if not column.foreign_keys:
         return not target.foreign_keys
@@ -463,14 +465,13 @@ class CopyProposer(Proposer):
         engine: Engine,
     ):
         """
-        Initialise a date after proposer.
+        Initialise a copy proposer.
 
         :param metadata: The metadata of the source database.
         :param column: The column to generate.
         :param anchor: The anchor column, which must be in the same table as column
          or a related table.
         :param engine: The source database.
-        :param buckets: The buckets for the intervals in the source database.
         """
         super().__init__()
         self._anchor_related = anchor_related
@@ -582,9 +583,12 @@ class CopyProposerFactory(ProposerFactory):
         if len(columns) != 1:
             return []
         column = columns[0]
-        fk_cols = _get_roles(self._config, column, "source")
+        source_cols = _get_roles(self._config, column, "source")
         other_source_columns = [
-            fk_col for fk_col in fk_cols if _not_copying_incompatible_fk(column, fk_col)
+            source_col
+            for source_col in source_cols
+            if _not_copying_incompatible_fk(column, source_col)
+            and self._can_copy_type(source_col.target.type, column.type)
         ]
         return [
             prop

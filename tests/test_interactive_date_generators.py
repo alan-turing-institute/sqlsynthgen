@@ -71,7 +71,7 @@ class ConfigureGeneratorsWithSrc2Tests(GeneratesDBTestCase):
             gc.do_next(f"{table}.{column}")
             gc.do_unmerge("visit_start")
             gc.reset()
-            gc.do_propose("")
+            gc.do_propose("all")
             proposals = gc.get_proposals()
             provider_name = (
                 "generic.anchored_provider.normal_date [anchored to visit_start]"
@@ -167,7 +167,7 @@ class ConfigureGeneratorsWithInstrumentsTests(GeneratesDBTestCase):
             # set up our interval proposer
             gc.do_next(f"{table}.{column}")
             gc.reset()
-            gc.do_propose("")
+            gc.do_propose("all")
             proposals = gc.get_proposals()
             provider_name = (
                 "generic.anchored_provider.normal_date_fk"
@@ -339,7 +339,7 @@ class ConfigureGeneratorsWithDateTests(GeneratesDBTestCase):
         with self._get_cmd(config) as gc:
             gc.do_next("happening.at_date")
             gc.reset()
-            gc.do_propose("")
+            gc.do_propose("all")
             proposals = gc.get_proposals()
             provider_name = (
                 "generic.anchored_provider.normal_date_fk"
