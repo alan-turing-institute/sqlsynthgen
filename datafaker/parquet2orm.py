@@ -100,7 +100,7 @@ def add_guessed_keys(tables_conf: dict[str, Any]):
                     primaries.add(column_name)
                     column_conf["primary"] = True
                     column_conf["nullable"] = False
-                elif guess := guesser.get_likely_foreign_key_target(column_name):
+                elif (guess := guesser.get_likely_foreign_key_target(column_name)) and guess[0] != table_name:
                     column_conf["foreign_keys"] = [f"{guess[0]}.{guess[1]}"]
             if column_name == "id":
                 column_conf["primary"] = True
