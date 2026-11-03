@@ -11,15 +11,7 @@ import yaml
 
 # pylint: disable=no-name-in-module
 from psycopg2.errors import UndefinedObject  # ty: ignore[unresolved-import]
-from sqlalchemy import (
-    Column,
-    Connection,
-    Engine,
-    ForeignKey,
-    create_engine,
-    event,
-    select,
-)
+from sqlalchemy import Connection, Engine, ForeignKey, create_engine, event, select
 from sqlalchemy.engine.interfaces import DBAPIConnection
 from sqlalchemy.exc import (
     IntegrityError,
@@ -297,25 +289,6 @@ def get_orm_metadata(
         if ignore:
             metadata.remove(table)
     return metadata
-
-
-def get_fk_column_between(
-    from_: Table, to_: Table
-) -> tuple[Column, ForeignKey] | tuple[None, None]:
-    """
-    Get a foreign key between two tables.
-
-    :param from_: The table on which the foreign key should be defined.
-    :param to_: The table to which the foreign key should refer.
-    :return: A pair (column on from_, foreign key to to_) if such a key exists,
-     or (None, None) if not.
-    """
-    for c in from_.columns:
-        fk: ForeignKey
-        for fk in c.foreign_keys:
-            if fk.column.table == to_:
-                return (c, fk)
-    return (None, None)
 
 
 def is_numeric_sql_type(column_type: TypeEngine | None) -> bool:

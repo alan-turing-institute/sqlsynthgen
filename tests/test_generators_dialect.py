@@ -11,7 +11,12 @@ from sqlalchemy.types import DateTime
 from datafaker.dialects import SecondsDifference
 from datafaker.interactive.generators import get_aggregate_query
 from datafaker.interactive.missingness import MissingnessType
-from datafaker.proposers.base import Buckets, PredefinedProposer, Proposer
+from datafaker.proposers.base import (
+    Buckets,
+    PredefinedProposer,
+    Proposer,
+    RelatedColumn,
+)
 from datafaker.proposers.choice import ChoiceProposerFactory, ZipfChoiceProposer
 from datafaker.proposers.continuous import (
     ContinuousLogDistributionProposerFactory,
@@ -592,7 +597,7 @@ class TestIntervalsDifferenceDialect(DatafakerTestCase):
             sd=1.0,
             mean=86400.0,
             column=tbl.c.end_date,
-            anchor=tbl.c.start_date,
+            anchor_related=RelatedColumn(tbl.c.start_date, None),
             engine=engine,
         )
         clauses = proposer.select_aggregate_clauses()
@@ -620,7 +625,7 @@ class TestIntervalsDifferenceDialect(DatafakerTestCase):
             sd=1.0,
             mean=86400.0,
             column=tbl.c.end_date,
-            anchor=tbl.c.start_date,
+            anchor_related=RelatedColumn(tbl.c.start_date, None),
             engine=engine,
         )
         clauses = proposer.select_aggregate_clauses()

@@ -38,6 +38,7 @@ from datafaker.utils import (
     schema_qualified_name,
     set_property,
     split_column_full_name,
+    text_list,
 )
 
 
@@ -161,7 +162,8 @@ class RoleCommandDelete(RoleCommand):
         """Perform the command."""
         if column_roles is None:
             return None
-        column_roles.new.remove(self.role)
+        if self.role in column_roles.new:
+            column_roles.new.remove(self.role)
         return column_roles
 
 
@@ -198,6 +200,9 @@ information about the columns in the current table. Use 'peek',
     PRIMARY_PRIVATE_TEXT = "Primary Private"
     SECONDARY_PRIVATE_TEXT = "Secondary Private on columns {0}"
     NOT_PRIVATE_TEXT = "Not private"
+    REQUIRES_NO_SOURCE_DATA_TEXT = (
+        "{0}. {2}{1}{3} requires no data from the source database."
+    )
     REQUIRES_SOURCE_DATA_TEXT = (
         "{0}. {2}{1}{3} requires the following data from the source database:"
     )
@@ -472,7 +477,7 @@ information about the columns in the current table. Use 'peek',
         """Set role information in the configuration."""
         for table_name, table_roles in self.roles.items():
             for column_name, entry in table_roles.items():
-                if entry.new:
+                if entry.new or entry.old:
                     set_property(
                         self.config,
                         ["tables", table_name, "columns", column_name, "roles"],
@@ -534,8 +539,8 @@ information about the columns in the current table. Use 'peek',
                         "Changing role set of column {0} of table {1} from {2} to {3}",
                         column_name,
                         table_name,
-                        ", ".join(str(oe) for oe in entry.old),
-                        ", ".join(str(ne) for ne in entry.new),
+                        text_list((e.value for e in entry.old), "empty"),
+                        text_list((e.value for e in entry.new), "empty"),
                     )
         return count
 
@@ -904,7 +909,7 @@ information about the columns in the current table. Use 'peek',
         theme = get_active_theme()
         if not prop.select_aggregate_clauses() and not prop.custom_queries():
             self.print(
-                "{0}. {2}{1}{3} requires no data from the source database.",
+                self.REQUIRES_NO_SOURCE_DATA_TEXT,
                 n,
                 prop.name(),
                 theme.function,

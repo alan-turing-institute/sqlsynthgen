@@ -457,6 +457,23 @@ def underline_error(e: SyntaxError) -> str:
     return "\n" + " " * start + "^" * (end - start)
 
 
+def text_list(items: Iterable[str], empty="") -> str:
+    """Concatenate the items with commas and one "and"."""
+    item_i = iter(items)
+    try:
+        last_item = next(item_i)
+    except StopIteration:
+        return empty
+    try:
+        so_far = next(item_i)
+    except StopIteration:
+        return last_item
+    for item in item_i:
+        so_far += ", " + last_item
+        last_item = item
+    return so_far + " and " + last_item
+
+
 def gather_from_ast(
     errors: MutableSequence[tuple],
     name: str,

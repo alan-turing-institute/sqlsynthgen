@@ -326,8 +326,8 @@ will list any pending role changes alongside pending generator changes before
 asking you to save.
 
 Two roles currently exist: ``start`` (consumed by this proposer, as described
-above) and ``source`` (reserved for future use --- no built-in proposer reads
-it yet). You can still set either role by hand-editing ``config.yaml`` instead
+above) and ``source`` (consumed by the copy proposer, described below).
+You can still set either role by hand-editing ``config.yaml`` instead
 of using ``role``, if you prefer; both routes update the same field.
 
 .. list-table::
@@ -351,6 +351,66 @@ of using ``role``, if you prefer; both routes update the same field.
      - ``generic.anchored_provider.normal_date_fk``
      - Same idea, but looks up the anchor value from the related row in the
        destination database at generation time.
+
+Copy proposers
+^^^^^^^^^^^^^^
+
+Propose copying a column's already-generated value verbatim, rather than
+generating it independently --- useful for columns that must always agree with
+another column by construction (for example a denormalised ``person_id``
+duplicated across related tables). This only appears once another column in
+the same table, or a directly related table (via a foreign key), has been
+given the ``source`` role.
+
+Roles are set per column and stored in ``config.yaml`` under
+``tables.<table>.columns.<column>.roles``. The easiest way to set one is the
+``role`` command inside ``configure-generators``:
+
+.. code-block:: shell
+
+   (rental.rental_date) role set source
+   (rental.rental_date) role list
+   source
+
+You can use ``on`` to specify a different column to view or set:
+
+.. code-block:: shell
+
+   (payment.payment_date) role on rental.rental_date list
+   source
+
+A proposal is only offered when it is safe to copy:
+
+* if the source and destination are both foreign keys, they must target the same table and column
+* if exactly one of the source and destination is a foreign key, copying is never safe
+* a nullable source will not be offered to a non-nullable destination
+* a source in a table linked through a nullable foreign key will not be offered to a non-nullable destination
+
+.. list-table::
+   :widths: 20 30 50
+   :header-rows: 1
+
+   * - Applies to
+     - Generator proposed
+     - Notes
+   * - Any column with a column with role ``source`` in the *same* table
+     - ``generic.anchored_provider.copy``
+     - Copies the other column's generated value for this row directly.
+   * - Any column with a column with role ``source`` in a *related* table
+       (via a foreign key)
+     - ``generic.anchored_provider.copy_fk``
+     - Looks up the related row already generated in the destination database
+       and copies its value, the same way ``normal_date_fk`` looks up its
+       anchor.
+
+Unlike the other proposers in this section, ``copy`` / ``copy_fk`` is never
+scored against the real data (it always reports a neutral fit) --- datafaker
+cannot tell you whether the two columns you've linked are actually always
+equal in the source database. Only use the ``source`` role where that
+equality genuinely holds by design (e.g. a known denormalisation); copying
+between two columns that merely happen to share a foreign key target but
+represent different real-world entities (device concept versus device type
+concept for example) will produce unfaithful synthetic data!
 
 Date component extraction proposers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

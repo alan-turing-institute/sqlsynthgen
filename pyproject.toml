@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "datafaker"
-version = "0.5.3"
+version = "0.5.4"
 description = "Generates fake SQL data"
 authors = ["Tim Band <3266052+tim-band@users.noreply.github.com>"]
 license = "MIT"

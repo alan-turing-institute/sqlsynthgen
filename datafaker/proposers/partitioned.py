@@ -28,30 +28,13 @@ from datafaker.proposers.continuous import (
     CovariateQuery,
     MultivariateNormalProposerFactory,
 )
-from datafaker.utils import T, get_property, logger
+from datafaker.utils import T, get_property, logger, text_list
 
 NumericType = Union[int, float]
 
 # How many distinct values can we have before we consider a
 # choice distribution to be infeasible?
 MAXIMUM_CHOICES = 500
-
-
-def text_list(items: Iterable[str]) -> str:
-    """Concatenate the items with commas and one "and"."""
-    item_i = iter(items)
-    try:
-        last_item = next(item_i)
-    except StopIteration:
-        return ""
-    try:
-        so_far = next(item_i)
-    except StopIteration:
-        return last_item
-    for item in item_i:
-        so_far += ", " + last_item
-        last_item = item
-    return so_far + " and " + last_item
 
 
 @dataclass

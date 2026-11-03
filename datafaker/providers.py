@@ -693,8 +693,8 @@ class AnchoredProvider(BaseProvider):
         :param sd_seconds: Standard deviation of the intervals' lengths in seconds.
         :param table: The name of the table for the anchor column.
         :param on_column: The name of the column in the foreign table
-         that ``row`` must match.
-        :param row: The value in the ``on_column`` column in table ``table``
+         that ``anchor_row`` must match.
+        :param anchor_row: The value in the ``on_column`` column in table ``table``
          for the row providing the start of the interval.
         :param anchor_column: The name of the column in ``table``
          providing the start of the interval.
@@ -711,3 +711,34 @@ class AnchoredProvider(BaseProvider):
         if not isinstance(out, (str, dt.date, dt.datetime)):
             return None
         return self.normal_date(mean_seconds, sd_seconds, out)
+
+    def copy(self, anchor: Any) -> Any:
+        """Copy another column from the same table."""
+        return anchor
+
+    def copy_fk(
+        self,
+        dst_db_conn: Connection,
+        table: str,
+        on_column: str,
+        anchor_row: Any,
+        anchor_column: str,
+    ) -> Any:
+        """
+        Copy a column from a different table.
+
+        :param dst_db_conn: Connection to the destination database.
+        :param table: The name of the table for the anchor column.
+        :param on_column: The name of the column in the foreign table
+         that ``anchor_row`` must match.
+        :param anchor_row: The value in the ``on_column`` column in table ``table``
+         for the row providing the source to copy.
+        :param anchor_column: The name of the column in ``table`` to copy.
+        :return: The value to be copied.
+        """
+        mt = self._metadata.tables[table]
+        query = select(mt.c[anchor_column].label("out")).where(
+            mt.c[on_column] == anchor_row,
+        )
+        anchor = dst_db_conn.execute(query).first()
+        return getattr(anchor, "out", None)

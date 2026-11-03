@@ -23,7 +23,7 @@ and stores the files produced in a directory called ``output``:
 .. code-block:: shell
 
    mkdir output
-   docker run --rm --user $(id -u):$(id -g) --network host -e SRC_SCHEMA=public -e SRC_DSN=postgresql://tim:tim@localhost:5432/pagila -itv ./output:data datafaker
+   docker run --rm --user $(id -u):$(id -g) --network host -e SRC_SCHEMA=public -e SRC_DSN=postgresql://tim:tim@localhost:5432/pagila -itv ./output:/data datafaker
 
 You do need to create the output folder first.
 
