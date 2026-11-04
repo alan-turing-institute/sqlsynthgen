@@ -21,7 +21,7 @@ DROP DATABASE IF EXISTS providers WITH (FORCE);
 -- Name: providers; Type: DATABASE; Schema: -; Owner: postgres
 --
 
-CREATE DATABASE providers WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE = 'en_US.utf8';
+CREATE DATABASE providers WITH TEMPLATE = template0 ENCODING = 'UTF8' ;
 
 
 ALTER DATABASE providers OWNER TO postgres;

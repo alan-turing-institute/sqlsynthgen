@@ -1,119 +1,96 @@
 """Tests for the remove module."""
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
-from sqlsynthgen.remove import remove_db_data, remove_db_tables, remove_db_vocab
-from sqlsynthgen.settings import Settings
-from tests.examples import example_orm, remove_ssg
-from tests.utils import SSGTestCase, get_test_settings
+from sqlalchemy import func, inspect, select
+from sqlalchemy.engine import Connection
+
+from datafaker.remove import remove_db_data, remove_db_tables, remove_db_vocab
+from datafaker.serialize_metadata import metadata_to_dict
+from tests.utils import RequiresDBTestCase, get_test_settings
 
 
-class RemoveTestCase(SSGTestCase):
-    """Tests for removing data, vocabs and tables."""
+class RemoveThingsTestCase(RequiresDBTestCase):
+    """Tests for ``remove-`` commands."""
 
-    @patch("sqlsynthgen.remove.get_settings", side_effect=get_test_settings)
-    @patch("sqlsynthgen.remove.create_db_engine")
-    @patch("sqlsynthgen.remove.delete", side_effect=range(1, 9))
-    def test_remove_db_data(
-        self, mock_delete: MagicMock, mock_engine: MagicMock, _: MagicMock
-    ) -> None:
-        """Test the remove_db_data function."""
-        config = {"tables": {"unignorable_table": {"ignore": True}}}
-        remove_db_data(example_orm, remove_ssg, config)
-        self.assertEqual(mock_delete.call_count, 8)
-        mock_delete.assert_has_calls(
-            [
-                call(example_orm.Base.metadata.tables[t])
-                for t in (
-                    "hospital_visit",
-                    "test_entity",
-                    "unique_constraint_test2",
-                    "unique_constraint_test",
-                    "person",
-                    "strange_type_table",
-                    "no_pk_test",
-                    "data_type_test",
-                )
-            ],
-            any_order=True,
+    dump_file_path = "instrument.sql"
+    database_name = "instrument"
+    schema_name = "public"
+
+    def count_rows(self, connection: Connection, table_name: str) -> int | None:
+        """Count the rows in a table."""
+        return connection.execute(
+            # pylint: disable=not-callable.
+            select(func.count()).select_from(self.metadata.tables[table_name])
+        ).scalar()
+
+    @patch("datafaker.settings.get_settings")
+    def test_remove_data(self, mock_get_settings: MagicMock) -> None:
+        """Test that data can be removed from non-vocabulary tables."""
+        mock_get_settings.return_value = get_test_settings(
+            src_dsn=self.dsn,
+            dst_dsn=self.dsn,
         )
-        dst_engine = mock_engine.return_value
-        dst_conn = dst_engine.connect.return_value.__enter__.return_value
-        dst_conn.execute.assert_has_calls([call(x) for x in range(1, 8)])
+        remove_db_data(
+            self.metadata,
+            {
+                "tables": {
+                    "manufacturer": {"vocabulary_table": True},
+                    "model": {"vocabulary_table": True},
+                }
+            },
+        )
+        with self.sync_engine.connect() as conn:
+            self.assert_greater_and_not_none(self.count_rows(conn, "manufacturer"), 0)
+            self.assert_greater_and_not_none(self.count_rows(conn, "model"), 0)
+            self.assertEqual(self.count_rows(conn, "player"), 0)
+            self.assertEqual(self.count_rows(conn, "string"), 0)
+            self.assertEqual(self.count_rows(conn, "signature_model"), 0)
 
-    @patch("sqlsynthgen.remove.get_settings")
-    def test_remove_db_data_raises(self, mock_get: MagicMock) -> None:
-        """Check that remove_db_data raises if dst DSN is missing."""
-        mock_get.return_value = Settings(
-            dst_dsn=None,
-            # The mypy ignore can be removed once we upgrade to pydantic 2.
-            _env_file=None,  # type: ignore[call-arg]
+    @patch("datafaker.settings.get_settings")
+    def test_remove_vocab(self, mock_get_settings: MagicMock) -> None:
+        """Test that vocabulary tables can be removed."""
+        mock_get_settings.return_value = get_test_settings(
+            src_dsn=self.dsn,
+            dst_dsn=self.dsn,
         )
-        with self.assertRaises(AssertionError) as context_manager:
-            remove_db_data(example_orm, remove_ssg, {})
-        self.assertEqual(
-            context_manager.exception.args[0], "Missing destination database settings"
+        meta_dict = metadata_to_dict(
+            self.metadata,
+            self.schema_name,
+            self.sync_engine,
+            parquet_dir=None,
         )
+        config = {
+            "tables": {
+                "manufacturer": {"vocabulary_table": True},
+                "model": {"vocabulary_table": True},
+            }
+        }
+        remove_db_data(self.metadata, config)
+        remove_db_vocab(self.metadata, meta_dict, config)
+        with self.sync_engine.connect() as conn:
+            self.assertEqual(self.count_rows(conn, "manufacturer"), 0)
+            self.assertEqual(self.count_rows(conn, "model"), 0)
+            self.assertEqual(self.count_rows(conn, "player"), 0)
+            self.assertEqual(self.count_rows(conn, "string"), 0)
+            self.assertEqual(self.count_rows(conn, "signature_model"), 0)
 
-    @patch("sqlsynthgen.remove.get_settings", side_effect=get_test_settings)
-    @patch("sqlsynthgen.remove.create_db_engine")
-    @patch("sqlsynthgen.remove.delete", side_effect=range(1, 6))
-    def test_remove_db_vocab(
-        self, mock_delete: MagicMock, mock_engine: MagicMock, _: MagicMock
-    ) -> None:
-        """Test the remove_db_vocab function."""
-        config = {"tables": {"unignorable_table": {"ignore": True}}}
-        remove_db_vocab(example_orm, remove_ssg, config)
-        self.assertEqual(mock_delete.call_count, 5)
-        mock_delete.assert_has_calls(
-            [
-                call(example_orm.Base.metadata.tables[t])
-                for t in (
-                    "concept",
-                    "ref_to_unignorable_table",
-                    "concept_type",
-                    "mitigation_type",
-                    "empty_vocabulary",
-                )
-            ],
-            any_order=True,
+    @patch("datafaker.settings.get_settings")
+    def test_remove_tables(self, mock_get_settings: MagicMock) -> None:
+        """Test that destination tables can be removed."""
+        mock_get_settings.return_value = get_test_settings(
+            src_dsn=self.dsn,
+            dst_dsn=self.dsn,
         )
-        dst_engine = mock_engine.return_value
-        dst_conn = dst_engine.connect.return_value.__enter__.return_value
-        dst_conn.execute.assert_has_calls([call(x) for x in range(1, 6)])
-
-    @patch("sqlsynthgen.remove.get_settings")
-    def test_remove_db_vocab_raises(self, mock_get: MagicMock) -> None:
-        """Check that remove_db_vocab raises if dst DSN is missing."""
-        mock_get.return_value = Settings(
-            dst_dsn=None,
-            # The mypy ignore can be removed once we upgrade to pydantic 2.
-            _env_file=None,  # type: ignore[call-arg]
-        )
-        with self.assertRaises(AssertionError) as context_manager:
-            remove_db_vocab(example_orm, remove_ssg, {})
-        self.assertEqual(
-            context_manager.exception.args[0], "Missing destination database settings"
-        )
-
-    @patch("sqlsynthgen.remove.get_settings", side_effect=get_test_settings)
-    @patch("sqlsynthgen.remove.create_db_engine")
-    def test_remove_tables(self, mock_engine: MagicMock, _: MagicMock) -> None:
-        """Test the remove_db_tables function."""
-        mock_orm = MagicMock()
-        remove_db_tables(mock_orm, {})
-        dst_engine = mock_engine.return_value
-        mock_orm.Base.metadata.drop_all.assert_called_once_with(dst_engine)
-
-    @patch("sqlsynthgen.remove.get_settings")
-    def test_remove_db_tables_raises(self, mock_get: MagicMock) -> None:
-        """Check that remove_db_tables raises if dst DSN is missing."""
-        mock_get.return_value = Settings(
-            dst_dsn=None,
-            # The mypy ignore can be removed once we upgrade to pydantic 2.
-            _env_file=None,  # type: ignore[call-arg]
-        )
-        with self.assertRaises(AssertionError) as context_manager:
-            remove_db_tables(example_orm, {})
-        self.assertEqual(
-            context_manager.exception.args[0], "Missing destination database settings"
-        )
+        engine_in = inspect(self.engine)
+        assert engine_in is not None
+        assert hasattr(engine_in, "has_table")
+        self.assertTrue(engine_in.has_table("player"))
+        remove_db_tables(self.metadata)
+        engine_out = inspect(self.engine)
+        assert engine_out is not None
+        assert hasattr(engine_out, "has_table")
+        self.assertFalse(engine_out.has_table("manufacturer"))
+        self.assertFalse(engine_out.has_table("model"))
+        self.assertFalse(engine_out.has_table("player"))
+        self.assertFalse(engine_out.has_table("string"))
+        self.assertFalse(engine_out.has_table("signature_model"))

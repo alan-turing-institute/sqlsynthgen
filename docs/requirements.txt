@@ -1,0 +1,11 @@
+# Requirements to build the datafaker docs
+# Install with: python3 -m pip install -r requirements.txt
+
+sphinx==9.1.0
+sphinx-rtd-theme==3.1.0
+sphinxcontrib-mermaid==2.1.0
+
+# Optional: runtime dependencies referenced by autodoc. Uncomment if you want autodoc to import modules
+# jsonschema>=4.0
+# pandas>=2.0
+# numpy>=1.27

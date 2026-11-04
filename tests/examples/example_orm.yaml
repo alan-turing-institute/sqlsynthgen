@@ -1,0 +1,265 @@
+dsn: postgresql://tim:tim@localhost/src
+schema: null
+tables:
+  concept:
+    columns:
+      concept_id:
+        nullable: false
+        primary: true
+        type: INTEGER
+      concept_name:
+        nullable: false
+        primary: false
+        type: TEXT
+      concept_type_id:
+        foreign_keys:
+        - concept_type.id
+        nullable: true
+        primary: false
+        type: INTEGER
+      concept_valid_from:
+        nullable: false
+        primary: false
+        type: TIMESTAMP WITH TIME ZONE
+    schema: null
+    unique:
+    - columns:
+      - concept_name
+      name: concept_name_uniq
+  concept_type:
+    columns:
+      id:
+        nullable: false
+        primary: true
+        type: INTEGER
+      lucky_number:
+        nullable: true
+        primary: false
+        type: INTEGER
+      mitigation_type_id:
+        foreign_keys:
+        - mitigation_type.id
+        nullable: true
+        primary: false
+        type: INTEGER
+      name:
+        nullable: false
+        primary: false
+        type: TEXT
+    schema: null
+    unique: []
+  data_type_test:
+    columns:
+      myuuid:
+        nullable: false
+        primary: false
+        type: UUID
+    schema: null
+    unique: []
+  empty_vocabulary:
+    columns:
+      entry_id:
+        nullable: false
+        primary: true
+        type: INTEGER
+      entry_name:
+        nullable: false
+        primary: false
+        type: TEXT
+    schema: null
+    unique: []
+  hospital_visit:
+    columns:
+      hospital_visit_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      person_id:
+        foreign_keys:
+        - person.person_id
+        nullable: false
+        primary: false
+        type: INTEGER
+      visit_duration_seconds:
+        nullable: false
+        primary: false
+        type: REAL
+      visit_end:
+        nullable: false
+        primary: false
+        type: DATE
+      visit_image:
+        nullable: false
+        primary: false
+        type: BYTEA
+      visit_start:
+        nullable: false
+        primary: false
+        type: DATE
+      visit_type_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: INTEGER
+    schema: null
+    unique: []
+  mitigation_type:
+    columns:
+      description:
+        nullable: true
+        primary: false
+        type: TEXT
+      id:
+        nullable: false
+        primary: true
+        type: INTEGER
+      name:
+        nullable: true
+        primary: false
+        type: TEXT
+    schema: null
+    unique: []
+  no_pk_test:
+    columns:
+      not_an_id:
+        nullable: false
+        primary: false
+        type: INTEGER
+    schema: null
+    unique: []
+  person:
+    columns:
+      name:
+        nullable: false
+        primary: false
+        type: TEXT
+      person_id:
+        nullable: false
+        primary: true
+        type: INTEGER
+      research_opt_out:
+        nullable: false
+        primary: false
+        type: BOOLEAN
+      stored_from:
+        nullable: false
+        primary: false
+        type: TIMESTAMP WITH TIME ZONE
+    schema: null
+    unique: []
+  ref_to_unignorable_table:
+    columns:
+      id:
+        nullable: false
+        primary: true
+        type: INTEGER
+      ref:
+        foreign_keys:
+        - unignorable_table.id
+        nullable: false
+        primary: false
+        type: INTEGER
+    schema: null
+    unique: []
+  strange_type_table:
+    columns:
+      column_with_unusual_type:
+        nullable: true
+        primary: false
+        type: CIDR
+      column_with_unusual_type_and_length:
+        nullable: true
+        primary: false
+        type: BIT(3)
+      id:
+        nullable: false
+        primary: true
+        type: INTEGER
+    schema: null
+    unique: []
+  table_to_be_ignored:
+    columns:
+      id:
+        nullable: false
+        primary: false
+        type: INTEGER
+    schema: null
+    unique: []
+  test_entity:
+    columns:
+      single_letter_column:
+        nullable: true
+        primary: false
+        type: VARCHAR(1)
+      vocabulary_entry_id:
+        foreign_keys:
+        - empty_vocabulary.entry_id
+        nullable: true
+        primary: false
+        type: INTEGER
+    schema: null
+    unique: []
+  unignorable_table:
+    columns:
+      id:
+        nullable: false
+        primary: true
+        type: INTEGER
+    schema: null
+    unique: []
+  unique_constraint_test:
+    columns:
+      a:
+        nullable: false
+        primary: false
+        type: BOOLEAN
+      b:
+        nullable: false
+        primary: false
+        type: BOOLEAN
+      c:
+        nullable: false
+        primary: false
+        type: TEXT
+      id:
+        nullable: false
+        primary: true
+        type: INTEGER
+    schema: null
+    unique:
+    - columns:
+      - c
+      name: c_uniq
+    - columns:
+      - a
+      - b
+      name: ab_uniq
+  unique_constraint_test2:
+    columns:
+      a:
+        nullable: false
+        primary: false
+        type: TEXT
+      b:
+        nullable: false
+        primary: false
+        type: TEXT
+      c:
+        nullable: false
+        primary: false
+        type: TEXT
+      id:
+        nullable: false
+        primary: true
+        type: INTEGER
+    schema: null
+    unique:
+    - columns:
+      - a
+      - b
+      - c
+      name: abc_uniq2
+    - columns:
+      - a
+      name: a_uniq2

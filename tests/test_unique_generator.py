@@ -1,20 +1,11 @@
 """Tests for the unique_generator module."""
-from pathlib import Path
 from unittest.mock import MagicMock
 
-from sqlalchemy import (
-    Boolean,
-    Column,
-    Integer,
-    Text,
-    UniqueConstraint,
-    create_engine,
-    insert,
-)
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Boolean, Column, Integer, Text, UniqueConstraint, insert
+from sqlalchemy.orm import declarative_base
 
-from sqlsynthgen.unique_generator import UniqueGenerator
-from tests.utils import RequiresDBTestCase, run_psql
+from datafaker.unique_generator import UniqueGenerator
+from tests.utils import RequiresDBTestCase
 
 # pylint: disable=invalid-name
 Base = declarative_base()
@@ -22,7 +13,7 @@ Base = declarative_base()
 metadata = Base.metadata
 
 
-class TestTable(Base):  # type: ignore
+class MockTable(Base):
     """A test SQLAlchemy table."""
 
     __tablename__ = "test_table"
@@ -41,22 +32,21 @@ class UniqueGeneratorTestCase(RequiresDBTestCase):
     constraint on a and b, and a separate unique constraint on c.
     """
 
+    dump_file_path = "unique_generator.dump"
+
     def setUp(self) -> None:
         """Pre-test setup."""
-        run_psql(Path("tests/examples/unique_generator.dump"))
-        self.engine = create_engine(
-            "postgresql://postgres:password@localhost:5432/unique_generator_test",
-        )
+        super().setUp()
         metadata.create_all(self.engine)
 
     def test_unique_generator_empty_table(self) -> None:
         """Test finding non-conflicting values for an empty database."""
 
-        table_name = TestTable.__tablename__
+        table_name = MockTable.__tablename__
         uniq_ab = UniqueGenerator(["a", "b"], table_name)
         uniq_c = UniqueGenerator(["c"], table_name, max_tries=10)
 
-        with self.engine.connect() as conn:
+        with self.sync_engine.connect() as conn:
             # Find a couple of different values that could be inserted, then try to do
             # one duplicate.
             test_ab1 = [True, False]
@@ -80,17 +70,17 @@ class UniqueGeneratorTestCase(RequiresDBTestCase):
         running create-data when there already is data in the database.
         """
 
-        table_name = TestTable.__tablename__
+        table_name = MockTable.__tablename__
         uniq_ab = UniqueGenerator(["a", "b"], table_name)
         uniq_c = UniqueGenerator(["c"], table_name, max_tries=10)
 
-        with self.engine.connect() as conn:
+        with self.sync_engine.connect() as conn:
             test_ab1 = [True, False]
             test_ab2 = [False, False]
             string1 = "String 1"
             string2 = "String 2"
             conn.execute(
-                insert(TestTable).values(a=test_ab1[0], b=test_ab1[1], c=string1)
+                insert(MockTable).values(a=test_ab1[0], b=test_ab1[1], c=string1)
             )
             # First check a value that doesn't conflict with the one we just wrote, then
             # the one that does.
@@ -106,11 +96,11 @@ class UniqueGeneratorTestCase(RequiresDBTestCase):
         values.
         """
 
-        table_name = TestTable.__tablename__
+        table_name = MockTable.__tablename__
         uniq_ab = UniqueGenerator(["a", "b"], table_name)
         uniq_c = UniqueGenerator(["c"], table_name, max_tries=10)
 
-        with self.engine.connect() as conn:
+        with self.sync_engine.connect() as conn:
             test_val1 = (True, False, "String 1")
             test_val2 = (True, False, "String 2")  # Conflicts on (a, b)
             test_val3 = (False, False, "String 1")  # Conflicts on c
@@ -138,13 +128,13 @@ class UniqueGeneratorTestCase(RequiresDBTestCase):
         """Test that UniqueGenerator the max_tries argument is respected."""
 
         max_tries = 23
-        table_name = TestTable.__tablename__
+        table_name = MockTable.__tablename__
         uniq_ab = UniqueGenerator(["a", "b"], table_name, max_tries=max_tries)
         mock_generator = MagicMock()
         test_val = (True, False, "String 1")
         mock_generator.return_value = test_val
 
-        with self.engine.connect() as conn:
+        with self.sync_engine.connect() as conn:
             self.assertEqual(uniq_ab(conn, ["a", "b", "c"], mock_generator), test_val)
             self.assertRaises(
                 RuntimeError, uniq_ab, conn, ["a", "b", "c"], mock_generator

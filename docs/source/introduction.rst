@@ -1,588 +1,654 @@
 .. _page-introduction:
 
-Introductory Tutorial
-==============================
+Tutorial: Generate Synthetic Data from PostgreSQL
+================================================================
 
+Let us begin with a simple movie rental database called `Pagila <https://github.com/devrimgunduz/pagila>`_. Follow the instructions there to create a PostgreSQL database if you want to follow this tutorial along.
+Pagila is already fake data, but we shall pretend that it has sensitive data in it, and we are attempting to keep this data secure.
+We will imagine we have a strict protocol to follow to keep the data safe, and that the source database is only accessible from a private network.
 
-`SqlSynthGen <https://github.com/alan-turing-institute/sqlsynthgen/>`_, or SSG for short, is a software package for synthetic data generation, focussed on relational data.
-When pointed to an existing relational database, SSG creates another database with the same database schema, and populates it with synthetic data.
-By default the synthetic data is crudely low fidelity, but the user is given various ways to configure the behavior of SSG to increase fidelity.
-This is done in a manner that maintains transparency and control over how the original data is used to inform the synthetic data, to control privacy risks.
-
-In this tutorial, we go through the different mechanisms SSG has for configuring the data generation, and the different levels of fidelity they can provide and different kinds of utility they can have.
-To showcase SSG, we will use the `AirBnb User Bookings dataset, available at Kaggle <https://www.kaggle.com/competitions/airbnb-recruiting-new-user-bookings/data>`_.
-The original dataset is a collection CSV files that can be ported to a relational database using `this Python script <https://github.com/alan-turing-institute/sqlsynthgen/blob/main/examples/airbnb/csv_to_database.py>`_ (it requires having SSG `previously installed <https://sqlsynthgen.readthedocs.io/en/latest/installation.html#enduser>`_).
-The script assumes you have a local PostgresSQL server running at port 5432, username ``postgres`` and password ``password``, with a database called ``airbnb`` to upload the data to.
-These assumptions can be edited in the ``main`` function of the script.
-
-After migration, the database has the following structure:
-
-.. image:: airbnb_db_diagram.png
-  :width: 400
-  :alt: The AirBnb database diagram.
-
-Default Behavior
-----------------
-
-SSG contains tools for replicating the schema of a source database.
-Let us assume that the AirBnb data is contained in the ``airbnb`` database in our local PostgreSQL instance.
-We would like to replicate its schema to the ``dst`` database, and generate synthetic data mimicking the records present on ``airbnb``.
-First, we need to provide SSG with the connection parameters, using a ``.env`` file like the following:
-
-**.env**:
+You can give access to this database to a different user (I'm using ``tim``) like this:
 
 .. code-block:: console
 
-    SRC_DSN='postgresql://postgres:password@localhost/airbnb'
-    DST_DSN='postgresql://postgres:password@localhost/dst'
+  $ sudo -u postgres psql pagila
+  pagila=# grant pg_read_all_data to tim;
+  pagila=# \q
 
-We can start the schema migration process by running the following command::
+Minimal example
+---------------
 
-    $ sqlsynthgen make-tables
+Let us begin in the private network that this sensitive data resides in (well, let us pretend anyway).
 
-This command makes an ``orm.py`` file containing the schema of the airbnb database.
-To use this file to replicate the schema in ``dst`` we run the following command::
+We being by setting the database connection information
+(you don't need to set ``SRC_SCHEMA`` if the schema is the default, but for explicitness we do here),
+and creating the configuration, ORM and initial statistics files.
+For creating a default configuration we will use the ``configure-tables``
+command but quit immediately.
+Here we are imagining the username is ``postgres`` and the password is ``password`` -- change ``postgres:password`` to the username and password you used to set up the database:
 
-    $ sqlsynthgen create-tables
+.. code-block::
 
-If you haven't created the destination database, you may first need to run a command like ``createdb --host localhost --user postgres dst``.
+    $ export SRC_DSN='postgresql://postgres:password@localhost/pagila'
+    $ export SRC_SCHEMA='public'
+    $ datafaker make-tables
+    $ datafaker configure-tables
+    Interactive table configuration (ignore, vocabulary, private, generate or empty). Type ? for help.
+    (table: actor) quit
+    You have made no changes.
+    Do you want to save this configuration?
+    (yes/no/cancel) yes
+    $ datafaker make-stats
 
-We can also use the ``orm.py`` file to make a Python module that generates synthetic data::
+This generates the files ``orm.yaml``, ``config.yaml`` and ``src-stats.yaml``.
 
-    $ sqlsynthgen make-generators
+Now at this point in the process we examine these files for evidence of sensitive information.
+At this point there is pretty much nothing in ``config.yaml`` or ``src-stats.yaml``,
+and ``orm.yaml`` only contains information on the structure of the source database.
+Therefore there is nothing much to examine here, and we can happily take these
+three files out of the private network and use them to generate some fake data.
 
-This creates an ``ssg.py`` file that contains one generator class (not to be confused with Python generator functions) per source database table.
-By default, without any user configuration, the data produced by these generators fulfills the schema of the original data:
-the data types are correct and the foreign key and uniqueness constraints are respected.
+Let us first create a new database within PostgreSQL.
+Here we are using user ``tim`` and the default schema ``public``:
 
-SSG presumes that any primary keys it encounters will be auto-populated when a row is inserted into the table.
-This is often true, for example, when a column is declared as the ``SERIAL`` pseudo-type.
-However, this is not the case for the AirBnB dataset.
-For example, the ``users`` table’s primary key ``id`` column is of type ``VARCHAR``.
-Running the next command, ``create-data``, will produce an error::
+.. code-block:: console
 
-    $ sqlsynthgen create-data
-    ...
-    psycopg2.errors.NotNullViolation:
+    $ sudo -u postgres psql
+    postgres=# create database fake_pagila;
+    CREATE DATABASE
+    postgres=# grant all privileges on database fake_pagila to tim;
+    GRANT
+    postgres=# \connect fake_pagila
+    You are now connected to database "fake_pagila" as user "postgres".
+    fake_pagila=# grant all privileges on schema public to tim;
+    GRANT
+    fake_pagila=# exit
 
-To work around this, we will manually specify how the primary keys should be generated for the ``countries``, ``users`` and ``age_gender_bkts`` tables by editing the ``ssg.py`` file:
-On line 9 below we specify that the ``id`` column value should be created using a ``password`` `Mimesis provider <https://mimesis.name/en/master/api.html>`_, which will give us a random string of characters.
+And let's populate it with the fake data:
 
-**ssg.py**:
+.. code-block:: shell
 
-.. code-block:: python3
-   :linenos:
+    export DST_DSN='postgresql://tim:password@localhost/fake_pagila'
+    export DST_SCHEMA='public'
+    datafaker create-tables
+    datafaker create-data
 
-    class usersGenerator(TableGenerator):
-        num_rows_per_pass = 1
+You will notice that ``create-tables`` produces a couple of warnings, and PostgreSQL complains when ``datafaker`` tries to create the data.
+The warnings are that ``datafaker`` doesn't understand the special PostgresSQL types ``TSVECTOR`` and ``ARRAY``, so it doesn't know how to generate data for those columns.
+Because it doesn't know how to generate data for those columns it will just use NULLs, and the ``film.fulltext`` column cannot be NULL, so creating the data fails.
 
-        def __init__(self):
-            pass
-
-        def __call__(self, dst_db_conn):
-            result = {}
-            result["id"] = generic.person.password()
-            ...
-
-The ``generic`` object on line 9 is an instance of the Mimesis type `generic provider <https://mimesis.name/en/master/providers.html#generic-provider>`_ , the fields of which give access to all the providers Mimesis implements, and that SSG makes available within every ``ssg.py`` module.
-Mimesis is a package for creating random data and has a wide array of providers (the Mimesis term for data generators) for different scenarios, which SSG makes extensive use of.
-
-Similar edits as above for the ``users`` table need to be made for the primary key columns of the other tables.
-See `this Python file <https://github.com/alan-turing-institute/sqlsynthgen/blob/main/examples/airbnb/ssg_manual_edit.py>`_ for the full changes to the ``ssg.py`` file.
-
-Now when we run ``create-data`` we get valid, if not very sensible, values in each of our tables. For example:
-
-.. list-table:: age_gender_bkts
-   :header-rows: 1
-
-   * - age_bucket
-     - country_destination
-     - gender
-     - population_in_thousands
-     - year
-   * - 8k$X-en
-     - vQjTJ=p*
-     - 1m>?l]"}
-     - 485
-     - 534
-
-SSG’s default generators have minimal fidelity: All data is generated based purely on the datatype of the column, e.g. random strings in string columns.
-Foreign key relations are respected by picking random rows from the table referenced.
-Even this synthetic data, nearly the crudest imaginable, can be useful for instance for testing software pipelines.
-Note that this data has no privacy implications, since it is only based on the schema.
-
-Vocabulary Tables
------------------
-
-The simplest configuration option available to increase fidelity is to mark some of the tables in the schema to be “vocabulary” tables.
-This means that they will be copied verbatim from the original source data into the synthetic data database.
-This should of course only be done for tables that hold no privacy-sensitive data, but rather hold fixed non-sensitive lists of concepts or facts that the rest of the schema references.
-
-For instance, in the AirBnB dataset, the ``users`` table has a foreign key reference to a table of world countries: ``users.country_destination`` references the ``countries.country_destination`` primary key column.
-Since the ``countries`` table doesn’t contain personal data, we can make it a vocabulary table.
-
-Besides manually editing it, we can also customise the generation of ``ssg.py`` via a YAML file,
-typically named ``config.yaml``.
-We identify ``countries`` as a vocabulary table in our ``config.yaml`` file:
-
-**config.yaml**:
-
-.. code-block:: yaml
-   :linenos:
-
-   tables:
-     countries:
-       vocabulary_table: true
-
-The vocabulary tables are exported from the source database when the generator module is made, so we overwrite ``ssg.py`` with one that includes the vocabulary import classes, using the ``--force`` option::
-
-    $ sqlsynthgen make-generators --config-file config.yaml --force
-
-This will export the ``countries`` table rows to a file called ``countries.yaml`` in your current working directory:
-
-.. code-block:: yaml
-   :linenos:
-
-   - country_destination: AU
-     destination_km2: 7741220
-     destination_language: eng
-     distance_km: 15297.744
-     language_levenshtein_distance: 0.0
-     lat_destination: -26.853388
-     lng_destination: 133.27516
-   - country_destination: CA
-     destination_km2: 9984670
-     destination_language: eng
-     distance_km: 2828.1333
-     language_levenshtein_distance: 0.0
-     lat_destination: 62.393303
-     lng_destination: -96.818146
-     ...
-
-We need to truncate any tables in our destination database before importing the countries data with::
-
-    $ sqlsynthgen remove-data --config-file config.yaml
-    $ sqlsynthgen create-vocab
-
-Since ``make-generators`` rewrote ``ssg.py``, we must now re-edit it to add the primary key ``VARCHAR`` workarounds for the ``users`` and ``age_gender_bkts`` tables, as we did in section above.
-Once this is done, we can generate random data for the other three tables with::
-
-    $ sqlsynthgen create-data
-
-From now on, whenever we make a change to ``config.yaml``, we should re-run these steps to see the effects:
-
-1. Run ``sqlsynthgen make-generators --config-file config.yaml --force``.
-2. If necessary, perform any manual edits to ``ssg.py``.
-3. Truncate the non-vocabulary database tables with ``sqlsynthgen remove-data --config-file config.yaml``.
-4. Run ``sqlsynthgen create-data``.
-
-Step 2. gets tedious to do every time, and in the next section we'll show how to automate it.
-
-To recap, vocabularies are tables that don’t need synthesising.
-By itself this adds only limited utility, since the interesting parts of the data are typically in the non-vocabulary tables, but it saves great amounts of work by fixing some tables with no privacy concerns to have perfect fidelity from the get-go.
-Note that one has to be careful in making sure that the tables marked as vocabulary tables truly do not hold privacy sensitive data, otherwise catastrophic privacy leaks are possible, where the original data is exposed raw and in full.
-
-Specifying Row-based Custom Generators
+Making the minimal example work at all
 --------------------------------------
 
-As we’ve seen above, ``ssg.py`` is overwritten whenever you re-run ``make-generators``.
-To avoid having to manually edit ``ssg.py`` after each overwrite, we can specify “row generators” for various columns in the config file:
+We can use the ``configure-generators`` command to fix this.
+Let us add a nice text generator to the ``film.fulltext``
+and ``film.special_features`` columns, and while we are at it let's
+give the actors sensible names (this would be back in the private
+network in a real example).
 
-**config.yaml**:
+Here we can see the use of some of the commands available within
+the ``configure-generators`` command:
+
+* ``next``: move to the next column or table.
+* ``next table-name``: move to table ``table-name``.
+* ``propose``: show generators that are available.
+* ``compare``: compare the proposed generators' output against the real data.
+* ``set``: set the proposed generator as the one we want.
+* An empty line repeats the previous command.
+
+.. code-block::
+
+  $ datafaker configure-generators
+  Interactive generator configuration. Type ? for help.
+
+  (actor.actor_id[pk]) next
+  (actor.first_name) propose
+  Sample of actual source data: 'PENELOPE'; 'MINNIE'; 'NICK'; 'FAY'; 'RIP'...
+  1. dist_gen.weighted_choice: (fit: 0) 'SIDNEY'; 'KENNETH'; 'EWAN'; 'AL'; 'WHOOPI' ...
+  2. dist_gen.weighted_choice [sampled]: (fit: 0) 'MERYL'; 'BEN'; 'DAN'; 'CHARLIZE'; 'SPENCER' ...
+  3. dist_gen.choice: (fit: 0.00281) 'JENNIFER'; 'GOLDIE'; 'MILLA'; 'FRANCES'; 'CHRIS' ...
+  4. dist_gen.choice [sampled]: (fit: 0.00281) 'RENEE'; 'ANNE'; 'RIP'; 'VAL'; 'SCARLETT' ...
+  5. dist_gen.zipf_choice: (fit: 0.0919) 'GROUCHO'; 'THORA'; 'GROUCHO'; 'PENELOPE'; 'KENNETH' ...
+  6. dist_gen.zipf_choice [sampled]: (fit: 0.0919) 'KIRK'; 'JOHN'; 'KENNETH'; 'RUSSELL'; 'DARYL' ...
+  7. generic.text.word: (fit: 200) 'optimal'; 'suggest'; 'share'; 'principal'; 'contain' ...
+  8. generic.person.language: (fit: 284) 'Haitian Creole'; 'Latvian'; 'Somali'; 'Haitian Creole'; 'Belarusian' ...
+  9. generic.person.nationality: (fit: 304) 'Afghan'; 'Finnish'; 'Costa Rican'; 'Guatemalan'; 'Afghan' ...
+  10. generic.person.last_name: (fit: 313) 'Blake'; 'Weeks'; 'Castillo'; 'Hensley'; 'Soto' ...
+  11. generic.person.first_name: (fit: 318) 'Maryln'; 'Minna'; 'Cleo'; 'Efrain'; 'Bart' ...
+  12. generic.address.street_name: (fit: 319) 'Lagangreen'; 'Creggan'; 'Killeen'; 'Kilcurragh'; 'Ceylon' ...
+  ... lines removed ...
+  38. dist_gen.constant: (no fit) ''; ''; ''; ''; '' ...
+  (actor.first_name) compare 4 11
+  Not private
+  4. dist_gen.choice [sampled] requires the following data from the source database:
+  SELECT first_name AS value FROM (SELECT first_name FROM actor WHERE first_name IS NOT NULL ORDER BY RANDOM() LIMIT 500) AS _inner GROUP BY value ORDER BY COUNT(first_name) DESC; providing the following values: ['KENNETH', 'PENELOPE', 'JULIA', 'BURT', 'GENE', 'DAN', 'MATTHEW', 'GROUCHO', 'MORGAN', 'RUSSELL', 'CUBA', 'CHRISTIAN', 'ED', 'FAY', 'CAMERON', 'NICK', 'JAYNE', 'SCARLETT', 'AUDREY', 'WOODY', 'ADAM', 'LUCILLE', 'MICHAEL', 'DARYL', 'CHRISTOPHER', 'MARY', 'BEN', 'HUMPHREY', 'MENA', 'CATE', 'RIP', 'REESE', 'MILLA', 'SUSAN', 'KEVIN', 'ANGELA', 'GARY', 'FRANCES', 'SPENCER', 'SEAN', 'KIRSTEN', 'MINNIE', 'CHRIS', 'TOM', 'WARREN', 'RENEE', 'GRETA', 'ALBERT', 'MERYL', 'SANDRA', 'JOHNNY', 'VIVIEN', 'JIM', 'HELEN', 'GINA', 'HARRISON', 'MEG', 'GEOFFREY', 'CHARLIZE', 'JOE', 'CARY', 'FRED', 'MAE', 'RIVER', 'DEBBIE', 'LIZA', 'NATALIE', 'HENRY', 'SIDNEY', 'BETTE', 'OLYMPIA', 'KARL', 'ANNE', 'JANE', 'RALPH', 'LISA', 'ZERO', 'GOLDIE', 'BELA', 'PARKER', 'JENNIFER', 'EMILY', 'JADA', 'WILLIAM', 'HARVEY', 'JODIE', 'ELVIS', 'SALMA', 'GREG', 'SYLVESTER', 'ALEC', 'ELLEN', 'JAMES', 'SISSY', 'IAN', 'KIRK', 'WILL', 'THORA', 'LAURA', 'ANGELINA', 'LAURENCE', 'WHOOPI', 'JUDE', 'TIM', 'KIM', 'OPRAH', 'EWAN', 'VAL', 'CARMEN', 'GREGORY', 'JESSICA', 'JULIANNE', 'RICHARD', 'JEFF', 'AL', 'UMA', 'RAY', 'WALTER', 'MICHELLE', 'JUDY', 'JOHN', 'JON', 'DUSTIN', 'BOB', 'ROCK', 'GRACE', 'RITA', 'ALAN']
+  11. generic.person.first_name requires no data from the source database.
+  +----------+------------------------------+-------------------------------+
+  |  source  | 4. dist_gen.choice [sampled] | 11. generic.person.first_name |
+  +----------+------------------------------+-------------------------------+
+  |   CATE   |           HARRISON           |             Alden             |
+  | KENNETH  |            HENRY             |            Michale            |
+  |  MORGAN  |           KIRSTEN            |             Foster            |
+  |  SANDRA  |             JUDE             |             Delpha            |
+  |  WHOOPI  |             KIRK             |              Kina             |
+  |   CUBA   |           PENELOPE           |            Vernetta           |
+  |    ED    |           RUSSELL            |           Kristopher          |
+  |   JOE    |             JANE             |            Geraldo            |
+  |   FAY    |             LIZA             |             Claude            |
+  |   JON    |             JUDY             |             Cesar             |
+  | SCARLETT |           HARRISON           |            Genevive           |
+  |  WARREN  |            CHRIS             |             Hisako            |
+  |  WOODY   |            CHRIS             |              Reed             |
+  |   MENA   |             JON              |              Mike             |
+  |   FAY    |            DARYL             |             Erwin             |
+  |  JULIA   |            JAMES             |            Katharyn           |
+  |  CHRIS   |            SUSAN             |             Ellis             |
+  | HARRISON |             JUDE             |             Orval             |
+  |  HARVEY  |            BETTE             |             Kenia             |
+  |  SUSAN   |            JULIA             |            Antonia            |
+  +----------+------------------------------+-------------------------------+
+  (actor.first_name) set 11
+  (actor.last_name) propose
+  Sample of actual source data: 'CRONYN'; 'DEGENERES'; 'BRODY'; 'DENCH'; 'CAGE'...
+  1. dist_gen.weighted_choice: (fit: 0) 'JACKMAN'; 'STREEP'; 'WINSLET'; 'BALL'; 'CAGE' ...
+  2. dist_gen.weighted_choice [sampled]: (fit: 0) 'KILMER'; 'LEIGH'; 'WEST'; 'MCKELLEN'; 'HOPKINS' ...
+  3. dist_gen.choice: (fit: 0.00396) 'NOLTE'; 'DEGENERES'; 'WINSLET'; 'VOIGHT'; 'LOLLOBRIGIDA' ...
+  4. dist_gen.choice [sampled]: (fit: 0.00396) 'AKROYD'; 'BALL'; 'PALTROW'; 'KEITEL'; 'MCQUEEN' ...
+  5. dist_gen.zipf_choice: (fit: 0.1) 'GARLAND'; 'HOPKINS'; 'WILLIS'; 'PFEIFFER'; 'PECK' ...
+  6. dist_gen.zipf_choice [sampled]: (fit: 0.1) 'BERRY'; 'KILMER'; 'ALLEN'; 'TEMPLE'; 'KILMER' ...
+  7. generic.text.word: (fit: 199) 'exploration'; 'substantial'; 'capacity'; 'jam'; 'suicide' ...
+  8. generic.address.city: (fit: 233) 'Felixstowe'; 'Bridgend'; 'Peterlee'; 'Kelso'; 'Harwich' ...
+  9. generic.address.street_name: (fit: 240) 'Derrynahone'; 'Foster'; 'Esdale'; 'Greenridge'; 'Harris' ...
+  10. generic.address.country: (fit: 271) 'Canada'; 'St. Kitts & Nevis'; 'Burkina Faso'; 'Jordan'; 'Lithuania' ...
+  11. generic.person.nationality: (fit: 278) 'Latvian'; 'British'; 'Spanish'; 'Russian'; 'Spanish' ...
+  12. generic.person.language: (fit: 284) 'Portuguese'; 'Bengali'; 'Dhivehi'; 'Catalan'; 'Portuguese' ...
+  13. generic.person.last_name: (fit: 285) 'Hanson'; 'Bush'; 'Benjamin'; 'Cox'; 'Cleveland' ...
+  14. generic.person.first_name: (fit: 289) 'Thi'; 'Huey'; 'Gaylord'; 'Marcel'; 'Dong' ...
+  15. generic.address.street_suffix: (fit: 331) 'Crescent'; 'Terrace'; 'Mall'; 'Shore'; 'Extension' ...
+  ... lines removed ...
+  38. dist_gen.constant: (no fit) ''; ''; ''; ''; '' ...
+  (actor.last_name) compare 4 13
+  Not private
+  4. dist_gen.choice [sampled] requires the following data from the source database:
+  SELECT last_name AS value FROM (SELECT last_name FROM actor WHERE last_name IS NOT NULL ORDER BY RANDOM() LIMIT 500) AS _inner GROUP BY value ORDER BY COUNT(last_name) DESC; providing the following values: ['KILMER', 'TEMPLE', 'NOLTE', 'WILLIS', 'PECK', 'GUINESS', 'DAVIS', 'DEGENERES', 'HOFFMAN', 'GARLAND', 'BERRY', 'ALLEN', 'TORN', 'KEITEL', 'HARRIS', 'JOHANSSON', 'ZELLWEGER', 'AKROYD', 'HOPKINS', 'WILLIAMS', 'CRONYN', 'DEPP', 'JACKMAN', 'HOPPER', 'DUKAKIS', 'TRACY', 'MONROE', 'MOSTEL', 'MCKELLEN', 'WAHLBERG', 'DEAN', 'BENING', 'SILVERSTONE', 'WEST', 'HACKMAN', 'BOLGER', 'MCQUEEN', 'DENCH', 'DEE', 'NEESON', 'STREEP', 'CAGE', 'BRODY', 'WINSLET', 'WOOD', 'GOODING', 'PENN', 'MCCONAUGHEY', 'CHASE', 'BAILEY', 'PALTROW', 'TANDY', 'CRAWFORD', 'FAWCETT', 'OLIVIER', 'CARREY', 'JOLIE', 'BACALL', 'TOMEI', 'PESCI', 'TAUTOU', 'LEIGH', 'COSTNER', 'WITHERSPOON', 'BASINGER', 'PITT', 'WILSON', 'BRIDGES', 'HUNT', 'GIBSON', 'HESTON', 'SUVARI', 'SINATRA', 'ASTAIRE', 'BULLOCK', 'JOVOVICH', 'GABLE', 'MALDEN', 'CHAPLIN', 'MANSFIELD', 'HURT', 'MCDORMAND', 'BALL', 'PRESLEY', 'RYDER', 'BIRCH', 'BERGMAN', 'WALKEN', 'HOPE', 'BERGEN', 'CRUZ', 'NICHOLSON', 'PHOENIX', 'PFEIFFER', 'SWANK', 'STALLONE', 'BLOOM', 'GRANT', 'SOBIESKI', 'CRUISE', 'BARRYMORE', 'CROWE', 'BALE', 'DAY-LEWIS', 'WAYNE', 'LOLLOBRIGIDA', 'HAWKE', 'MARX', 'POSEY', 'DUNST', 'DAMON', 'PINKETT', 'VOIGHT', 'MIRANDA', 'DERN', 'REYNOLDS', 'GOLDBERG', 'HUDSON', 'DREYFUSS', 'WRAY', 'CLOSE']
+  13. generic.person.last_name requires no data from the source database.
+  +-----------+------------------------------+------------------------------+
+  |   source  | 4. dist_gen.choice [sampled] | 13. generic.person.last_name |
+  +-----------+------------------------------+------------------------------+
+  |   BRODY   |            TRACY             |           Lambert            |
+  |   CARREY  |            CRONYN            |          Cleveland           |
+  |  PFEIFFER |           MIRANDA            |           Bullock            |
+  |   LEIGH   |            TEMPLE            |           Mckenzie           |
+  |   MALDEN  |           WAHLBERG           |            Sawyer            |
+  |   HAWKE   |          ZELLWEGER           |            Warner            |
+  | JOHANSSON |            HOPPER            |            Ortiz             |
+  |    PECK   |           PINKETT            |           Hubbard            |
+  |  GOODING  |            CLOSE             |           Burnett            |
+  |    CAGE   |          MANSFIELD           |           Erickson           |
+  |   BERRY   |            POSEY             |           Russell            |
+  |   HOPPER  |            PESCI             |            Combs             |
+  |  JACKMAN  |             DEE              |            Hooper            |
+  |  PALTROW  |            NOLTE             |           Foreman            |
+  |   ALLEN   |             DERN             |            Miles             |
+  |  MCKELLEN |            KEITEL            |           Salinas            |
+  |   TEMPLE  |          DAY-LEWIS           |           Swanson            |
+  |   BERRY   |             TORN             |           Hensley            |
+  |   TRACY   |            CRONYN            |             Key              |
+  | BARRYMORE |           HACKMAN            |            Cooke             |
+  +-----------+------------------------------+------------------------------+
+  (actor.last_name) set 13
+  (actor.last_update) next film
+  (film.description) next
+  (film.film_id[pk])
+  (film.fulltext) propose
+  Sample of actual source data: "'amaz':4 'astronaut':11 'berlin':18 'display':5 'fight':14 'idaho':2 'must':13 'robot':8 'woman':16 'yentl':1"; "'battl':14 'boat':20 'butler':11,16 'command':2 'jet':19 'montezuma':1 'must':13 'reflect':5 'thrill':4 'waitress':8"; "'amaz':4 'astronaut':11 'boy':8 'crusad':2 'epistl':5 'gaslight':1 'gulf':19 'man':16 'mexico':21 'must':13 'redeem':14"; "'arsenic':2 'astronaut':11 'australia':18 'display':5 'girl':8 'lacklustur':4 'must':13 'student':16 'succumb':14 'videotap':1"; "'battl':14 'beauti':4 'brooklyn':1 'compos':11 'dentist':8 'desert':2 'drama':5 'first':20 'man':21 'must':13 'space':22 'station':23 'sumo':16 'wrestler':17"...
+  1. dist_gen.choice [sampled]: (fit: 0) "'administr':18 'boat':9,22 'cat':12 'charact':5 'crane':2 'databas':17 'fate':4 'find':15 'jet':21 'must':14 'right':1 'studi':6"; "'baloon':19 'confront':14 'drama':5 'epic':4 'explor':11 'factori':20 'hunter':16 'invas':2 'lumberjack':8 'must':13 'sundanc':1"; "'butler':16 'drama':5 'feminist':11 'hustler':2 'loser':1 'must':13 'nigeria':18 'outgun':14 'robot':8 'stun':4"; "'abandon':21 'beauti':1 'compos':10 'display':7 'fast':5 'fast-pac':4 'greas':2 'mine':22 'moos':13 'must':15 'pace':6 'robot':18 'shaft':23 'sink':16"; "'astronaut':12 'california':19 'car':17 'challeng':15 'cow':9 'epic':4 'hard':2 'juggler':1 'mad':8 'must':14 'stori':5" ...
+  2. dist_gen.weighted_choice [sampled]: (fit: 0) "'convent':21 'explor':12 'frisbe':17 'must':14 'mysql':20 'reflect':5 'sink':15 'sleep':1 'stun':4 'sumo':8 'suspect':2 'wrestler':9"; "'administr':18 'boy':8 'challeng':15 'cow':12 'databas':17 'desert':22 'guy':2 'mad':11 'must':14 'sahara':21 'stori':5 'trap':1 'unbeliev':4"; "'amaz':4 'australia':18 'compos':16 'crocodil':8 'crusad':2 'deep':1 'discov':14 'must':13 'squirrel':11 'tale':5"; "'convent':22 'cow':18 'discov':15 'forens':11 'insight':4 'mad':17 'man':8 'must':14 'mysql':21 'psychologist':12 'punk':2 'saga':5 'seabiscuit':1"; "'bore':4 'challeng':14 'dog':11 'fiddler':1 'gulf':19 'lost':2 'madman':16 'mexico':21 'must':13 'squirrel':8 'tale':5" ...
+  3. dist_gen.zipf_choice [sampled]: (fit: 0.0346) "'charact':5 'crocodil':12 'gulf':20 'insight':4 'intent':2 'mexico':22 'must':14 'sink':15 'streetcar':1 'studi':6 'waitress':9,17"; "'australia':18 'butler':8 'explor':16 'freddi':2 'must':13 'pursu':14 'saga':5 'sister':1 'stun':4 'woman':11"; "'administr':9 'baloon':21 'chef':13 'coma':2 'confront':16 'databas':8 'emot':4 'factori':22 'metropoli':1 'must':15 'pastri':12 'saga':5 'teacher':18"; "'boat':8 'california':18 'cat':16 'die':1 'intrepid':4 'kill':14 'maker':2 'monkey':11 'must':13 'tale':5"; "'battl':15 'chef':9 'giant':2 'monkey':12,17 'must':14 'pastri':8 'princess':1 'shark':20 'tank':21 'thrill':4 'yarn':5" ...
+  (film.fulltext) set 1
+  (film.language_id) next
+  (film.last_update)
+  (film.length)
+  (film.original_language_id)
+  (film.rating)
+  (film.release_year)
+  (film.rental_duration)
+  (film.rental_rate)
+  (film.replacement_cost)
+  (film.special_features)
+  (film.title) previous
+  (film.special_features) propose
+  Sample of actual source data: ['Commentaries', 'Deleted Scenes', 'Behind the Scenes']; ['Trailers', 'Commentaries', 'Behind the Scenes']; ['Trailers', 'Commentaries', 'Deleted Scenes']; ['Trailers', 'Commentaries', 'Behind the Scenes']; ['Trailers', 'Commentaries', 'Deleted Scenes', 'Behind the Scenes']...
+  1. dist_gen.weighted_choice: (fit: 0) ['Trailers', 'Commentaries']; ['Commentaries']; ['Commentaries']; ['Behind the Scenes']; ['Trailers'] ...
+  2. dist_gen.weighted_choice [suppressed]: (fit: 0) ['Commentaries', 'Deleted Scenes']; ['Deleted Scenes']; ['Trailers', 'Behind the Scenes']; ['Trailers', 'Behind the Scenes']; ['Trailers', 'Commentaries', 'Deleted Scenes', 'Behind the Scenes'] ...
+  3. dist_gen.weighted_choice [sampled]: (fit: 0) ['Commentaries', 'Deleted Scenes']; ['Commentaries', 'Deleted Scenes', 'Behind the Scenes']; ['Trailers', 'Deleted Scenes']; ['Trailers', 'Deleted Scenes']; ['Commentaries', 'Deleted Scenes', 'Behind the Scenes'] ...
+  4. dist_gen.weighted_choice [sampled and suppressed]: (fit: 0) ['Trailers', 'Commentaries', 'Deleted Scenes']; ['Trailers', 'Behind the Scenes']; ['Trailers', 'Commentaries', 'Deleted Scenes']; ['Trailers', 'Deleted Scenes']; ['Commentaries', 'Deleted Scenes', 'Behind the Scenes'] ...
+  5. dist_gen.choice [sampled]: (fit: 1.26) ['Deleted Scenes', 'Behind the Scenes']; ['Trailers', 'Deleted Scenes']; ['Trailers', 'Commentaries', 'Behind the Scenes']; ['Trailers', 'Commentaries']; ['Deleted Scenes'] ...
+  6. dist_gen.choice [sampled and suppressed]: (fit: 1.26) ['Trailers', 'Commentaries']; ['Trailers', 'Commentaries']; ['Trailers', 'Commentaries', 'Behind the Scenes']; ['Commentaries', 'Deleted Scenes', 'Behind the Scenes']; ['Trailers', 'Commentaries', 'Deleted Scenes'] ...
+  7. dist_gen.choice: (fit: 2.75) ['Deleted Scenes']; ['Trailers', 'Deleted Scenes']; ['Trailers', 'Behind the Scenes']; ['Trailers', 'Deleted Scenes', 'Behind the Scenes']; ['Deleted Scenes'] ...
+  8. dist_gen.choice [suppressed]: (fit: 2.75) ['Trailers', 'Behind the Scenes']; ['Deleted Scenes']; ['Trailers', 'Deleted Scenes', 'Behind the Scenes']; ['Trailers', 'Commentaries']; ['Commentaries', 'Deleted Scenes', 'Behind the Scenes'] ...
+  9. dist_gen.zipf_choice [sampled]: (fit: 71.1) ['Commentaries', 'Deleted Scenes']; ['Commentaries', 'Deleted Scenes']; ['Trailers', 'Deleted Scenes']; ['Trailers', 'Commentaries', 'Behind the Scenes']; ['Deleted Scenes'] ...
+  10. dist_gen.zipf_choice [sampled and suppressed]: (fit: 71.1) ['Commentaries', 'Deleted Scenes']; ['Trailers', 'Commentaries', 'Deleted Scenes', 'Behind the Scenes']; ['Trailers']; ['Trailers']; ['Commentaries', 'Deleted Scenes'] ...
+  11. dist_gen.zipf_choice: (fit: 299) ['Trailers']; ['Trailers', 'Commentaries']; ['Trailers', 'Commentaries']; ['Trailers']; ['Commentaries'] ...
+  12. dist_gen.zipf_choice [suppressed]: (fit: 299) ['Trailers']; ['Trailers', 'Behind the Scenes']; ['Trailers', 'Commentaries', 'Behind the Scenes']; ['Trailers', 'Commentaries', 'Behind the Scenes']; ['Trailers'] ...
+  13. dist_gen.constant: (no fit) None; None; None; None; None ...
+  (film.special_features) set 1
+  (film.title) quit
+  Table film:
+  ...changing special_features from nothing to dist_gen.weighted_choice
+  Do you want to save this configuration?
+  (yes/no/cancel) yes
+
+Let's have a look at what that did to ``config.yaml``
+(which used to contain almost nothing):
 
 .. code-block:: yaml
-  :linenos:
 
+  src-stats:
+  - comments:
+    - The values that appear in column fulltext of a random sample of 500 rows of table
+      film
+    name: auto__film__fulltext
+    query: SELECT fulltext AS value FROM (SELECT fulltext FROM film WHERE fulltext IS
+      NOT NULL ORDER BY RANDOM() LIMIT 500) AS _inner GROUP BY value ORDER BY COUNT(fulltext)
+      DESC
   tables:
-    age_gender_bkts:
-      num_rows_per_pass: 1
+    actor:
       row_generators:
-        - name: generic.person.password
-          columns_assigned: gender
-        - name: generic.person.password
-          columns_assigned: age_bucket
-        - name: generic.column_value_provider.column_value
-          args: [dst_db_conn, orm.Countries, '"country_destination"']
-          columns_assigned: country_destination
-
-    users:
-      num_rows_per_pass: 1
+      - columns_assigned:
+        - first_name
+        name: generic.person.first_name
+      - columns_assigned:
+        - last_name
+        name: generic.person.last_name
+    address: {}
+    category: {}
+    city: {}
+    country: {}
+    customer: {}
+    film:
       row_generators:
-        - name: generic.person.password
-          columns_assigned: id
+      - columns_assigned:
+        - fulltext
+        kwargs:
+          a: SRC_STATS["auto__film__fulltext"]["results"]
+        name: dist_gen.choice
+      - columns_assigned:
+        - special_features
+        kwargs:
+          a: SRC_STATS["auto__film__special_features"]["results"]
+        name: dist_gen.weighted_choice
+    film_actor: {}
+    film_category: {}
+    inventory: {}
+    language: {}
+    payment: {}
+    payment_p2022_01: {}
+    payment_p2022_02: {}
+    payment_p2022_03: {}
+    payment_p2022_04: {}
+    payment_p2022_05: {}
+    payment_p2022_06: {}
+    payment_p2022_07: {}
+    rental: {}
+    staff: {}
+    store: {}
 
-For instance, on lines 5-6 above we say that every time a row is generated for the ``agen_gender_bkts`` table, the ``generic.person.password`` function should be called (without arguments), and the output should be written to the ``gender`` column.
-We similarly use ``generic.person.password`` to populate ``age_gender_bkts.age_bucket`` and ``users.id``, and ``generic.column_value_provider.column_value`` (more on that one later) to populate ``country_destination``.
-The next time we run ``make-generators``, these config-specified row generators will override the default ones and we will not need to edit the ``ssg.py`` manually any more.
+Here we can see the simple generators that are now applied to the first name
+and last name of the ``actor`` table. We can also see the ``dist_gen.choice``
+generators we chose for ``film.fulltext`` and ``film.special_features``, and how
+these require some data from the database.
+We can see the query that will provide this data in the ``src-stats:`` block.
 
-You may notice in the above code block a few magical-seeming keywords, namely ``generic``, ``dst_db_conn``, and ``orm``, that deserve an explanation.
+However, this was a confusing choice to make. We did not see actual text when we
+were choosing the generator, we saw a list of words and numbers.
 
-- ``generic`` is the object that is used to reference Mimesis providers, which you already met earlier.
-- ``dst_db_conn`` is a SQLAlchemy database connection object for the destination database. Generator functions can use it to for example fetch a random ID for a row in a different table, which is what the ``generic.column_value_provide.column_value`` generator above does.
-- ``orm`` is the module of the ``orm.py`` file.
+Well, let's see what this generates anyway. We will need to use the
+``--force`` option for overwrite the existing files, and the ``--num-passes``
+option to create multiple rows of output.
 
-These three and their fields are available to you to use as generator functions (the ``name`` field) or their arguments when writing a config file.
-You can also use Python constants like constant numbers, strings, and ``None``, although take care to wrap any constant strings in ``'"nested quotes"'``.
+.. code-block:: shell
 
-We can also use row generators to add more fidelity to the data.
-Examples include specifying that a column’s value should be an integer in a given range or should be chosen at random from a list of acceptable values.
-We see below that we have used these techniques to populate the ``sessions.secs_elapsed`` column with random integers in the range 0-3,600 and ``sessions.action`` with any one of the three most common action types from the source dataset:
+  datafaker create-data --num-passes 3
 
-**config.yaml**:
+Now let's have a look at what data we have in the destination database:
 
-.. code-block:: yaml
-   :linenos:
+.. code-block::
 
-   tables:
-     sessions:
-       row_generators:
-         - name: generic.numeric.integer_number
-           kwargs:
-             start: 0
-             end: 3600
-           columns_assigned: secs_elapsed
-         - name: generic.choice
-           kwargs:
-             items: ["show", "index", "personalize"]
-           columns_assigned: action
+  $ datafaker list-tables
+  actor
+  address
+  category
+  city
+  country
+  customer
+  film
+  film_actor
+  film_category
+  inventory
+  language
+  payment
+  payment_p2022_01
+  payment_p2022_02
+  payment_p2022_03
+  payment_p2022_04
+  payment_p2022_05
+  payment_p2022_06
+  payment_p2022_07
+  rental
+  staff
+  store
+  $ datafaker dump-data --output - --table actor
+  actor_id,first_name,last_name,last_update
+  1,Vertie,Huber,2026-12-13 01:09:43.409289+00:00
+  2,Jewel,Clarke,2026-10-31 16:07:09.691557+00:00
+  3,Arden,Chavez,2026-03-12 17:22:18.332749+00:00
+  $ datafaker dump-data --output - --table film
+  description,film_id,fulltext,language_id,last_update,length,original_language_id,rating,release_year,rental_duration,rental_rate,replacement_cost,special_features,title
+  Green,1,'amaz':4 'boat':22 'butler':8 'drama':5 'expec':1 'husband':11 'must':13 'natur':2 'reach':14 'shark':17 'u':21 'u-boat':20,1,2026-04-22 19:56:57.650072+01:00,938,1,Cyan,-319,-52,79.21,45.44,"['Deleted Scenes', 'Behind the Scenes']",Blue
+  Red,2,'ballroom':2 'boondock':1 'boy':11 'crocodil':8 'defeat':14 'fate':4 'gulf':19 'mexico':21 'monkey':16 'must':13 'panorama':5,1,2026-08-08 21:06:59.620631+01:00,994,1,Brown,-471,-388,97.80,32.94,"['Commentaries', 'Deleted Scenes', 'Behind the Scenes']",Blue
+  Magenta,3,"'ancient':20 'astound':4 'chanc':1 'china':21 'forens':8,12 'moos':18 'must':15 'overcom':16 'psychologist':9,13 'resurrect':2 'stori':5",2,2026-06-10 09:43:23.457110+01:00,273,2,Pink,520,-960,71.36,14.38,"['Trailers', 'Behind the Scenes']",Brown
+  $ datafaker dump-data --output - --table film_actor
+  actor_id,film_id,last_update
+  1,1,2026-07-18 22:09:15.669313+01:00
+  2,2,2026-02-18 03:04:45.317350+00:00
+  3,3,2026-07-09 20:43:06.250462+01:00
+
+So here we have dumped the two tables we configured (``actor`` and ``film``),
+and one other (``film_actor``), three rows of each because we specified ``--num-passes 3``.
+
+You will see that almost all of the columns have correctly-typed data in it.
+The primary keys befin at one and increase by one per row,
+all the foreign keys point to existing rows in the correct table
+and all the data is correctly-typed. Also our nice new generators are working:
+Our ``actor`` table has nice names in it, and our ``film`` table has a ``fulltext`` column.
+
+Problems with the minimal example
+---------------------------------
+
+Here is a non-exhaustive list of issues with the data produced:
+
+- all text fields are just colours, for example:
+  - staff names (we can deal with this the same way we dealt with actors names above).
+  - address lines.
+  - movie categories.
+  - city, country and language names.
+  - movie descriptions.
+- the ``fulltext`` table in Pagila relates to the ``title`` and ``description``
+  but in our generated data does not.
+- there are a lot of payment tables that are partitions of the
+  main payment table in the source database, but these are
+  just different tables in the generated table.
+
+Fixing the problems with the minimal example #1: ignoring unwanted tables
+-------------------------------------------------------------------------
+
+First, let us remove all the ``payment_`` tables.
+This lowers the fidelity of the generated database, but ``datafaker`` cannot cope with partitioned tables
+so the best that we can do is pretend that ``payment`` is not a partitioned table.
+If we think that our users will not be interested in this implementation detail then this will be acceptable.
+
+We fix this problems with ``datafaker configure-tables``
+(remember that entering no command repeats the previous command):
+
+.. code-block::
+
+  $ datafaker configure-tables
+  Interactive table configuration (ignore, vocabulary, private, generate or empty). Type ? for help.
+
+  (table: actor) next
+  (table: address)
+  (table: category)
+  (table: city)
+  (table: country)
+  (table: customer)
+  (table: film)
+  (table: film_actor)
+  (table: film_category)
+  (table: inventory)
+  (table: language)
+  (table: payment)
+  (table: payment_p2022_01) ignore
+  Table payment_p2022_01 set as ignored
+  (table: payment_p2022_02)
+  Table payment_p2022_02 set as ignored
+  (table: payment_p2022_03)
+  Table payment_p2022_03 set as ignored
+  (table: payment_p2022_04)
+  Table payment_p2022_04 set as ignored
+  (table: payment_p2022_05)
+  Table payment_p2022_05 set as ignored
+  (table: payment_p2022_06)
+  Table payment_p2022_06 set as ignored
+  (table: payment_p2022_07)
+  Table payment_p2022_07 set as ignored
+  (table: rental) quit
+  Changing payment_p2022_01 from generate to ignore
+  Changing payment_p2022_02 from generate to ignore
+  Changing payment_p2022_03 from generate to ignore
+  Changing payment_p2022_04 from generate to ignore
+  Changing payment_p2022_05 from generate to ignore
+  Changing payment_p2022_06 from generate to ignore
+  Changing payment_p2022_07 from generate to ignore
+  Do you want to save this configuration?
+  (yes/no/cancel) yes
 
 
-Many simple needs are served by the plethora of Mimesis providers we can access through the ``generic`` object, but to go beyond what they offer, we can also write our own custom row generators.
-These are written in a separate Python module and referenced in the configuration file.
-For example, in the ``users`` table, we may want to ensure that the ``date_first_booking`` is optional and never comes before the ``date_account_created``.
-To accomplish this, we define a custom generator, which is a function that returns a tuple with two dates.
-In this tuple, the second item may be ``None`` and always comes at least a calendar year after the first item:
-
-**airbnb_generators.py**:
-
-.. code-block:: python3
-   :linenos:
-
-   import datetime
-   from typing import Optional
-
-   def user_dates_provider(generic):
-       date_account_created: datetime.date = generic.datetime.date(start=2010, end=2015)
-
-       booking_date: Optional[datetime.date] = None
-       if generic.choice([True, False]):
-           booking_date = generic.datetime.date(
-               start=date_account_created.year + 1, end=2016
-           )
-
-       return date_account_created, booking_date
-
-Then, we tell SSG to import our custom ``airbnb_generators.py`` and assign the return values of our generator function to the two columns in our ``users`` table:
-
-**config.yaml**:
-
-.. code-block:: yaml
-   :linenos:
-
-   row_generators_module: airbnb_generators
-
-   tables:
-     users:
-       num_rows_per_pass: 1
-       row_generators:
-         - name: generic.person.password
-           columns_assigned: id
-         - name: airbnb_generators.user_dates_provider
-           kwargs:
-              generic: generic
-           columns_assigned: ["date_account_created", "date_first_booking"]
-
-Note how we pass the ``generic`` object as a keyword argument to ``user_dates_provider``.
-Row generators can have positional arguments specified as a list under the ``args`` entry and keyword arguments as a dictionary under the ``kwargs`` entry.
-
-Limitations to this approach to increasing fidelity are that rows can not be correlated with other rows in the same table, nor with any rows in other tables, except for trivially fulfilling foreign key constraints as in the default configuration.
-We will see how to address this later when we talk about :ref:`story generators <story-generators>`.
-
-This level of configuration allows us to make the data look much more plausible, especially when looked at locally on the level of individual rows.
-The ``sessions.action`` column can have plausible actions rather than random strings, a session’s duration can be in a plausible range of numbers and users don’t make bookings before creating an account:
-
-.. list-table:: users
-   :header-rows: 1
-
-   * - id
-     - date_account_created
-     - date_first_booking
-   * - TK53EDBJ
-     - 2011-10-21
-     -
-   * - BY13UILQ
-     - 2015-04-12
-     - 2016-12-29
-   * - WA25VOAU
-     - 2011-02-08
-     - 2013-07-03
-   * - YT49ANJT
-     - 2015-11-16
-     -
-
-Still there are no privacy implications, but data can be generated that e.g. passes various filters and ``WHERE`` clauses that one might realistically run on the data, opening new utility, especially in testing.
-
-.. _source_statistics:
-
-Using Aggregate Statistics from the Source Data
------------------------------------------------
-
-Beyond copying vocabulary tables, SSG allows for the original data to affect the synthetic data generation process only through a particular mechanism we call source statistics.
-To use it, the user writes in the configuration file SQL queries that are executed on the source data, and their output is written into a file, typically called ``src-stats.yaml``.
-The file is both machine and human-readable, and its contents are available to be used as inputs into the custom generators we discussed above.
-
-In principle this allows moving over arbitrary information about the source data, but using the source statistics feature with row-by-row queries is considered an anti-pattern.
-Rather, the queries should compute some aggregate properties of the source data: the mean and standard deviation of the values in some column, the average age of a person, a histogram of relative frequencies of pairs of values in two different columns, etc.
-By using the outputs of these queries as arguments in the custom generators one can, for instance, match uni- or multi-variate distributions between the source data and the synthetic data, such as setting the average age of the synthetic people to be the same as that in the real data.
-
-In the AirBnB dataset, if we want to generate normally-distributed values with the right mean and standard deviation for the ``users.age`` column, we would define a ``config.yaml`` with the following content (on top of the configurations we wrote in the previous sections):
-
-   **config.yaml**:
-
-.. code-block:: yaml
-    :linenos:
-
-    src-stats:
-      - name: age_stats
-        query: >
-          SELECT AVG(age)::float AS mean, STDDEV(age)::float AS std_dev
-          FROM users
-          WHERE age <= 100
-
-    tables:
-      users:
-        row_generators:
-          - name: airbnb_generators.user_age_provider
-            kwargs:
-              query_results: SRC_STATS["age_stats"]
-            columns_assigned: age
-
-Let's first focus on the ``src-stats`` block where we define what queries to run on the source data.
-In this case we run only one, called ``age_stats``, which you can see on lines 4 - 6.
-With this added to your ``config.yaml`` you need run ::
-
-    $ sqlsynthgen make-stats --config-file config.yaml
-
-which executes the query and writes the results to a ``src-stats.yaml`` file, which looks as follows:
-
-**src-stats.yaml**:
-
-.. code-block:: yaml
-    :linenos:
-
-    age_stats:
-    - mean: 36.54434029695572
-      std_dev: 11.708339792587486
-
-This is the output of the SQL query in YAML format.
-To be able to use these numbers in our generators we need to regenerate ``ssg.py`` with ::
-
-    $ sqlsynthgen make-generators --config-file config.yaml --stats-file src-stats.yaml --force
-
-The new option ``--stats-file src-stats.yaml`` makes it such that the ``SRC_STATS`` variable in ``ssg.py`` is populated with the concents of ``src-stats.yaml``, allowing you to pass them to your generators as arguments, as we do above in the ``config.yaml`` snippet on line 13.
-Note how the query name ``name: age_stats`` (line 2) is used in ``SRC_STATS["age_stats"]`` (line 13) to access the results of this particular query.
-
-Finally, we need the custom generator function ``airbnb_generators.user_age_provider`` (line 11), whose content is the following:
-
-**airbnb_generators.py**:
-
-.. code-block:: python3
-    :linenos:
-
-    import random
-
-    def user_age_provider(query_results):
-        # The [0] picks up the first row of the query results. This is needed because all
-        # query results are always tables, and could in principle have many rows.
-        mean: float = query_results[0]["mean"]
-        std_dev: float = query_results[0]["std_dev"]
-        return random.gauss(mean, std_dev)
-
-With that in place you can run ::
-
-    $ sqlsynthgen create-data
-
-as usual, and your newly created rows fill have the correct distribution of ages.
-
-Note the difference between this approach and some other approaches to synthetic data, such as those that use neural networks trained on the original data.
-Here, the user has to manually specify exactly which statistical properties of the original data are extracted, and exactly how they are used to inform the synthetic data.
-This means more manual work for the user, especially if many aspects of the synthetic data want to be matched with the original.
-However, it provides complete transparency and control over how the original data is used, and thus over possible privacy implications.
-One can look at the queries run to produce source statistics, and their outputs in the ``src-stats.yaml`` file, and if one is satisfied that publishing these results poses an acceptable privacy risk, then publishing any amount of synthetic data generated based on them can only pose less of a risk.
-
-Differentially Private Source Statistics
-++++++++++++++++++++++++++++++++++++++++
-
-Even if only aggregate statistics about the source data are used, they can still leak private information.
-If for instance we would do a ``SELECT COUNT(*), gender FROM people GROUP BY gender`` query to find out the gender distribution of the people in our data, and if there were only a few people with "other" as their gender, their presence or absense in the dataset could be leaked by the aggregate query.
-To protect against such privacy leaks, we can add differential privacy to our source statistics queries, which adds noise to the results to hide the effects of individuals.
-
-For differential privacy, SSG uses a package called `SmartNoiseSQL <https://github.com/opendp/smartnoise-sdk>`_, that runs SQL queries and adds appropriate amounts of noise to the results to make them `differentially private <https://en.wikipedia.org/wiki/Differential_privacy>`_.
-Here's how you could add differential privacy to the above ``age-stats`` query:
-
-   **config.yaml**:
+This has changed ``config.yaml`` file by adding the following sections:
 
 .. code-block:: yaml
-    :linenos:
 
-    src-stats:
-      - name: age_stats
-        query: >
-          SELECT age, id
-          FROM users
-          WHERE age <= 100
-        dp-query: >
-          SELECT AVG(age) AS mean, STDDEV(age) AS std_dev
-          FROM query_result
-        epsilon: 0.5
-        delta: 0.000001
-        snsql-metadata:
-          max_ids: 1
-          id:
-            type: string
-            private_id: true
-          age:
-            type: float
-            lower: 0
-            upper: 100
+    payment_p2022_01:
+      ignore: true
+    payment_p2022_02:
+      ignore: true
+    payment_p2022_03:
+      ignore: true
+    payment_p2022_04:
+      ignore: true
+    payment_p2022_05:
+      ignore: true
+    payment_p2022_06:
+      ignore: true
+    payment_p2022_07:
+      ignore: true
 
-The query is now done in two stages.
-First, a regular SQL query, the one called ``query``, is executed on the database, and the results are fetched to the memory of the machine that SSG is being run on, in a table called ``query_result``.
-Then a second query called ``dp-query`` is run on the table ``query_result``, using SmartNoiseSQL (SNSQL), to compute aggregates in a differentially private way.
-To be able to do this, we need to provide SmartNoiseSQL some extra information:
+Now we can destroy the existing database and try again:
 
-- ``epsilon`` and ``delta`` are the parameters that control the strength of the `differential privacy guarantee <https://en.wikipedia.org/wiki/Differential_privacy#ε-differentially_private_mechanisms>`_.
-- The ``snsql-metadata`` block holds information about the columns in ``query_result``.
-  There must always be one column marked with ``private_id: true`` to be the one that identifies the "unit of privacy", e.g. individual people.
-  Data types must also be provided for all columns, and for numerical columns a minimum and maximum values that they can take are needed.
-  Please refer to the `SmartNoiseSQL documentation <https://docs.smartnoise.org/sql/metadata.html>`_ for a detailed explanation of all the parameters available and their meaning.
+.. code-block:: shell
 
-Through the robustness to post-processing property of differential privacy, if the values in ``src-stats.yaml`` are generated in a differentially private way, the synthetic data generated based on those values can not break that guarantee.
-To learn more about differential privacy and the meaning of its parameters, please read `this white paper from Microsoft <https://azure.microsoft.com/mediahandler/files/resourcefiles/microsoft-smartnoisedifferential-privacy-machine-learning-case-studies/SmartNoise%20Whitepaper%20Final%203.8.21.pdf>`_.
+  datafaker remove-tables --all --yes
+  datafaker create-tables
+  datafaker create-data --num-passes 3
 
-At the time of writing, SmartNoiseSQL is somewhat limited in the kinds of queries it can run.
-For instance, joins and subqueries are not possible.
-This is why it is typically necessary to do some preprocessing of the data in the ``query`` before the differentially private aggregation, usually an ``AVG``, a ``SUM`` or a ``COUNT``, is done in ``dp-query``.
-Apart from splitting the ``src-stats`` query into the ``query`` and ``dp-query`` parts and adding the SNSQL metadata, nothing else has to change:
-You still run ``make-stats`` as usual to generate a ``src-stats.yaml``.
+We don't need to regenerate the generators this time as we have not changed anything in the ``config.yaml`` file that affects generators.
 
-Below is an example of the kind of fidelity one can obtain by combining custom row generators with source statistics queries.
+Fixing the problems with the minimal example #2: generate vocabularies
+----------------------------------------------------------------------
 
-**raw vs synthetic ages histogram**:
+While we could try to generate random plausible language, country, city and film category names, there is a better way.
+As these tables hold no sensitive data, we can just copy them.
 
-|pic1| |pic2|
+We will need to use ``datafaker configure-tables`` again; in fact,
+we could have done this at the same time as ignoring the payment partitions.
+After configuring the tables we use ``datafaker make-vocab`` to export the data:
 
-.. |pic1| image:: real_data_histogram.png
-   :width: 45%
+.. code-block::
 
-.. |pic2| image:: synthetic_data_histogram.png
-   :width: 45%
+  $ datafaker configure-tables
+  Interactive table configuration (ignore, vocabulary, private, generate or empty). Type ? for help.
 
-One final aspect of source statistics bears mentioning:
-At the top level of ``config.yaml`` one can also set ``use-asyncio: true``.
-With this, if there are multiple source stats queries to be run, they will be run in parallel, which may speed up ``make-stats`` significantly if some of the queries are slow.
+  (table: actor) next
+  (table: address)
+  (table: category) vocabulary
+  Table category set as vocabulary
+  (table: city)
+  Table city set as vocabulary
+  (table: country)
+  Table country set as vocabulary
+  (table: customer) next
+  (table: film)
+  (table: film_actor)
+  (table: film_category)
+  (table: inventory)
+  (table: language) vocabulary
+  Table language set as vocabulary
+  (table: payment) quit
+  Changing category from generate to vocabulary
+  Changing city from generate to vocabulary
+  Changing country from generate to vocabulary
+  Changing language from generate to vocabulary
+  Do you want to save this configuration?
+  (yes/no/cancel) yes
+  $ datafaker make-vocab --compress
 
-.. _story-generators:
-
-Stories Within the Data
--------------------------
-
-The final configuration option available to users of SSG is what we call story generators.
-These address generating synthetic data with correlations that bridge different tables and multiple rows.
-
-A story generator is a Python generator (an unfortunate clash of terminology: Python uses the term "generator" to refer to objects that yield multiple values in a sequence), written by the user, that yields rows to be written into the synthetic database.
-For instance, it may first yield a row specifying a person in the ``users`` table, and then multiple rows for the ``sessions`` table that specify various browsing sessions this user has had:
-
-**airbnb_generators.py**:
-
-.. code-block:: python3
-   :linenos:
-
-   import random
-
-   def sessions_story():
-       """Generate users and their sessions."""
-       device_types = ["Mac Desktop", "Windows Desktop", "iPhone"]
-
-       # a new user will be sent back to us with our randomly chosen device type
-       user: dict = yield (
-           "users",  # table name
-           {
-               "first_device_type": random.choice(device_types)
-           }  # see 1. below
-       )
-
-       # create between 10 and 19 sessions per user
-       sessions_per_user: int = random.randint(10, 20)
-
-       for _ in range(sessions_per_user):
-           if random.random() < 0.8:
-               # most often, the session is from the user's sign-up device...
-               yield (
-                   "sessions",
-                   {
-                       "user_id": user["id"],  # see 2. below
-                       "device_type": user["first_device_type"],
-                   }
-               )
-           else:
-               # ...but sometimes it is from any device type
-               yield (
-                   "sessions",
-                   {
-                       "user_id": user["id"],
-                       "device_type": random.choice(device_types)},
-               )
-
-Three features make story generators more practical than simply manually writing code that creates the synthetic data bit-by-bit:
-
-1. When a story generator yields a row, it can choose to only specify values for some of the columns. The values for the other columns will be filled by custom row generators (as explained in a previous section) or, if none are specified, by SSG's default generators. Above, we have chosen to specify the value for ``first_device_type`` but the date columns will still be handled by our ``user_dates_provider`` and the age column will still be populated by the ``user_age_provider``.
-2. Any default values that are set when the rows yielded by the story generator are written into the database are available to the story generator when it resumes. In our example, the user's ``id`` is available so that we can respect the foreign key relationship between ``users`` and ``sessions``, even though we did not explicitly set the user's ``id`` when creating the user on line 8.
-
-To use and get the most from story generators, we will need to make some changes to our configuration:
-
-**config.yaml**:
+Now we can see the follwing sections in ``config.yaml`` containing ``vocabulary_table:true``:
 
 .. code-block:: yaml
-   :linenos:
 
-   tables:
-     ...
-     users:
-        num_rows_per_pass: 0  # see 1 below
-        ...
+  category:
+    vocabulary_table: true
+  city:
+    vocabulary_table: true
+  country:
+    vocabulary_table: true
+  language:
+    vocabulary_table: true
 
-     sessions:
-        num_rows_per_pass: 0  # see 1 below
-        ...
+And we can also see we have generated four files:
+``category.yaml.gz``, ``city.yaml.gz``, ``country.yaml.gz`` and ``language.yaml.gz``.
+If the ``--compress`` option is not passed it will produce ``.yaml`` files instead of ``.yaml.gz`` and this would be fine in this case.
+Certain databases have very large vocabulary tables, for example the ``concept`` table in OMOP databases.
+Such huge YAML files can cause problems, but they compress very well, so the ``--compress`` option can be very useful for overcoming such limitations.
+Generating these huge vocabulary files can nevertheless take a very long time! Not in Pagila's case, though.
 
-   story_generators_module: airbnb_generators  # see 2 below
+Now your data privacy protocols will either require you to unzip and examine these files before taking them out of the private network
+or it will trust ``datafaker`` to produce only non-private output given certain inputs.
+In either case we take these files out of the private network.
 
-   story_generators:
-     - name: airbnb_generators.sessions_story
-       num_stories_per_pass: 30  # see 3 below
+Using the same ``config.yaml`` file outside the private network (and with ``DST_DSN`` set as above) we delete the existing data in these vocabulary tables,
+and fill them with the new data from the ``yaml.gz`` (or unzipped ``.yaml``) files:
 
-1. By default, story generators will run in addition to the usual process that generates data row-by-row independently for each table, the process that we've been using so far when running ``create-data``. Often we don't want this for the tables that the story generators generate data for, so in our case we set ``num_rows_per_pass: 0`` for ``users`` and ``sessions``. We could keep these >0 if we wanted a mix of row-by-row and story-generated users and sessions.
-2. We specify the module that contains our story generators. In this case, it is the same Python file as the row generators.
-3. We specify that we have one story generator and that it will be called 30 times. Note that, unlike row generators, the story generator is not linked to any particular table as it specifies the table name whenever it ``yield`` s.
+.. code-block:: console
 
-After editing the ``config.yaml`` and ``airbnb_generators.py`` as above, you can run: ::
+  $ datafaker remove-vocab --yes
+  tim@tim-Latitude-5410:~/Documents/test$ datafaker create-vocab
+  tim@tim-Latitude-5410:~/Documents/test$ datafaker dump-data --output - --table language
+  language_id,last_update,name
+  1,2022-02-15 10:02:19+00:00,English
+  2,2022-02-15 10:02:19+00:00,Italian
+  3,2022-02-15 10:02:19+00:00,Japanese
+  4,2022-02-15 10:02:19+00:00,Mandarin
+  5,2022-02-15 10:02:19+00:00,French
+  6,2022-02-15 10:02:19+00:00,German
 
-  $ sqlsynthgen make-generators --config-file=config.yaml --stats-file=src-stats.yaml --force
+Fixing the problems with the minimal example #3: generate more plausible text
+-----------------------------------------------------------------------------
 
-This will regenerate the ``ssg.py`` file to incorporate your story generator, and running ``create-data`` as usual will then create some storied users and sessions.
+Let us take the example of the ``film.description`` column. Remember we did this above:
 
-Story generators allow for nearly unlimited fidelity if enough work is put in to write them.
-Above, we have created a correlation between only two tables but one can create arbitrary correlations between many tables and variables, including complex time series such as a patient's test results or a customer's orders.
-An example of this can be seen in :ref:`our health data example use case <page-example-health-data>`.
-This opens utility far beyond simple pipeline testing or showcasing, including fitting statistical models to the synthetic data that could perform non-trivially well on the real data.
-The output of the source statistics queries are available as arguments for the story generators, just like they are for the custom row generators.
-Thus the synthetic data generated can be made to match the original data in whatever ways are desired.
-The only significant limitation is that referencing or updating rows created before the current story was run is not easy (although not impossible either, by using the ``dst_db_conn`` object).
+.. code-block::
 
-Note that we make here the same trade off as we did before: generating very high fidelity data requires significant effort on the user's part, in writing the Python code for any story generators that are needed, and any source statistics SQL queries needed to inform those generators of properties of the original data. This is in contrast with other more automated synthetic data generators, such as GANs, which automatically learn various features of the source data and try to replicate them. However, what we gain are:
+  $ datafaker dump-data --output - --table film
+  description,film_id,fulltext,language_id,last_update,length,original_language_id,rating,release_year,rental_duration,rental_rate,replacement_cost,special_features,title
+  Green,1,'amaz':4 'boat':22 'butler':8 'drama':5 'expec':1 'husband':11 'must':13 'natur':2 'reach':14 'shark':17 'u':21 'u-boat':20,1,2026-04-22 19:56:57.650072+01:00,938,1,Cyan,-319,-52,79.21,45.44,"['Deleted Scenes', 'Behind the Scenes']",Blue
+  Red,2,'ballroom':2 'boondock':1 'boy':11 'crocodil':8 'defeat':14 'fate':4 'gulf':19 'mexico':21 'monkey':16 'must':13 'panorama':5,1,2026-08-08 21:06:59.620631+01:00,994,1,Brown,-471,-388,97.80,32.94,"['Commentaries', 'Deleted Scenes', 'Behind the Scenes']",Blue
+  Magenta,3,"'ancient':20 'astound':4 'chanc':1 'china':21 'forens':8,12 'moos':18 'must':15 'overcom':16 'psychologist':9,13 'resurrect':2 'stori':5",2,2026-06-10 09:43:23.457110+01:00,273,2,Pink,520,-960,71.36,14.38,"['Trailers', 'Behind the Scenes']",Brown
 
-* Full transparency and control over the ways in which the source data is utilised, and thus the ways in which privacy could in principle be at risk, including easy implementation of differential privacy guarantees.
-* The possibility of starting from very low fidelity data, and incrementally adding fidelity to particular aspects of the data, as is needed to serve the utility of whatever use case the synthetic data is created for.
+The ``description`` column has values ``Green``, ``Red`` and ``Magenta``. Can we do better? Well, maybe a bit.
 
-Examples of the complete files generated by the tutorial can be found at: ``/sqlsynthgen/examples/airbnb``.
+Let us at least make the description longer than one word!
+``datafaker configure-generators`` using commands ``next table-name.column-name``, ``propose`` and ``set``,
+followed by re-generating the data:
+
+.. code-block::
+
+  $ datafaker configure-generators
+  Interactive generator configuration. Type ? for help.
+
+  (actor.first_name (generic.person.first_name)) next film.description
+  (film.description) propose
+  Sample of actual source data: 'A Brilliant Panorama of a Boat And a Astronaut who must Challenge a Teacher in A Manhattan Penthouse'; 'A Lacklusture Epistle of a Boat And a Technical Writer who must Fight a A Shark in The Canadian Rockies'; 'A Awe-Inspiring Drama of a Dog And a Man who must Escape a Robot in A Shark Tank'; 'A Epic Yarn of a Cat And a Madman who must Vanquish a Dentist in An Abandoned Amusement Park'; 'A Intrepid Story of a Student And a Dog who must Challenge a Explorer in Soviet Georgia'...
+  1. dist_gen.choice [sampled]: (fit: 0) 'A Emotional Tale of a Robot And a Sumo Wrestler who must Redeem a Pastry Chef in A Baloon Factory'; 'A Insightful Epistle of a Pastry Chef And a Womanizer who must Build a Boat in New Orleans'; 'A Stunning Display of a Moose And a Database Administrator who must Pursue a Composer in A Jet Boat'; 'A Amazing Documentary of a Car And a Robot who must Escape a Lumberjack in An Abandoned Amusement Park'; 'A Beautiful Story of a Monkey And a Sumo Wrestler who must Conquer a A Shark in A MySQL Convention' ...
+  2. dist_gen.weighted_choice [sampled]: (fit: 0) 'A Fateful Story of a A Shark And a Explorer who must Succumb a Technical Writer in A Jet Boat'; 'A Epic Tale of a Robot And a Monkey who must Vanquish a Man in New Orleans'; 'A Fast-Paced Panorama of a Technical Writer And a Mad Scientist who must Find a Feminist in An Abandoned Mine Shaft'; 'A Insightful Panorama of a Crocodile And a Boat who must Conquer a Sumo Wrestler in A MySQL Convention'; 'A Brilliant Tale of a Car And a Moose who must Battle a Dentist in Nigeria' ...
+  3. dist_gen.zipf_choice [sampled]: (fit: 0.0346) 'A Intrepid Yarn of a Frisbee And a Dog who must Build a Astronaut in A Baloon Factory'; 'A Awe-Inspiring Character Study of a Boy And a Feminist who must Sink a Crocodile in Ancient China'; 'A Thrilling Yarn of a Feminist And a Madman who must Battle a Hunter in Berlin'; 'A Lacklusture Reflection of a Boat And a Forensic Psychologist who must Fight a Waitress in A Monastery'; 'A Insightful Drama of a Mad Scientist And a Hunter who must Defeat a Pastry Chef in New Orleans' ...
+  4. generic.text.sentence: (fit: 789) 'Do you come here often?'; 'Haskell features a type system with type inference and lazy evaluation.'; 'Do you have any idea why this is not working?'; 'Erlang is a general-purpose, concurrent, functional programming language.'; 'Ports are used to communicate with the external world.' ...
+  5. generic.text.quote: (fit: 826) "Mama always said life was like a box of chocolates. You never know what you're gonna get."; "Mama always said life was like a box of chocolates. You never know what you're gonna get."; 'A census taker once tried to test me. I ate his liver with some fava beans and a nice Chianti.'; 'Houston, we have a problem.'; 'Elementary, my dear Watson.' ...
+  6. generic.text.text: (fit: 1600) 'It is also a garbage-collected runtime system. Any element of a tuple can be accessed in constant time. They are written as strings of consecutive alphanumeric characters, the first character being lowercase. The arguments can be primitive data types or compound data types. In 1989 the building was heavily damaged by fire, but it has since been restored.'; 'Atoms can contain any character if they are enclosed within single quotes and an escape convention exists which allows any character to be used within an atom. Where are my pants? Do you have any idea why this is not working? Haskell features a type system with type inference and lazy evaluation. Erlang is a general-purpose, concurrent, functional programming language.'; 'Initially composing light-hearted and irreverent works, he also wrote serious, sombre and religious pieces beginning in the 1930s. Make me a sandwich. Make me a sandwich. The Galactic Empire is nearing completion of the Death Star, a space station with the power to destroy entire planets. Make me a sandwich.'; 'Make me a sandwich. Its main implementation is the Glasgow Haskell Compiler. Atoms can contain any character if they are enclosed within single quotes and an escape convention exists which allows any character to be used within an atom. The Galactic Empire is nearing completion of the Death Star, a space station with the power to destroy entire planets. Haskell features a type system with type inference and lazy evaluation.'; 'The syntax {D1,D2,...,Dn} denotes a tuple whose arguments are D1, D2, ... Dn. They are written as strings of consecutive alphanumeric characters, the first character being lowercase. The sequential subset of Erlang supports eager evaluation, single assignment, and dynamic typing. Erlang is a general-purpose, concurrent, functional programming language. Ports are created with the built-in function open_port.' ...
+  ... lines removed ...
+  35. dist_gen.constant: (no fit) None; None; None; None; None ...
+  (film.description) set 5
+  (film.film_id[pk]) quit
+  Table film:
+  ...changing description from nothing to generic.text.quote
+  Do you want to save this configuration?
+  (yes/no/cancel) yes
+  $ datafaker remove-data --yes
+  $ datafaker create-data --num-passes 3
+  $ datafaker dump-data --output - --table film
+  description,film_id,fulltext,language_id,last_update,length,original_language_id,rating,release_year,rental_duration,rental_rate,replacement_cost,special_features,title
+  I'm gonna make him an offer he can't refuse.,1,'apollo':2 'beauti':4 'conquer':15 'convent':22 'monkey':8 'must':14 'mysql':21 'shark':18 'stori':5 'sumo':11 'wild':1 'wrestler':12,2,2026-04-07 16:17:54.353109+01:00,981,2,Brown,-846,575,51.36,73.72,"['Trailers', 'Deleted Scenes']",Cyan
+  Those who refuse to learn from history are condemned to repeat it.,2,'ace':1 'administr':9 'ancient':19 'astound':4 'car':17 'china':20 'databas':8 'epistl':5 'explor':12 'find':15 'goldfing':2 'must':14,3,2026-11-03 01:24:15.123173+00:00,122,5,Magenta,-154,148,46.16,17.17,"['Trailers', 'Deleted Scenes']",Red
+  "One morning I shot an elephant in my pajamas. How he got in my pajamas, I don't know.",3,'berlin':20 'car':10 'cat':13 'fargo':2 'fast':5 'fast-pac':4 'hunter':18 'must':15 'outgun':16 'pace':6 'perdit':1 'stori':7,2,2026-12-28 08:16:07.956949+00:00,393,5,Black,761,158,34.31,61.42,"['Deleted Scenes', 'Behind the Scenes']",Pink
+
+So, not really movie descriptions, but at least text of sensible length.
+This generator requires no information from the source database and so cannot leak private data.
+Later, datafaker might gain the capability to generate more exciting text.
+
+Fixing the problems with the minimal example #4: Unnormalized databases
+-----------------------------------------------------------------------
+
+If you look at the ``film`` table in the source Pagila directory, you might figure out that
+the ``fulltext`` column is where to find all the words in the ``title`` and ``description`` columns:
+
+.. code-block::
+
+  $ psql pagila
+  psql (17.7 (Ubuntu 17.7-3.pgdg24.04+1), server 16.11 (Ubuntu 16.11-1.pgdg24.04+1))
+  Type "help" for help.
+
+  pagila=> select title,description,fulltext,to_tsvector(concat(title,' ',description)) from film limit 3;
+        title       |                                             description                                              |                                                                  fulltext                                                                   |                                                                 to_tsvector
+  ------------------+------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------
+  ACADEMY DINOSAUR | A Epic Drama of a Feminist And a Mad Scientist who must Battle a Teacher in The Canadian Rockies     | 'academi':1 'battl':15 'canadian':20 'dinosaur':2 'drama':5 'epic':4 'feminist':8 'mad':11 'must':14 'rocki':21 'scientist':12 'teacher':17 | 'academi':1 'battl':15 'canadian':20 'dinosaur':2 'drama':5 'epic':4 'feminist':8 'mad':11 'must':14 'rocki':21 'scientist':12 'teacher':17
+  ACE GOLDFINGER   | A Astounding Epistle of a Database Administrator And a Explorer who must Find a Car in Ancient China | 'ace':1 'administr':9 'ancient':19 'astound':4 'car':17 'china':20 'databas':8 'epistl':5 'explor':12 'find':15 'goldfing':2 'must':14      | 'ace':1 'administr':9 'ancient':19 'astound':4 'car':17 'china':20 'databas':8 'epistl':5 'explor':12 'find':15 'goldfing':2 'must':14
+  ADAPTATION HOLES | A Astounding Reflection of a Lumberjack And a Car who must Sink a Lumberjack in A Baloon Factory     | 'adapt':1 'astound':4 'baloon':19 'car':11 'factori':20 'hole':2 'lumberjack':8,16 'must':13 'reflect':5 'sink':14                          | 'adapt':1 'astound':4 'baloon':19 'car':11 'factori':20 'hole':2 'lumberjack':8,16 'must':13 'reflect':5 'sink':14
+  (3 rows)
+
+So ideally we should be able to generate ``title`` and ``description``, then set the ``fulltext`` column
+with the SQL expression ``TO_TSVECTOR(CONCAT(title, ' ', description))``.
+
+Sorry, this is not possible at the moment using the configuration commands;
+stories should be used if this column is necessary.
+One possible solution is to remove this column from the ``orm.yaml`` file.
+Find the portion that corresponds to the ``film`` table in this file:
+
+.. code-block::yaml
+  film:
+    columns:
+      description:
+        nullable: true
+        primary: false
+        type: TEXT
+      film_id:
+        nullable: false
+        primary: true
+        type: INTEGER
+      fulltext:
+        nullable: false
+        primary: false
+        type: TSVECTOR
+      language_id:
+        foreign_keys:
+        - language.language_id
+        nullable: false
+        primary: false
+        type: INTEGER
+      ### ... lines removed ... ###
+      title:
+        nullable: false
+        primary: false
+        type: TEXT
+    unique: []
+
+Simply remove the ``fulltext:`` section and this column will not appear in the destination database.

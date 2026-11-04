@@ -1,65 +1,168 @@
 """Tests for the create module."""
 import itertools as itt
+import os
+import random
+import tempfile
 from collections import Counter
 from pathlib import Path
-from typing import Any, Generator, Tuple
+from tempfile import mkdtemp
+from typing import Any, Generator, Mapping, Tuple
 from unittest.mock import MagicMock, call, patch
 
-from sqlalchemy import Column, Connection, Integer, create_engine
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.schema import Table
+import duckdb
+import pandas as pd
+from sqlalchemy import Connection, Engine, select
+from sqlalchemy.schema import Column, MetaData, Table
+from sqlalchemy.types import Integer
 
-from sqlsynthgen.base import FileUploader, TableGenerator
-from sqlsynthgen.create import (
-    Story,
-    _populate_story,
-    create_db_data,
+from datafaker.create import (
+    create_db_data_into,
     create_db_tables,
+    create_db_tables_into,
     create_db_vocab,
     populate,
 )
-from tests.utils import RequiresDBTestCase, SSGTestCase, get_test_settings, run_psql
+from datafaker.db_utils import (
+    create_db_engine_dst,
+    get_sync_engine,
+    sorted_non_vocabulary_tables,
+)
+from datafaker.make import FunctionCall, StoryGeneratorInfo, _get_generator_for_table
+from datafaker.populate import TableGenerator
+from datafaker.serialize_metadata import dict_to_metadata, metadata_to_dict
+from datafaker.settings import SettingsError
+from tests.utils import (
+    DatafakerTestCase,
+    GeneratesDBTestCase,
+    MsSqlTestDb,
+    RequiresDBTestCase,
+)
 
 
-class MyTestCase(SSGTestCase):
-    """Module test case."""
+class TestCreate(GeneratesDBTestCase):
+    """Test that we can create data."""
 
-    @patch("sqlsynthgen.utils.create_engine")
-    @patch("sqlsynthgen.create.get_settings")
-    @patch("sqlsynthgen.create.populate")
-    def test_create_db_data(
-        self,
-        mock_populate: MagicMock,
-        mock_get_settings: MagicMock,
-        mock_create_engine: MagicMock,
-    ) -> None:
-        """Test the generate function."""
-        mock_get_settings.return_value = get_test_settings()
-        mock_populate.return_value = {}
+    dump_file_path = "instrument.sql"
+    database_name = "instrument"
+    schema_name = "public"
 
-        num_passes = 23
-        row_counts = create_db_data([], {}, [], num_passes)
+    def test_create_vocab(self) -> None:
+        """Test the create_db_vocab function."""
+        with patch.dict(
+            os.environ,
+            {"DST_DSN": self.dst_dsn},
+            clear=True,
+        ):
+            config = {
+                "tables": {
+                    "player": {
+                        "vocabulary_table": True,
+                    }
+                },
+            }
+            self.set_configuration(config)
+            meta_dict = metadata_to_dict(
+                self.metadata, self.schema_name, self.sync_engine, None
+            )
+            create_db_tables(self.metadata)
+            create_db_vocab(self.metadata, meta_dict, config, Path("./tests/examples"))
+        assert self.dst_engine is not None
+        with self.dst_engine.connect() as conn:
+            stmt = select(self.metadata.tables["player"])
+            rows = list(conn.execute(stmt).mappings().fetchall())
+            self.assertEqual(len(rows), 3)
+            self.assertEqual(rows[0].id, 1)
+            self.assertEqual(rows[0].given_name, "Jock")
+            self.assertEqual(rows[0].family_name, "Spring")
+            self.assertEqual(rows[1].id, 2)
+            self.assertEqual(rows[1].given_name, "Jennifer")
+            self.assertEqual(rows[1].family_name, "Jenny")
+            self.assertEqual(rows[2].id, 3)
+            self.assertEqual(rows[2].given_name, "Mus")
+            self.assertEqual(rows[2].family_name, "Al-Said")
 
-        self.assertEqual(len(mock_populate.call_args_list), num_passes)
-        self.assertEqual(row_counts, {})
-        mock_create_engine.assert_called()
+    def test_column_defaults_in_stories(self) -> None:
+        """Test that we can handle column defaults in stories."""
+        random.seed(56)
+        config: Mapping[str, Any] = {}
+        self.generate_data(config, num_passes=2)
+        assert self.dst_engine is not None
+        with self.dst_engine.connect() as conn:
+            stmt = select(self.metadata.tables["string"])
+            rows = list(conn.execute(stmt).mappings().fetchall())
+            a = rows[0]
+            b = rows[1]
+            self.assertEqual(a.id, 1)
+            self.assertEqual(b.id, 2)
+            self.assertIs(type(a.frequency), float)
+            self.assertIs(type(b.frequency), float)
+            self.assertNotEqual(a.frequency, b.frequency)
+            self.assertIs(type(a.position), int)
+            self.assertIs(type(b.position), int)
+            self.assertNotEqual(a.position, b.position)
+            self.assertEqual(a.model_id, 1)
+            self.assertIn(b.model_id, {1, 2})
+            stmt = select(self.metadata.tables["player"])
+            rows = list(conn.execute(stmt).mappings().fetchall())
+            c = rows[0]
+            d = rows[1]
+            self.assertIs(type(c.given_name), str)
+            self.assertIs(type(d.given_name), str)
 
-    @patch("sqlsynthgen.create.get_settings")
-    @patch("sqlsynthgen.utils.create_engine")
-    def test_create_db_tables(
-        self, mock_create_engine: MagicMock, mock_get_settings: MagicMock
-    ) -> None:
-        """Test the create_tables function."""
-        mock_get_settings.return_value.dst_schema = None
-        mock_meta = MagicMock()
 
-        create_db_tables(mock_meta)
-        mock_create_engine.assert_called_once_with(
-            mock_get_settings.return_value.dst_dsn
-        )
-        mock_meta.create_all.assert_called_once_with(mock_create_engine.return_value)
+class TestPopulate(DatafakerTestCase):
+    """Test create.populate."""
 
-    def test_populate(self) -> None:
+    def test_multicolumn_primary_key(self) -> None:
+        """Test that multi-primary-key columns get generated correctly."""
+        tmpdir = mkdtemp()
+        dsn = f"duckdb:///{tmpdir}/out.parquet"
+        engine = get_sync_engine(create_db_engine_dst(dsn))
+        metadata = MetaData()
+        table = Table("tab1", metadata)
+        table.append_column(Column("pk1", Integer(), nullable=False, primary_key=True))
+        table.append_column(Column("pk2", Integer(), nullable=False, primary_key=True))
+        create_db_tables_into(metadata, dsn)
+        with engine.connect() as conn:
+            table_gen = TableGenerator(
+                conn,
+                _get_generator_for_table(
+                    {
+                        "row_generators": [
+                            {
+                                "columns_assigned": ["pk1"],
+                                "name": "increment",
+                            },
+                            {
+                                "columns_assigned": ["pk2"],
+                                "name": "increment",
+                            },
+                        ]
+                    },
+                    table,
+                ),
+                5,
+            )
+
+            def mk_increment():
+                v = [0]
+
+                def increment():
+                    v[0] += 1
+                    return v[0]
+
+                return increment
+
+            context = {
+                "increment": mk_increment(),
+            }
+            table_gen.set_context(context)
+            row_counts = populate(conn, [table], {table.name: table_gen}, [], context)
+            self.assertEqual(row_counts["tab1"], 1)
+
+    # pylint: disable=too-many-locals
+    @patch("datafaker.populate._get_object")
+    def test_populate(self, mock_get_object: MagicMock) -> None:
         """Test the populate function."""
         table_name = "table_name"
 
@@ -67,33 +170,32 @@ class MyTestCase(SSGTestCase):
             """Mock story."""
             yield table_name, {}
 
-        def mock_story_gen(_: Any) -> Generator[Tuple[str, dict], None, None]:
-            """A function that returns mock stories."""
-            return story()
+        mock_get_object.return_value = story
 
         for num_stories_per_pass, num_rows_per_pass, num_initial_rows in itt.product(
             [0, 2], [0, 3], [0, 17]
         ):
-            with patch("sqlsynthgen.create.insert") as mock_insert:
+            with patch("datafaker.create.insert") as mock_insert:
                 mock_values = mock_insert.return_value.values
                 mock_dst_conn = MagicMock(spec=Connection)
                 mock_dst_conn.execute.return_value.returned_defaults = {}
                 mock_table = MagicMock(spec=Table)
                 mock_table.name = table_name
+                mock_metadata = MagicMock(spec=MetaData)
                 mock_gen = MagicMock(spec=TableGenerator)
                 mock_gen.num_rows_per_pass = num_rows_per_pass
-                mock_gen.return_value = {}
+                mock_gen.generate_row.return_value = {}
                 row_counts = Counter(
                     {table_name: num_initial_rows} if num_initial_rows > 0 else {}
                 )
 
-                story_generators: list[dict[str, Any]] = (
+                story_generators: list[StoryGeneratorInfo] = (
                     [
-                        {
-                            "function": mock_story_gen,
-                            "num_stories_per_pass": num_stories_per_pass,
-                            "name": "mock_story_gen",
-                        }
+                        StoryGeneratorInfo(
+                            "mock_story_gen name",
+                            FunctionCall("mock_story_gen", [], {}),
+                            num_stories_per_pass,
+                        )
                     ]
                     if num_stories_per_pass > 0
                     else []
@@ -103,6 +205,7 @@ class MyTestCase(SSGTestCase):
                     [mock_table],
                     {table_name: mock_gen},
                     story_generators,
+                    mock_metadata,
                 )
 
                 expected_row_count = (
@@ -117,24 +220,12 @@ class MyTestCase(SSGTestCase):
                     row_counts,
                 )
                 self.assertListEqual(
-                    [call(mock_dst_conn)] * (num_stories_per_pass + num_rows_per_pass),
-                    mock_gen.call_args_list,
-                )
-                self.assertListEqual(
-                    [call(mock_gen.return_value)]
+                    [call(mock_gen.generate_row.return_value)]
                     * (num_stories_per_pass + num_rows_per_pass),
                     mock_values.call_args_list,
                 )
-                self.assertListEqual(
-                    (
-                        [call(mock_values.return_value.return_defaults.return_value)]
-                        * num_stories_per_pass
-                    )
-                    + ([call(mock_values.return_value)] * num_rows_per_pass),
-                    mock_dst_conn.execute.call_args_list,
-                )
 
-    @patch("sqlsynthgen.create.insert")
+    @patch("datafaker.create.insert")
     def test_populate_diff_length(self, mock_insert: MagicMock) -> None:
         """Test when generators and tables differ in length."""
         mock_dst_conn = MagicMock(spec=Connection)
@@ -146,83 +237,297 @@ class MyTestCase(SSGTestCase):
         mock_table_two.name = "two"
         mock_table_three = MagicMock(spec=Table)
         mock_table_three.name = "three"
+        mock_metadata = MagicMock(spec=MetaData)
         tables: list[Table] = [mock_table_one, mock_table_two, mock_table_three]
         row_generators: dict[str, TableGenerator] = {
             "two": mock_gen_two,
             "three": mock_gen_three,
         }
 
-        row_counts = populate(mock_dst_conn, tables, row_generators, [])
+        row_counts = populate(mock_dst_conn, tables, row_generators, [], mock_metadata)
         self.assertEqual(row_counts, {"two": 1, "three": 1})
         self.assertListEqual(
             [call(mock_table_two), call(mock_table_three)], mock_insert.call_args_list
         )
 
-        mock_gen_two.assert_called_once()
-        mock_gen_three.assert_called_once()
-
-    @patch("sqlsynthgen.utils.create_engine")
-    @patch("sqlsynthgen.create.get_settings")
-    def test_create_db_vocab(
-        self, mock_get_settings: MagicMock, mock_create_engine: MagicMock
-    ) -> None:
-        """Test the create_db_vocab function."""
-        mock_get_settings.return_value = get_test_settings()
-
-        mock_load = MagicMock()
-        mock_table = MagicMock()
-        mock_table.name = "Mock table"
-        mock_file_uploader = MagicMock(spec=FileUploader)
-        mock_file_uploader.load = mock_load
-        mock_file_uploader.table = mock_table
-        vocab_list: dict[str, FileUploader] = {mock_table.name: mock_file_uploader}
-
-        create_db_vocab(vocab_list)
-
-        mock_load.assert_called_once_with(
-            mock_create_engine.return_value.connect.return_value.__enter__.return_value
-        )
-        mock_create_engine.assert_called_once_with(
-            mock_get_settings.return_value.dst_dsn
-        )
-        # Running the same insert twice should be fine.
-        create_db_vocab(vocab_list)
+        mock_gen_two.generate_row.assert_called_once()
+        mock_gen_three.generate_row.assert_called_once()
 
 
-class TestStoryDefaults(RequiresDBTestCase):
-    """Test that we can handle column defaults in stories."""
+class MockFunctionUsingConnection:
+    """Base mock callable that should not be permitted to read parquet files."""
 
-    # pylint: disable=invalid-name
-    Base = declarative_base()
-    # pylint: enable=invalid-name
-    metadata = Base.metadata
+    @classmethod
+    def is_parquet_permitted(cls, connection: Any) -> bool:
+        """Test if a normal DuckDB can access the ``fruit.parquet`` file."""
+        try:
+            connection.execute("SELECT * FROM fruit.parquet")
+        except duckdb.PermissionException:
+            return False
+        return True
 
-    class ColumnDefaultsTable(Base):  # type: ignore
-        """A SQLAlchemy model."""
+    def __init__(self) -> None:
+        """Initialize as uncalled."""
+        self.called = False
 
-        __tablename__ = "column_defaults"
-        someval = Column(Integer, primary_key=True)
-        otherval = Column(Integer, server_default="8")
+    def do_call(self, connection: Any) -> None:
+        """Test for parquet access not being permitted."""
+        assert not self.is_parquet_permitted(connection)
+        self.called = True
+
+
+class CreateReadsNoParquetTestCase(DatafakerTestCase):
+    """
+    Output to the database should not have access to parquet files.
+
+    Otherwise there is a risk of leakage of source data.
+    """
+
+    examples_dir = Path("examples/duckdb")
+    parquet_name = "fruit.parquet"
 
     def setUp(self) -> None:
-        """Ensure we have an empty DB to work with."""
-        dump_file_path = Path("dst.dump")
-        examples_dir = Path("tests/examples")
-        run_psql(examples_dir / dump_file_path)
+        """Go to the directory where there are parquet files."""
+        super().setUp()
+        self.start_dir = os.getcwd()
+        self.parquet_dir = Path(tempfile.mkdtemp("parq"))
+        os.chdir(self.parquet_dir)
+        self.write_parquet()
+        assert MockFunctionUsingConnection.is_parquet_permitted(duckdb.connect())
 
-    def test_populate(self) -> None:
-        """Check that we can populate a table that has column defaults."""
-        engine = create_engine(
-            "postgresql://postgres:password@localhost:5432/dst",
+    def tearDown(self) -> None:
+        """Return to the start directory."""
+        os.chdir(self.start_dir)
+        return super().tearDown()
+
+    def write_parquet(self) -> None:
+        """Write a parquet file into the current directory."""
+        fruit: dict[str, list[Any]] = {
+            "id": [1, 2, 3],
+            "orange": [True, True, False],
+            "banana": ["one", "two", "three"],
+        }
+        pd.DataFrame.from_dict(fruit).to_parquet(self.parquet_name)
+
+    class MockCreateAll(MockFunctionUsingConnection):
+        """Mock for the MetaData.create_all function."""
+
+        def __call__(self, engine: Engine) -> None:
+            self.do_call(engine.raw_connection())
+
+    def test_create_db_tables_cannot_access_parquet(self) -> None:
+        """Test the database connection cannot access parquet file."""
+        meta_data = MagicMock()
+        meta_data.create_all = self.MockCreateAll()
+        with patch.dict(
+            os.environ,
+            {"DST_DSN": "duckdb:///:memory:tables"},
+            clear=True,
+        ):
+            create_db_tables(meta_data)
+        assert meta_data.create_all.called
+
+    def test_create_db_tables_cannot_access_parquet_with_schema(self) -> None:
+        """
+        Test the database connection cannot access parquet file.
+
+        We use a schema because this activates a different code path.
+        """
+        meta_data = MagicMock()
+        meta_data.create_all = self.MockCreateAll()
+        testdb = duckdb.connect("./test.db")
+        testdb.execute("CREATE SCHEMA fruity")
+        testdb.close()
+        with patch.dict(
+            os.environ,
+            {"DST_SCHEMA": "fruity", "DST_DSN": "duckdb:///./test.db"},
+            clear=True,
+        ):
+            create_db_tables(meta_data)
+        assert meta_data.create_all.called
+
+    @patch("datafaker.create.populate")
+    def test_create_db_data_cannot_access_parquet(
+        self, mock_populate: MagicMock
+    ) -> None:
+        """Test the database connection cannot access parquet file while creating data."""
+
+        class MockPopulate(MockFunctionUsingConnection):
+            """Mock ``populate`` function."""
+
+            def __call__(
+                self, connection: Connection, _a2: Any, _a3: Any, _a4: Any, _a5: Any
+            ) -> dict[str, Any]:
+                super().do_call(connection.connection.dbapi_connection)
+                return {"vocab1": 1}
+
+        mock_populate.side_effect = MockPopulate()
+        create_db_data_into(
+            [MagicMock()],
+            MagicMock(),
+            None,
+            1,
+            "duckdb:///:memory:data",
+            None,
+            MagicMock(),
         )
-        self.metadata.create_all(engine)
+        assert mock_populate.side_effect.called
 
-        def my_story() -> Story:
-            """A story generator."""
-            first_row = yield "column_defaults", {}
-            self.assertEqual(1, first_row["someval"])
-            self.assertEqual(8, first_row["otherval"])
+    @patch("datafaker.create.FileUploader")
+    def test_create_db_vocab_cannot_access_parquet(
+        self, file_uploader: MagicMock
+    ) -> None:
+        """Test we cannot access parquet file while populating vocabulary tables."""
 
-        with engine.connect() as conn:
-            with conn.begin():
-                _populate_story(my_story(), dict(self.metadata.tables), {}, conn)
+        class MockLoader(MockFunctionUsingConnection):
+            """Mock ``FileUploader.load`` function."""
+
+            def __call__(self, connection: Connection, base_path: Path) -> None:
+                assert str(base_path) == "base"
+                super().do_call(connection.connection.dbapi_connection)
+
+        file_uploader.return_value.load = MockLoader()
+        assert not file_uploader.return_value.load.called
+        meta_data = MetaData()
+        Table("table1", meta_data)
+        with patch.dict(
+            os.environ,
+            {"DST_DSN": "duckdb:///:memory:vocab"},
+            clear=True,
+        ):
+            create_db_vocab(
+                meta_data,
+                {"tables": {"table1": {"columns": {}}}},
+                {"tables": {"table1": {"vocabulary_table": True}}},
+                base_path=Path("base"),
+            )
+        assert file_uploader.return_value.load.called
+
+
+class CreateDataTestCase(RequiresDBTestCase):
+    """Tests for create-data."""
+
+    dump_file_path = "empty.sql"
+    database_name = "empty"
+    schema_name = "public"
+    dst_schema_name = "fake"
+
+    def test_create_data_minimal(self) -> None:
+        """Test creating one table with one PK column."""
+        config: dict[str, Any] = {}
+        orm = {
+            "tables": {
+                "one": {
+                    "columns": {
+                        "id": {
+                            "primary": True,
+                            "type": "INTEGER",
+                        }
+                    }
+                }
+            }
+        }
+        metadata = dict_to_metadata(orm, config)
+        create_db_tables_into(metadata, self.dsn, self.schema_name)
+        generate_count = 4
+        row_counts = create_db_data_into(
+            sorted_non_vocabulary_tables(metadata, config),
+            config,
+            None,
+            generate_count,
+            self.dsn,
+            self.schema_name,
+            metadata,
+        )
+        with self.sync_engine.connect() as connection:
+            stmt = select(metadata.tables["one"])
+            rows = connection.execute(stmt).fetchall()
+            self.assertEqual(rows, [(1,), (2,), (3,), (4,)])
+        self.assertListEqual(list(row_counts.keys()), ["one"])
+        self.assertEqual(row_counts["one"], generate_count)
+
+    def test_unique_constraint_minimal(self) -> None:
+        """Test that unique constraints cause a failure with a constant provider."""
+        config = {
+            "tables": {
+                "one": {
+                    "row_generators": [
+                        {
+                            "name": "dist_gen.constant",
+                            "kwargs": {
+                                "value": 123,
+                            },
+                            "columns_assigned": ["tiger"],
+                        }
+                    ]
+                }
+            },
+            "max-unique-constraint-tries": 20,
+        }
+        orm = {
+            "tables": {
+                "one": {
+                    "columns": {
+                        "id": {
+                            "primary": True,
+                            "type": "INTEGER",
+                        },
+                        "tiger": {
+                            "type": "INTEGER",
+                        },
+                    },
+                    "unique": [{"name": "tiger_uniq", "columns": ["tiger"]}],
+                }
+            }
+        }
+        metadata = dict_to_metadata(orm, config)
+        create_db_tables_into(metadata, self.dsn, self.schema_name)
+        self.assertRaises(
+            RuntimeError,
+            create_db_data_into,
+            sorted_non_vocabulary_tables(metadata, config),
+            config,
+            None,
+            2,
+            self.dsn,
+            self.schema_name,
+            metadata,
+        )
+
+    def test_story_incorrect_name_minimal(self) -> None:
+        """Test we get a proper error message if the story generator module does not exist."""
+        config = {
+            "story_generators_module": "incorrect_module",
+        }
+        orm = {
+            "tables": {
+                "one": {
+                    "columns": {
+                        "id": {
+                            "primary": True,
+                            "type": "INTEGER",
+                        }
+                    }
+                }
+            }
+        }
+        metadata = dict_to_metadata(orm, config)
+        create_db_tables_into(metadata, self.dsn, self.schema_name)
+        self.assertRaises(
+            SettingsError,
+            create_db_data_into,
+            sorted_non_vocabulary_tables(metadata, config),
+            config,
+            None,
+            1,
+            self.dsn,
+            self.schema_name,
+            metadata,
+        )
+
+
+class CreateDataTestCaseMsSql(CreateDataTestCase):
+    """CreateData but for MSSQL."""
+
+    database_type = MsSqlTestDb
+    schema_name = None

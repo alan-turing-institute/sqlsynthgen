@@ -1,0 +1,121 @@
+dsn: mssql+pyodbc://sa:***@127.0.0.1:1433/master?TrustServerCertificate=yes&driver=ODBC+Driver+18+for+SQL+Server
+schema: mimic100
+tables:
+  concept:
+    columns:
+      concept_class_id:
+        nullable: false
+        primary: false
+        type: VARCHAR(20) COLLATE SQL_Latin1_General_CP1_CI_AS
+      concept_code:
+        nullable: false
+        primary: false
+        type: VARCHAR(255) COLLATE SQL_Latin1_General_CP1_CI_AS
+      concept_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      concept_name:
+        nullable: false
+        primary: false
+        type: VARCHAR(255) COLLATE SQL_Latin1_General_CP1_CI_AS
+      domain_id:
+        nullable: false
+        primary: false
+        type: VARCHAR(20) COLLATE SQL_Latin1_General_CP1_CI_AS
+      invalid_reason:
+        nullable: true
+        primary: false
+        type: VARCHAR(1) COLLATE SQL_Latin1_General_CP1_CI_AS
+      standard_concept:
+        nullable: true
+        primary: false
+        type: VARCHAR(1) COLLATE SQL_Latin1_General_CP1_CI_AS
+      valid_end_date:
+        nullable: false
+        primary: false
+        type: DATE
+      valid_start_date:
+        nullable: false
+        primary: false
+        type: DATE
+      vocabulary_id:
+        nullable: false
+        primary: false
+        type: VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS
+    unique: []
+  person:
+    columns:
+      # birth_datetime:
+      #   nullable: true
+      #   primary: false
+      #   type: DATETIME2
+      # day_of_birth:
+      #   nullable: true
+      #   primary: false
+      #   type: BIGINT
+      ethnicity_concept_id:
+        foreign_keys:
+        - mimic100.concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      # ethnicity_source_concept_id:
+      #   foreign_keys:
+      #   - mimic100.concept.concept_id
+      #   nullable: true
+      #   primary: false
+      #   type: BIGINT
+      # ethnicity_source_value:
+      #   nullable: true
+      #   primary: false
+      #   type: VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS
+      gender_concept_id:
+        foreign_keys:
+        - mimic100.concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      # gender_source_concept_id:
+      #   foreign_keys:
+      #   - mimic100.concept.concept_id
+      #   nullable: true
+      #   primary: false
+      #   type: BIGINT
+      # gender_source_value:
+      #   nullable: true
+      #   primary: false
+      #   type: VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS
+      # month_of_birth:
+      #   nullable: true
+      #   primary: false
+      #   type: BIGINT
+      person_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      # person_source_value:
+      #   nullable: true
+      #   primary: false
+      #   type: VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS
+      race_concept_id:
+        foreign_keys:
+        - mimic100.concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      # race_source_concept_id:
+      #   foreign_keys:
+      #   - mimic100.concept.concept_id
+      #   nullable: true
+      #   primary: false
+      #   type: BIGINT
+      # race_source_value:
+      #   nullable: true
+      #   primary: false
+      #   type: VARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS
+      year_of_birth:
+        nullable: false
+        primary: false
+        type: BIGINT
+    unique: []

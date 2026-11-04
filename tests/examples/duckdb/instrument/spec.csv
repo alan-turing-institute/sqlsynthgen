@@ -1,0 +1,6 @@
+model.parquet,name,dist_gen.choice
+model.parquet,manufacturer_id,dist_gen.choice
+model.parquet,introduced,generic.date
+player.parquet,given_name,generic.person.first_name
+player.parquet,family_name,generic.person.last_name
+signature_model.parquet,name,dist_gen.choice

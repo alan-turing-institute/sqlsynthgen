@@ -1,6 +1,4 @@
-# How to Develop for SQLSYNTHGEN
-
-The following instructions have been tested on MacOS Ventura, but they *should* work on other Unix-based OS.
+# How to Develop for DATAFAKER
 
 ## Pre-requisites
 
@@ -15,13 +13,13 @@ Please install the following software on your workstation:
 1. Clone the GitHub repository:
 
     ```bash
-    git clone https://github.com/alan-turing-institute/sqlsynthgen.git
+    git clone https://github.com/SAFEHR-data/datafaker
     ```
 
-1. In the directory of your local copy, create a virtual environment with all `sqlsynthgen` dependencies:
+1. In the directory of your local copy, create a virtual environment with all `datafaker` dependencies:
 
     ```bash
-    cd sqlsynthgen
+    cd datafaker
     poetry install --all-extras
     ```
 
@@ -43,48 +41,17 @@ Please install the following software on your workstation:
 
 ## Running unit tests
 
-Executing unit tests is straightforward:
+Executing unit tests is straightforward. For example inside a Poetry shell you can run:
 
 ```bash
-cd sqlsynthgen
-python -m unittest discover --verbose tests/
+pytest -rs
 ```
 
-## Running functional tests
+or outside:
 
-Functional tests require a PostgreSQL service running. Perform the following steps on your local server:
-
-1. Set the password of user `postgres` to `password`:
-
-   ```bash
-    psql -p5432 "postgres"
-    postgres=# \password postgres
-    Enter new password: <password>
-    postgres=# \q
-    ```
-
-1. From the shell, create and load the `src` database:
-
-    ```bash
-    createdb src
-    cd sqlsynthgen
-    PGPASSWORD=password psql --host=localhost --username=postgres --file=tests/examples/src.dump
-    ```
-
-    *WARNING: Some MacOS systems [do not recognise the 'en_US.utf8' locale](https://apple.stackexchange.com/questions/206495/load-a-locale-from-usr-local-share-locale-in-os-x). As a workaround, replace `en_US.utf8` with `en_US.UTF-8` on every `*.dump` file.*
-
-1. Also, create `dst` database:
-
-    ```bash
-    createdb dst
-    PGPASSWORD=password psql --host=localhost --username=postgres --file=tests/examples/dst.dump
-    ```
-
-1. Finally, run the functional tests. You will need the environment variable `REQUIRES_DB` with a value of `1`.
-
-    ```bash
-    REQUIRES_DB=1 poetry run python -m unittest discover --verbose tests
-    ```
+```bash
+poetry run pytest -rs
+```
 
 ## Building documentation locally
 

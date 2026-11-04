@@ -9,15 +9,15 @@ on:
 env:
   # This should be the default but we'll be explicit
   PRE_COMMIT_HOME: ~/.caches/pre-commit
-  PYTHON_VERSION: "3.9"
+  PYTHON_VERSION: "3.10"
 jobs:
-  the_job:
+  clean-check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Bootstrap poetry

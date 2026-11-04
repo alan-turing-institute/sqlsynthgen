@@ -1,0 +1,43 @@
+---
+name: Publish Documentation
+on:
+  push:
+    branches:
+      # need this to be able to run the workflow until it has been merged into main
+      - yhong123/112-column_evaluators
+  workflow_dispatch:
+env:
+  PYTHON_VERSION: "3.12"
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "${{ env.PYTHON_VERSION }}"
+      - name: Install poetry
+        shell: bash
+        run: |
+          sudo apt install python3-poetry
+      - name: Configure poetry
+        shell: bash
+        run: |
+          poetry config virtualenvs.in-project true
+      - name: Install dependencies
+        shell: bash
+        run: |
+          poetry install --all-extras
+      - name: Build documentation
+        shell: bash
+        working-directory: ./docs
+        run: |
+          poetry run make html
+      - name: Publish docs on github Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          publish_branch: gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/build/html
+          force_orphan: true

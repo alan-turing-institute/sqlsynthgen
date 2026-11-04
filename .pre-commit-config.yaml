@@ -3,21 +3,22 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.2.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
+        exclude: docs/(source|build/html)/_static/
       - id: end-of-file-fixer
         exclude: docs/source/_static/
       - id: check-yaml
       - id: check-added-large-files
   - repo: https://github.com/markdownlint/markdownlint
     # Note the "v"
-    rev: v0.11.0
+    rev: v0.12.0
     hooks:
       - id: markdownlint
         args: [--style=mdl_style.rb]
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.8.0.4
+    rev: v0.11.0.1
     hooks:
       - id: shellcheck
   - repo: local
@@ -29,7 +30,7 @@ repos:
           poetry run
           generate-schema-doc
           --config-file .jsfh.yaml
-          sqlsynthgen/json_schemas/config_schema.json
+          datafaker/json_schemas/config_schema.json
           docs/source/_static/
         language: system
         pass_filenames: false
@@ -38,18 +39,16 @@ repos:
         entry: poetry run black
         language: system
         types: ['python']
-        exclude: (?x)(
-          tests/examples|
-          tests/workspace
+        exclude: (?x)^(
+          tests/examples
           )
       - id: isort
         name: isort
         entry: poetry run isort
         language: system
         types: ['python']
-        exclude: (?x)(
+        exclude: (?x)^(
           tests/examples|
-          tests/workspace|
           examples
           )
       - id: pylint
@@ -57,7 +56,7 @@ repos:
         entry: poetry run pylint
         language: system
         types: ['python']
-        exclude: (?x)(
+        exclude: (?x)^(
           examples/
           )
       - id: pydocstyle
@@ -65,18 +64,18 @@ repos:
         entry: poetry run pydocstyle
         language: system
         types: ['python']
-        exclude: (?x)(
+        exclude: (?x)^(
           docs/|
           tests/|
           examples/
           )
-      - id: mypy
-        name: mypy
-        entry: poetry run mypy --follow-imports=silent
+      - id: ty
+        name: ty
+        entry: poetry run ty check
         language: system
-        exclude: (?x)(
-          tests/examples|
-          tests/workspace|
-          examples
+        exclude: (?x)^(
+          tests/examples/|
+          examples/|
+          /\.
           )
         types: ['python']

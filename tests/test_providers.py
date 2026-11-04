@@ -1,21 +1,22 @@
 """Tests for the providers module."""
 import datetime as dt
-from pathlib import Path
 from typing import Any
+from unittest.mock import MagicMock
 
-from sqlalchemy import Column, Integer, Text, create_engine, insert
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, MetaData, Text, insert
+from sqlalchemy.dialects import mssql, postgresql
+from sqlalchemy.orm import declarative_base
 
-from sqlsynthgen import providers
-from tests.utils import RequiresDBTestCase, SSGTestCase, run_psql
+from datafaker import providers
+from tests.utils import DatafakerTestCase, RequiresDBTestCase
 
 # pylint: disable=invalid-name
 Base = declarative_base()
 # pylint: enable=invalid-name
-metadata = Base.metadata
+metadata: MetaData = Base.metadata
 
 
-class Person(Base):  # type: ignore
+class Person(Base):
     """A SQLAlchemy table."""
 
     __tablename__ = "person"
@@ -27,7 +28,7 @@ class Person(Base):  # type: ignore
     sex = Column(Text)
 
 
-class BinaryProviderTestCase(SSGTestCase):
+class BinaryProviderTestCase(DatafakerTestCase):
     """Tests for the BytesProvider class."""
 
     def test_bytes(self) -> None:
@@ -38,21 +39,18 @@ class BinaryProviderTestCase(SSGTestCase):
 class ColumnValueProviderTestCase(RequiresDBTestCase):
     """Tests for the ColumnValueProvider class."""
 
+    dump_file_path = "providers.dump"
+
     def setUp(self) -> None:
         """Pre-test setup."""
-
-        run_psql(Path("tests/examples/providers.dump"))
-
-        self.engine = create_engine(
-            "postgresql://postgres:password@localhost:5432/providers",
-        )
-        metadata.create_all(self.engine)
+        super().setUp()
+        metadata.create_all(self.sync_engine)
 
     def test_column_value_present(self) -> None:
         """Test the key method."""
         # pylint: disable=invalid-name
 
-        with self.engine.connect() as conn:
+        with self.sync_engine.connect() as conn:
             stmt = insert(Person).values(sex="M")
             conn.execute(stmt)
 
@@ -64,14 +62,47 @@ class ColumnValueProviderTestCase(RequiresDBTestCase):
     def test_column_value_missing(self) -> None:
         """Test the generator when there are no values in the source table."""
 
-        with self.engine.connect() as connection:
+        with self.sync_engine.connect() as connection:
             provider: providers.ColumnValueProvider = providers.ColumnValueProvider()
             generated_value: Any = provider.column_value(connection, Person, "sex")
 
         self.assertIsNone(generated_value)
 
 
-class TimedeltaProvider(SSGTestCase):
+class ColumnValueRandomFunctionTestCase(DatafakerTestCase):
+    """column_value uses the correct random function for each dialect."""
+
+    def _make_connection(self, dialect_name: str) -> MagicMock:
+        conn = MagicMock()
+        conn.dialect.name = dialect_name
+        conn.execute.return_value.first.return_value = None
+        return conn
+
+    def _get_order_by_sql(self, dialect_name: str) -> str:
+        conn = self._make_connection(dialect_name)
+        providers.ColumnValueProvider.column_value(conn, Person, "sex")
+        query = conn.execute.call_args[0][0]
+
+        dialect = mssql.dialect() if dialect_name == "mssql" else postgresql.dialect()
+        return str(
+            query.compile(dialect=dialect, compile_kwargs={"literal_binds": True})
+        )
+
+    def test_mssql_uses_rand(self) -> None:
+        """Test that the column provider uses RAND for the Postgres dialect."""
+        sql = self._get_order_by_sql("mssql")
+        self.assertIn("newid()", sql.lower())
+        self.assertNotIn("random()", sql.lower())
+
+    def test_postgresql_uses_random(self) -> None:
+        """Test that the column provider uses RANDOM for the Postgres dialect."""
+        sql = self._get_order_by_sql("postgresql")
+        self.assertIn("random()", sql.lower())
+        self.assertNotIn("newid()", sql.lower())
+        self.assertNotIn("rand()", sql.lower())
+
+
+class TimedeltaProvider(DatafakerTestCase):
     """Tests for TimedeltaProvider"""
 
     def test_timedelta(self) -> None:
@@ -84,7 +115,7 @@ class TimedeltaProvider(SSGTestCase):
         self.assertLessEqual(delta, max_dt)
 
 
-class TimespanProvider(SSGTestCase):
+class TimespanProvider(DatafakerTestCase):
     """Tests for TimespanProvider."""
 
     def test_timespan(self) -> None:
@@ -106,7 +137,7 @@ class TimespanProvider(SSGTestCase):
         self.assertEqual(end - start, delta)
 
 
-class TestWeightedBooleanProvider(SSGTestCase):
+class TestWeightedBooleanProvider(DatafakerTestCase):
     """Tests for WeightedBooleanProvider."""
 
     def test_bool(self) -> None:

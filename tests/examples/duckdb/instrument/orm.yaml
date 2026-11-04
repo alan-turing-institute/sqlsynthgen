@@ -1,0 +1,60 @@
+tables:
+  manufacturer.parquet:
+    columns:
+      founded:
+        type: TIMESTAMP WITH TIME ZONE
+      id:
+        primary: true
+        type: INTEGER
+      name:
+        type: TEXT
+  model.parquet:
+    columns:
+      id:
+        primary: true
+        type: INTEGER
+      introduced:
+        type: TIMESTAMP WITH TIME ZONE
+      manufacturer_id:
+        foreign_keys:
+        - manufacturer.parquet.id
+        type: INTEGER
+      name:
+        type: TEXT
+  player.parquet:
+    columns:
+      family_name:
+        type: TEXT
+      given_name:
+        type: TEXT
+      id:
+        primary: true
+        type: INTEGER
+  signature_model.parquet:
+    columns:
+      based_on:
+        foreign_keys:
+        - model.parquet.id
+        type: INTEGER
+      id:
+        primary: true
+        type: INTEGER
+      name:
+        type: VARCHAR(20)
+      player_id:
+        foreign_keys:
+        - player.parquet.id
+        type: INTEGER
+  string.parquet:
+    columns:
+      frequency:
+        type: DOUBLE PRECISION
+      id:
+        primary: true
+        type: INTEGER
+      model_id:
+        foreign_keys:
+        - model.parquet.id
+        type: INTEGER
+      position:
+        type: INTEGER

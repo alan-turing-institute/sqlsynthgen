@@ -1,0 +1,25 @@
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Datafaker!Test123"
+    ports:
+      - "21433:1433"
+    healthcheck:
+      test:
+        - "CMD"
+        - "/opt/mssql-tools18/bin/sqlcmd"
+        - "-S"
+        - "localhost"
+        - "-U"
+        - "sa"
+        - "-P"
+        - "Datafaker!Test123"
+        - "-Q"
+        - "SELECT 1"
+        - "-No"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s

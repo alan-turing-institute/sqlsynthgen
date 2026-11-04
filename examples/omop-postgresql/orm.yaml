@@ -1,0 +1,127 @@
+dsn: postgresql://postgres@localhost:5432/omop5.4
+schema: mimic
+tables:
+  concept:
+    columns:
+      concept_class_id:
+        foreign_keys:
+        - concept_class.concept_class_id
+        nullable: false
+        primary: false
+        type: VARCHAR(20)
+      concept_code:
+        nullable: false
+        primary: false
+        type: VARCHAR(255)
+      concept_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      concept_name:
+        nullable: false
+        primary: false
+        type: VARCHAR(255)
+      domain_id:
+        foreign_keys:
+        - domain.domain_id
+        nullable: false
+        primary: false
+        type: VARCHAR(20)
+      invalid_reason:
+        nullable: true
+        primary: false
+        type: VARCHAR(1)
+      standard_concept:
+        nullable: true
+        primary: false
+        type: VARCHAR(1)
+      valid_end_date:
+        nullable: false
+        primary: false
+        type: DATE
+      valid_start_date:
+        nullable: false
+        primary: false
+        type: DATE
+      vocabulary_id:
+        foreign_keys:
+        - vocabulary.vocabulary_id
+        nullable: false
+        primary: false
+        type: VARCHAR(50)
+    unique: []
+  person:
+    columns:
+      # birth_datetime:
+      #   nullable: true
+      #   primary: false
+      #   type: TIMESTAMP WITHOUT TIME ZONE
+      # day_of_birth:
+      #   nullable: true
+      #   primary: false
+      #   type: BIGINT
+      ethnicity_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      # ethnicity_source_concept_id:
+      #   foreign_keys:
+      #   - concept.concept_id
+      #   nullable: true
+      #   primary: false
+      #   type: BIGINT
+      # ethnicity_source_value:
+      #   nullable: true
+      #   primary: false
+      #   type: VARCHAR(50)
+      gender_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      # gender_source_concept_id:
+      #   foreign_keys:
+      #   - concept.concept_id
+      #   nullable: true
+      #   primary: false
+      #   type: BIGINT
+      # gender_source_value:
+      #   nullable: true
+      #   primary: false
+      #   type: VARCHAR(50)
+      # month_of_birth:
+      #   nullable: true
+      #   primary: false
+      #   type: BIGINT
+      person_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      # person_source_value:
+      #   nullable: true
+      #   primary: false
+      #   type: VARCHAR(50)
+      race_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      # race_source_concept_id:
+      #   foreign_keys:
+      #   - concept.concept_id
+      #   nullable: true
+      #   primary: false
+      #   type: BIGINT
+      # race_source_value:
+      #   nullable: true
+      #   primary: false
+      #   type: VARCHAR(50)
+      year_of_birth:
+        nullable: false
+        primary: false
+        type: BIGINT
+    unique: []

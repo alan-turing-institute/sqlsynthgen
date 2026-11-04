@@ -1,0 +1,6 @@
+tables:
+  manufacturer.parquet:
+    vocabulary_table: true
+    ignore: true
+  string.parquet:
+    ignore: true

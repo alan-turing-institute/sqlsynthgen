@@ -1,0 +1,121 @@
+tables:
+  # Unnecessary tables
+  _measurement_links:
+    ignore: true
+  _observation_links:
+    ignore: true
+  _person_links:
+    ignore: true
+  _procedure_occurrence_links:
+    ignore: true
+  _visit_occurrence_links:
+    ignore: true
+
+  # Vocab tables
+  concept:
+    # This one is a vocab, but its too big to handle the usual way
+    ignore: true
+    # vocabulary_table: true
+  concept_ancestor:
+    # This one is a vocab, but its too big to handle the usual way
+    ignore: true
+    # vocabulary_table: true
+  vocabulary:
+    vocabulary_table: true
+  domain:
+    vocabulary_table: true
+  concept_class:
+    vocabulary_table: true
+  concept_synonym:
+    # This one is a vocab, but its too big to handle the usual way
+    ignore: true
+    # vocabulary_table: true
+  concept_relationship:
+    # This one is a vocab, but its too big to handle the usual way
+    ignore: true
+    # vocabulary_table: true
+  drug_strength:
+    # This one is a vocab, but its too big to handle the usual way
+    ignore: true
+    # vocabulary_table: true
+  relationship:
+    vocabulary_table: true
+  source_to_concept_map:
+    vocabulary_table: true
+  location:
+    vocabulary_table: true
+  care_site:
+    vocabulary_table: true
+  provider:
+    vocabulary_table: true
+  cdm_source:
+    vocabulary_table: true
+
+  attribute_definition:
+    num_rows_per_pass: 0
+
+  cohort_definition:
+    num_rows_per_pass: 0
+
+  condition_era:
+    num_rows_per_pass: 0
+
+  cost:
+    num_rows_per_pass: 0
+
+  device_exposure:
+    num_rows_per_pass: 0
+
+  dose_era:
+    num_rows_per_pass: 0
+
+  drug_era:
+    num_rows_per_pass: 0
+
+  drug_exposure:
+    num_rows_per_pass: 0
+
+  fact_relationship:
+    num_rows_per_pass: 0
+
+  measurement:
+    num_rows_per_pass: 0
+
+  metadata:
+    num_rows_per_pass: 0
+
+  note:
+    num_rows_per_pass: 0
+
+  note_nlp:
+    num_rows_per_pass: 0
+
+  observation:
+    num_rows_per_pass: 0
+
+  observation_period:
+    num_rows_per_pass: 0
+
+  payer_plan_period:
+    num_rows_per_pass: 0
+
+  procedure_occurrence:
+    num_rows_per_pass: 0
+
+  specimen:
+    num_rows_per_pass: 0
+
+  visit_detail:
+    num_rows_per_pass: 0
+
+  visit_occurrence:
+    num_rows_per_pass: 0
+
+  person:
+    num_rows_per_pass: 0
+
+  death:
+    num_rows_per_pass: 0
+
+  condition_occurrence:
+    num_rows_per_pass: 0

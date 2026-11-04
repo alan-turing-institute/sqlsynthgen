@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=../../sqlsynthgen/json_schemas/config_schema.json
+# yaml-language-server: $schema=../../datafaker/json_schemas/config_schema.json
 
 use-asyncio: false
 
@@ -47,6 +47,9 @@ src-stats:
 max-unique-constraint-tries: 50
 
 row_generators_module: row_generators
+object_instantiation:
+  uct:
+    class: row_generators.UniquConstaintTests
 tables:
   person:
     num_rows_per_pass: 2
@@ -60,7 +63,7 @@ tables:
         columns_assigned: stored_from
       - name: generic.sql_group_by_provider.sample
         kwargs:
-          group_by_result: SRC_STATS["count_opt_outs"]
+          group_by_result: SRC_STATS["count_opt_outs"]["results"]
           weights_column: '"num"'
           value_columns: '"research_opt_out"'
         columns_assigned: research_opt_out
@@ -68,7 +71,7 @@ tables:
   hospital_visit:
     num_rows_per_pass: 3
     row_generators:
-      - name: row_generators.timespan_generator
+      - name: uct.timespan_generator
         args: [generic, 2021, 2022]
         kwargs:
           min_dt_days: 1
@@ -81,7 +84,7 @@ tables:
   unique_constraint_test:
     num_rows_per_pass: 1
     row_generators:
-      - name: row_generators.boolean_pair
+      - name: uct.boolean_pair
         args: [generic]
         columns_assigned:
           - a
@@ -91,7 +94,7 @@ tables:
     ignore: false
     num_rows_per_pass: 1
     row_generators:
-      - name: row_generators.unique_constraint_test2
+      - name: uct.unique_constraint_test2
         columns_assigned:
           - a
           - b
@@ -131,5 +134,5 @@ story_generators:
     kwargs:
       dst_db_conn: dst_db_conn
       generic: generic
-      count_opt_outs: 'SRC_STATS["count_opt_outs"]'
+      count_opt_outs: 'SRC_STATS["count_opt_outs"]["results"]'
     num_stories_per_pass: 2

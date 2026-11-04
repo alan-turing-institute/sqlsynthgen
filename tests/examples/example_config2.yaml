@@ -1,0 +1,145 @@
+# yaml-language-server: $schema=../../datafaker/json_schemas/config_schema.json
+
+use-asyncio: false
+
+src-stats:
+  - name: count_names
+    query: >
+      SELECT count(*) AS num, name
+      FROM person
+      GROUP BY name
+  - name: avg_person_id
+    query: >
+      SELECT avg(person_id) AS avg_id
+      FROM person
+  - name: count_opt_outs
+    query: >
+      SELECT count(person_id) AS num, research_opt_out
+      FROM person
+      GROUP BY research_opt_out
+    epsilon: 0.1
+    delta: 0.0001
+    snsql-metadata:
+      # You may well want censor_dims to be on, but we turn it off for the
+      # tests to silence a smartnoise-sql nag warning.
+      max_ids: 10
+      row_privacy: False
+      sample_max_ids: True
+      censor_dims: False
+      clamp_counts: False
+      clamp_columns: False
+      use_dpsu: False
+      person_id:
+        type: int
+        private_id: True
+        lower: 10
+        upper: 100
+        nullable: True
+        # sensitivity: this is derived from the bounds
+        # missing_value: breaks things
+      research_opt_out:
+        type: boolean
+        private_id: False
+  - name: auto__hospital_visit__visit_type_concept_id
+    comments:
+      - All the values and their counts that appear in column visit_type_concept_id of table hospital_visit
+    query: >
+      SELECT visit_type_concept_id AS value, COUNT(visit_type_concept_id) AS count FROM hospital_visit
+      WHERE visit_type_concept_id IS NOT NULL GROUP BY visit_type_concept_id
+      ORDER BY COUNT(visit_type_concept_id) DESC
+
+max-unique-constraint-tries: 50
+
+row_generators_module: row_generators
+object_instantiation:
+  uct:
+    class: row_generators.UniquConstaintTests
+tables:
+  person:
+    num_rows_per_pass: 2
+    row_generators:
+      - name: generic.person.full_name
+        columns_assigned: name
+      - name: generic.datetime.datetime
+        args:
+          - 2022
+          - 2022
+        columns_assigned: stored_from
+      - name: generic.sql_group_by_provider.sample
+        kwargs:
+          group_by_result: SRC_STATS["count_opt_outs"]["results"]
+          weights_column: '"num"'
+          value_columns: '"research_opt_out"'
+        columns_assigned: research_opt_out
+
+  hospital_visit:
+    columns:
+      visit_start:
+        roles:
+          - start
+    num_rows_per_pass: 3
+    row_generators:
+      - name: uct.timespan_generator
+        args: [generic, 2021, 2022]
+        kwargs:
+          min_dt_days: 1
+          max_dt_days: 30
+        columns_assigned:
+          - visit_start
+          - visit_end
+      - name: dist_gen.weighted_choice
+        kwargs:
+          a: SRC_STATS["auto__hospital_visit__visit_type_concept_id"]["results"]
+        columns_assigned:
+          - visit_type_concept_id
+
+  unique_constraint_test:
+    num_rows_per_pass: 1
+    row_generators:
+      - name: uct.boolean_pair
+        args: [generic]
+        columns_assigned:
+          - a
+          - b
+
+  unique_constraint_test2:
+    ignore: false
+    num_rows_per_pass: 1
+    row_generators:
+      - name: uct.unique_constraint_test2
+        columns_assigned:
+          - a
+          - b
+          - c
+
+  table_to_be_ignored:
+    ignore: true
+
+  # This one can't be ignored at ORM creation time, because the below table fk
+  # refs it. We thus ignore it at the later stages when loading the ORM.
+  unignorable_table:
+    vocabulary_table: true
+
+  ref_to_unignorable_table:
+    vocabulary_table: true
+
+  concept:
+    vocabulary_table: true
+    ignore: true
+  concept_type:
+    vocabulary_table: true
+  mitigation_type:
+    vocabulary_table: true
+  empty_vocabulary:
+    vocabulary_table: true
+
+story_generators_module: story_generators
+story_generators:
+  - name: story_generators.short_story
+    args:
+      - generic
+    num_stories_per_pass: 3
+  - name: story_generators.full_row_story
+    args:
+      - generic
+    num_stories_per_pass: 1

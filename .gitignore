@@ -134,15 +134,25 @@ dmypy.json
 .pyre/
 
 .fake
-sqlsynthgen/config.ini
+datafaker/config.ini
 
 # sphinx
 docs/build/*
+docs/esbonio-build/*
 docs/temp/*
 
 # vim swap files
 *.swp
 
-ssg.py
-orm.py
-src-stats.yaml
+# tool outputs
+/df.py
+/ssg.py
+/orm.yaml
+/src-stats.yaml
+/config.yaml
+*.yaml.gz
+
+*_stories.py
+
+/examples/opiates/*
+/examples/pagila/*

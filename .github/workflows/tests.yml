@@ -8,50 +8,41 @@ on:
       - main
 env:
   # This should be the default but we'll be explicit
-  PYTHON_VERSION: "3.9"
+  PYTHON_VERSION: "3.10"
 jobs:
-  the_job:
+  unit-tests:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: password
-        ports:
-          - 5432:5432
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-      - name: Bootstrap poetry
+        uses: actions/checkout@v6
+      - name: Install prerequisites
+        id: install-prereqs
         shell: bash
         run: |
-          python -m ensurepip
-          python -m pip install --upgrade pip
-          python -m pip install poetry
+          sudo apt install python3-poetry mssql-tools18
+        background: true
+      - name: Start PostgreSQL
+        shell: bash
+        run: |
+          sudo systemctl start postgresql.service
+      - name: Wait for poetry to be installed
+        wait: install-prereqs
       - name: Configure poetry
         shell: bash
-        run: |
-          python -m poetry config virtualenvs.in-project true
-      # - name: Cache Poetry dependencies
-      #   uses: actions/cache@v3
-      #   id: poetry-cache
-      #   with:
-      #     path: .venv
-      #     key: venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('poetry.lock') }}
+        run: python -m poetry config virtualenvs.in-project true
       - name: Install dependencies
+        id: install-deps
         shell: bash
         if: steps.poetry-cache.outputs.cache-hit != 'true'
-        run: |
-          python -m poetry install --all-extras
-      - name: Create src database
+        run: python -m poetry install --all-extras
+        background: true
+      - name: Set up MS SQL Server
+        uses: hoverkraft-tech/compose-action@11beaa1c2dae4e8ed7b1665aa074723b6cecb0e4 # v3.0.0
+        with:
+          compose-file: ./docker-compose.yml
+      - name: Wait for the dependencies
+        wait:
+          - install-deps
+      - name: Run tests
         shell: bash
-        run: |
-          PGPASSWORD=password psql --host=localhost --username=postgres --set="ON_ERROR_STOP=1" --file=tests/examples/src.dump
-      - name: Run Unit Tests
-        shell: bash
-        run: |
-          REQUIRES_DB=1 poetry run python -m unittest discover --verbose tests
+        run: poetry run python -m pytest -rs

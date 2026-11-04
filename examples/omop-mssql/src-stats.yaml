@@ -1,0 +1,102 @@
+auto__person__ethnicity_concept_id:
+  comments:
+  - All the values that appear in column ethnicity_concept_id of table person more
+    than 7 times
+  queries:
+    date: '2026-05-22 15:26:05'
+    query: "SELECT _counted.value \nFROM (SELECT \"ethnicity_concept_id\" AS value,\
+      \ count(\"ethnicity_concept_id\") AS count \nFROM mimic100.person \nWHERE \"\
+      ethnicity_concept_id\" IS NOT NULL GROUP BY \"ethnicity_concept_id\") AS _counted\
+      \ \nWHERE _counted.count > 7"
+  results:
+  - value: 0
+auto__person__gender_concept_id:
+  comments:
+  - The values and their counts that appear in column gender_concept_id of a random
+    sample of 500 rows of table person
+  queries:
+    date: '2026-05-22 15:26:05'
+    query: "SELECT _counted.value, _counted.count \nFROM (SELECT _inner.value AS value,\
+      \ count(_inner.value) AS count \nFROM (SELECT TOP 500 \"gender_concept_id\"\
+      \ AS value \nFROM mimic100.person \nWHERE \"gender_concept_id\" IS NOT NULL\
+      \ ORDER BY newid()) AS _inner GROUP BY _inner.value) AS _counted ORDER BY _counted.count\
+      \ DESC"
+  results:
+  - count: 57
+    value: 8507
+  - count: 43
+    value: 8532
+auto__person__year_of_birth:
+  comments:
+  - All the values that appear in column year_of_birth of table person
+  queries:
+    date: '2026-05-22 15:26:05'
+    query: "SELECT _counted.value \nFROM (SELECT \"year_of_birth\" AS value, count(\"\
+      year_of_birth\") AS count \nFROM mimic100.person \nWHERE \"year_of_birth\" IS\
+      \ NOT NULL GROUP BY \"year_of_birth\") AS _counted ORDER BY _counted.count DESC"
+  results:
+  - value: 2062
+  - value: 2058
+  - value: 2059
+  - value: 2070
+  - value: 2073
+  - value: 2084
+  - value: 2119
+  - value: 2123
+  - value: 2125
+  - value: 2102
+  - value: 2104
+  - value: 2106
+  - value: 2136
+  - value: 2130
+  - value: 2133
+  - value: 2055
+  - value: 2085
+  - value: 2086
+  - value: 2089
+  - value: 2094
+  - value: 2075
+  - value: 2079
+  - value: 2083
+  - value: 2066
+  - value: 2043
+  - value: 2050
+  - value: 2052
+  - value: 2054
+  - value: 2049
+  - value: 2030
+  - value: 2031
+  - value: 2033
+  - value: 2038
+  - value: 2041
+  - value: 2067
+  - value: 2069
+  - value: 2064
+  - value: 2060
+  - value: 2061
+  - value: 2077
+  - value: 2074
+  - value: 2071
+  - value: 2095
+  - value: 2096
+  - value: 2097
+  - value: 2099
+  - value: 2090
+  - value: 2092
+  - value: 2093
+  - value: 2134
+  - value: 2138
+  - value: 2145
+  - value: 2149
+  - value: 2108
+  - value: 2111
+  - value: 2114
+  - value: 2115
+  - value: 2116
+  - value: 2117
+  - value: 2118
+  - value: 2105
+  - value: 2103
+  - value: 2128
+  - value: 2120
+  - value: 2122

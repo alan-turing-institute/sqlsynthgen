@@ -1,0 +1,46 @@
+src-stats:
+- comments:
+  - The values and their counts that appear in column gender_concept_id of a random
+    sample of 500 rows of table person
+  name: auto__person__gender_concept_id
+  query: "SELECT _counted.value, _counted.count \nFROM (SELECT _inner.value AS value,\
+    \ count(_inner.value) AS count \nFROM (SELECT TOP 500 \"gender_concept_id\" AS\
+    \ value \nFROM mimic100.person \nWHERE \"gender_concept_id\" IS NOT NULL ORDER\
+    \ BY newid()) AS _inner GROUP BY _inner.value) AS _counted ORDER BY _counted.count\
+    \ DESC"
+- comments:
+  - All the values that appear in column year_of_birth of table person
+  name: auto__person__year_of_birth
+  query: "SELECT _counted.value \nFROM (SELECT \"year_of_birth\" AS value, count(\"\
+    year_of_birth\") AS count \nFROM mimic100.person \nWHERE \"year_of_birth\" IS\
+    \ NOT NULL GROUP BY \"year_of_birth\") AS _counted ORDER BY _counted.count DESC"
+- comments:
+  - All the values that appear in column ethnicity_concept_id of table person more
+    than 7 times
+  name: auto__person__ethnicity_concept_id
+  query: "SELECT _counted.value \nFROM (SELECT \"ethnicity_concept_id\" AS value,\
+    \ count(\"ethnicity_concept_id\") AS count \nFROM mimic100.person \nWHERE \"ethnicity_concept_id\"\
+    \ IS NOT NULL GROUP BY \"ethnicity_concept_id\") AS _counted \nWHERE _counted.count\
+    \ > 7"
+tables:
+  concept:
+    ignore: false
+    vocabulary_table: true
+  person:
+    num_rows_per_pass: 10
+    row_generators:
+    - columns_assigned:
+      - gender_concept_id
+      kwargs:
+        a: SRC_STATS["auto__person__gender_concept_id"]["results"]
+      name: dist_gen.weighted_choice
+    - columns_assigned:
+      - year_of_birth
+      kwargs:
+        a: SRC_STATS["auto__person__year_of_birth"]["results"]
+      name: dist_gen.choice
+    - columns_assigned:
+      - ethnicity_concept_id
+      kwargs:
+        a: SRC_STATS["auto__person__ethnicity_concept_id"]["results"]
+      name: dist_gen.choice

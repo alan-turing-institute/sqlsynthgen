@@ -21,7 +21,7 @@ DROP DATABASE IF EXISTS unique_generator_test WITH (FORCE);
 -- Name: unique_generator_test; Type: DATABASE; Schema: -; Owner: postgres
 --
 
-CREATE DATABASE unique_generator_test WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE = 'en_US.utf8';
+CREATE DATABASE unique_generator_test WITH TEMPLATE = template0 ENCODING = 'UTF8' ;
 
 
 ALTER DATABASE unique_generator_test OWNER TO postgres;

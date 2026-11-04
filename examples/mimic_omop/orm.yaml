@@ -1,0 +1,2092 @@
+dsn: postgresql://postgres@localhost:5432/omop5.4
+schema: mimic
+tables:
+  care_site:
+    columns:
+      care_site_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      care_site_name:
+        nullable: true
+        primary: false
+        type: VARCHAR(255)
+      care_site_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      location_id:
+        foreign_keys:
+        - location.location_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      place_of_service_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      place_of_service_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+    unique: []
+  cdm_source:
+    columns:
+      cdm_etl_reference:
+        nullable: true
+        primary: false
+        type: VARCHAR(255)
+      cdm_holder:
+        nullable: false
+        primary: false
+        type: VARCHAR(255)
+      cdm_release_date:
+        nullable: false
+        primary: false
+        type: DATE
+      cdm_source_abbreviation:
+        nullable: false
+        primary: false
+        type: VARCHAR(25)
+      cdm_source_name:
+        nullable: false
+        primary: false
+        type: VARCHAR(255)
+      cdm_version:
+        nullable: true
+        primary: false
+        type: VARCHAR(10)
+      source_description:
+        nullable: true
+        primary: false
+        type: TEXT
+      source_documentation_reference:
+        nullable: true
+        primary: false
+        type: VARCHAR(255)
+      source_release_date:
+        nullable: false
+        primary: false
+        type: DATE
+      vocabulary_version:
+        nullable: false
+        primary: false
+        type: VARCHAR(20)
+    unique: []
+  cohort:
+    columns:
+      cohort_definition_id:
+        nullable: false
+        primary: false
+        type: BIGINT
+      cohort_end_date:
+        nullable: false
+        primary: false
+        type: DATE
+      cohort_start_date:
+        nullable: false
+        primary: false
+        type: DATE
+      subject_id:
+        nullable: false
+        primary: false
+        type: BIGINT
+    unique: []
+  cohort_definition:
+    columns:
+      cohort_definition_description:
+        nullable: true
+        primary: false
+        type: TEXT
+      cohort_definition_id:
+        nullable: false
+        primary: false
+        type: BIGINT
+      cohort_definition_name:
+        nullable: false
+        primary: false
+        type: VARCHAR(255)
+      cohort_definition_syntax:
+        nullable: true
+        primary: false
+        type: TEXT
+      cohort_initiation_date:
+        nullable: true
+        primary: false
+        type: DATE
+      definition_type_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      subject_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+    unique: []
+  concept:
+    columns:
+      concept_class_id:
+        foreign_keys:
+        - concept_class.concept_class_id
+        nullable: false
+        primary: false
+        type: VARCHAR(20)
+      concept_code:
+        nullable: false
+        primary: false
+        type: VARCHAR(255)
+      concept_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      concept_name:
+        nullable: false
+        primary: false
+        type: VARCHAR(255)
+      domain_id:
+        foreign_keys:
+        - domain.domain_id
+        nullable: false
+        primary: false
+        type: VARCHAR(20)
+      invalid_reason:
+        nullable: true
+        primary: false
+        type: VARCHAR(1)
+      standard_concept:
+        nullable: true
+        primary: false
+        type: VARCHAR(1)
+      valid_end_date:
+        nullable: false
+        primary: false
+        type: DATE
+      valid_start_date:
+        nullable: false
+        primary: false
+        type: DATE
+      vocabulary_id:
+        foreign_keys:
+        - vocabulary.vocabulary_id
+        nullable: false
+        primary: false
+        type: VARCHAR(50)
+    unique: []
+  concept_ancestor:
+    columns:
+      ancestor_concept_id:
+        nullable: false
+        primary: false
+        type: BIGINT
+      descendant_concept_id:
+        nullable: false
+        primary: false
+        type: BIGINT
+      max_levels_of_separation:
+        nullable: false
+        primary: false
+        type: BIGINT
+      min_levels_of_separation:
+        nullable: false
+        primary: false
+        type: BIGINT
+    unique: []
+  concept_class:
+    columns:
+      concept_class_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      concept_class_id:
+        nullable: false
+        primary: true
+        type: VARCHAR(20)
+      concept_class_name:
+        nullable: false
+        primary: false
+        type: VARCHAR(255)
+    unique: []
+  concept_relationship:
+    columns:
+      concept_id_1:
+        nullable: false
+        primary: false
+        type: BIGINT
+      concept_id_2:
+        nullable: false
+        primary: false
+        type: BIGINT
+      invalid_reason:
+        nullable: true
+        primary: false
+        type: VARCHAR(1)
+      relationship_id:
+        foreign_keys:
+        - relationship.relationship_id
+        nullable: false
+        primary: false
+        type: VARCHAR(20)
+      valid_end_date:
+        nullable: false
+        primary: false
+        type: DATE
+      valid_start_date:
+        nullable: false
+        primary: false
+        type: DATE
+    unique: []
+  concept_synonym:
+    columns:
+      concept_id:
+        nullable: false
+        primary: false
+        type: BIGINT
+      concept_synonym_name:
+        nullable: false
+        primary: false
+        type: VARCHAR(1000)
+      language_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+    unique: []
+  condition_era:
+    columns:
+      condition_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      condition_era_end_date:
+        nullable: false
+        primary: false
+        type: DATE
+      condition_era_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      condition_era_start_date:
+        nullable: false
+        primary: false
+        type: DATE
+      condition_occurrence_count:
+        nullable: true
+        primary: false
+        type: BIGINT
+      person_id:
+        foreign_keys:
+        - person.person_id
+        nullable: false
+        primary: false
+        type: BIGINT
+    unique: []
+  condition_occurrence:
+    columns:
+      condition_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      condition_end_date:
+        nullable: true
+        primary: false
+        type: DATE
+      condition_end_datetime:
+        nullable: true
+        primary: false
+        type: TIMESTAMP WITHOUT TIME ZONE
+      condition_occurrence_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      condition_source_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      condition_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      condition_start_date:
+        nullable: false
+        primary: false
+        type: DATE
+      condition_start_datetime:
+        nullable: true
+        primary: false
+        type: TIMESTAMP WITHOUT TIME ZONE
+      condition_status_concept_id:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      condition_status_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      condition_type_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      person_id:
+        foreign_keys:
+        - person.person_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      provider_id:
+        foreign_keys:
+        - provider.provider_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      stop_reason:
+        nullable: true
+        primary: false
+        type: VARCHAR(20)
+      visit_detail_id:
+        foreign_keys:
+        - visit_detail.visit_detail_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      visit_occurrence_id:
+        foreign_keys:
+        - visit_occurrence.visit_occurrence_id
+        nullable: true
+        primary: false
+        type: BIGINT
+    unique: []
+  cost:
+    columns:
+      amount_allowed:
+        nullable: true
+        primary: false
+        type: NUMERIC
+      cost_domain_id:
+        foreign_keys:
+        - domain.domain_id
+        nullable: false
+        primary: false
+        type: VARCHAR(20)
+      cost_event_id:
+        nullable: false
+        primary: false
+        type: BIGINT
+      cost_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      cost_type_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      currency_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      drg_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      drg_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(3)
+      paid_by_patient:
+        nullable: true
+        primary: false
+        type: NUMERIC
+      paid_by_payer:
+        nullable: true
+        primary: false
+        type: NUMERIC
+      paid_by_primary:
+        nullable: true
+        primary: false
+        type: NUMERIC
+      paid_dispensing_fee:
+        nullable: true
+        primary: false
+        type: NUMERIC
+      paid_ingredient_cost:
+        nullable: true
+        primary: false
+        type: NUMERIC
+      paid_patient_coinsurance:
+        nullable: true
+        primary: false
+        type: NUMERIC
+      paid_patient_copay:
+        nullable: true
+        primary: false
+        type: NUMERIC
+      paid_patient_deductible:
+        nullable: true
+        primary: false
+        type: NUMERIC
+      payer_plan_period_id:
+        nullable: true
+        primary: false
+        type: BIGINT
+      revenue_code_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      revenue_code_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      total_charge:
+        nullable: true
+        primary: false
+        type: NUMERIC
+      total_cost:
+        nullable: true
+        primary: false
+        type: NUMERIC
+      total_paid:
+        nullable: true
+        primary: false
+        type: NUMERIC
+    unique: []
+  death:
+    columns:
+      cause_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      cause_source_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      cause_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      death_date:
+        nullable: false
+        primary: false
+        type: DATE
+      death_datetime:
+        nullable: true
+        primary: false
+        type: TIMESTAMP WITHOUT TIME ZONE
+      death_type_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      person_id:
+        foreign_keys:
+        - person.person_id
+        nullable: false
+        primary: false
+        type: BIGINT
+    unique: []
+  device_exposure:
+    columns:
+      device_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      device_exposure_end_date:
+        nullable: true
+        primary: false
+        type: DATE
+      device_exposure_end_datetime:
+        nullable: true
+        primary: false
+        type: TIMESTAMP WITHOUT TIME ZONE
+      device_exposure_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      device_exposure_start_date:
+        nullable: false
+        primary: false
+        type: DATE
+      device_exposure_start_datetime:
+        nullable: true
+        primary: false
+        type: TIMESTAMP WITHOUT TIME ZONE
+      device_source_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      device_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      device_type_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      person_id:
+        foreign_keys:
+        - person.person_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      provider_id:
+        foreign_keys:
+        - provider.provider_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      quantity:
+        nullable: true
+        primary: false
+        type: BIGINT
+      unique_device_id:
+        nullable: true
+        primary: false
+        type: VARCHAR(255)
+      visit_detail_id:
+        foreign_keys:
+        - visit_detail.visit_detail_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      visit_occurrence_id:
+        foreign_keys:
+        - visit_occurrence.visit_occurrence_id
+        nullable: true
+        primary: false
+        type: BIGINT
+    unique: []
+  domain:
+    columns:
+      domain_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      domain_id:
+        nullable: false
+        primary: true
+        type: VARCHAR(20)
+      domain_name:
+        nullable: false
+        primary: false
+        type: VARCHAR(255)
+    unique: []
+  dose_era:
+    columns:
+      dose_era_end_date:
+        nullable: false
+        primary: false
+        type: DATE
+      dose_era_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      dose_era_start_date:
+        nullable: false
+        primary: false
+        type: DATE
+      dose_value:
+        nullable: false
+        primary: false
+        type: NUMERIC
+      drug_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      person_id:
+        foreign_keys:
+        - person.person_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      unit_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+    unique: []
+  drug_era:
+    columns:
+      drug_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      drug_era_end_date:
+        nullable: false
+        primary: false
+        type: DATE
+      drug_era_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      drug_era_start_date:
+        nullable: false
+        primary: false
+        type: DATE
+      drug_exposure_count:
+        nullable: true
+        primary: false
+        type: BIGINT
+      gap_days:
+        nullable: true
+        primary: false
+        type: BIGINT
+      person_id:
+        foreign_keys:
+        - person.person_id
+        nullable: false
+        primary: false
+        type: BIGINT
+    unique: []
+  drug_exposure:
+    columns:
+      days_supply:
+        nullable: true
+        primary: false
+        type: BIGINT
+      dose_unit_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      drug_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      drug_exposure_end_date:
+        nullable: false
+        primary: false
+        type: DATE
+      drug_exposure_end_datetime:
+        nullable: true
+        primary: false
+        type: TIMESTAMP WITHOUT TIME ZONE
+      drug_exposure_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      drug_exposure_start_date:
+        nullable: false
+        primary: false
+        type: DATE
+      drug_exposure_start_datetime:
+        nullable: true
+        primary: false
+        type: TIMESTAMP WITHOUT TIME ZONE
+      drug_source_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      drug_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(255)
+      drug_type_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      lot_number:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      person_id:
+        foreign_keys:
+        - person.person_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      provider_id:
+        foreign_keys:
+        - provider.provider_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      quantity:
+        nullable: true
+        primary: false
+        type: NUMERIC
+      refills:
+        nullable: true
+        primary: false
+        type: BIGINT
+      route_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      route_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      sig:
+        nullable: true
+        primary: false
+        type: TEXT
+      stop_reason:
+        nullable: true
+        primary: false
+        type: VARCHAR(20)
+      verbatim_end_date:
+        nullable: true
+        primary: false
+        type: DATE
+      visit_detail_id:
+        foreign_keys:
+        - visit_detail.visit_detail_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      visit_occurrence_id:
+        foreign_keys:
+        - visit_occurrence.visit_occurrence_id
+        nullable: true
+        primary: false
+        type: BIGINT
+    unique: []
+  drug_strength:
+    columns:
+      amount_unit_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      amount_value:
+        nullable: true
+        primary: false
+        type: NUMERIC
+      box_size:
+        nullable: true
+        primary: false
+        type: BIGINT
+      denominator_unit_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      denominator_value:
+        nullable: true
+        primary: false
+        type: NUMERIC
+      drug_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      ingredient_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      invalid_reason:
+        nullable: true
+        primary: false
+        type: VARCHAR(1)
+      numerator_unit_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      numerator_value:
+        nullable: true
+        primary: false
+        type: NUMERIC
+      valid_end_date:
+        nullable: false
+        primary: false
+        type: DATE
+      valid_start_date:
+        nullable: false
+        primary: false
+        type: DATE
+    unique: []
+  episode:
+    columns:
+      episode_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      episode_end_date:
+        nullable: true
+        primary: false
+        type: DATE
+      episode_end_datetime:
+        nullable: true
+        primary: false
+        type: TIMESTAMP WITHOUT TIME ZONE
+      episode_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      episode_number:
+        nullable: true
+        primary: false
+        type: BIGINT
+      episode_object_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      episode_parent_id:
+        nullable: true
+        primary: false
+        type: BIGINT
+      episode_source_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      episode_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      episode_start_date:
+        nullable: false
+        primary: false
+        type: DATE
+      episode_start_datetime:
+        nullable: true
+        primary: false
+        type: TIMESTAMP WITHOUT TIME ZONE
+      episode_type_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      person_id:
+        foreign_keys:
+        - person.person_id
+        nullable: false
+        primary: false
+        type: BIGINT
+    unique: []
+  episode_event:
+    columns:
+      episode_event_field_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      episode_id:
+        foreign_keys:
+        - episode.episode_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      event_id:
+        nullable: false
+        primary: false
+        type: BIGINT
+    unique: []
+  fact_relationship:
+    columns:
+      domain_concept_id_1:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      domain_concept_id_2:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      fact_id_1:
+        nullable: false
+        primary: false
+        type: BIGINT
+      fact_id_2:
+        nullable: false
+        primary: false
+        type: BIGINT
+      relationship_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+    unique: []
+  location:
+    columns:
+      address_1:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      address_2:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      city:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      county:
+        nullable: true
+        primary: false
+        type: VARCHAR(20)
+      location_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      location_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      state:
+        nullable: true
+        primary: false
+        type: VARCHAR(2)
+      zip:
+        nullable: true
+        primary: false
+        type: VARCHAR(9)
+    unique: []
+  measurement:
+    columns:
+      measurement_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      measurement_date:
+        nullable: false
+        primary: false
+        type: DATE
+      measurement_datetime:
+        nullable: true
+        primary: false
+        type: TIMESTAMP WITHOUT TIME ZONE
+      measurement_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      measurement_source_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      measurement_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      measurement_time:
+        nullable: true
+        primary: false
+        type: VARCHAR(10)
+      measurement_type_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      operator_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      person_id:
+        foreign_keys:
+        - person.person_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      provider_id:
+        foreign_keys:
+        - provider.provider_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      range_high:
+        nullable: true
+        primary: false
+        type: NUMERIC
+      range_low:
+        nullable: true
+        primary: false
+        type: NUMERIC
+      unit_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      unit_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      value_as_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      value_as_number:
+        nullable: true
+        primary: false
+        type: NUMERIC
+      value_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      visit_detail_id:
+        foreign_keys:
+        - visit_detail.visit_detail_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      visit_occurrence_id:
+        foreign_keys:
+        - visit_occurrence.visit_occurrence_id
+        nullable: true
+        primary: false
+        type: BIGINT
+    unique: []
+  metadata:
+    columns:
+      metadata_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      metadata_date:
+        nullable: true
+        primary: false
+        type: DATE
+      metadata_datetime:
+        nullable: true
+        primary: false
+        type: TIMESTAMP WITHOUT TIME ZONE
+      metadata_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      metadata_type_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      name:
+        nullable: false
+        primary: false
+        type: VARCHAR(250)
+      value_as_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      value_as_number:
+        nullable: true
+        primary: false
+        type: NUMERIC
+      value_as_string:
+        nullable: true
+        primary: false
+        type: VARCHAR(250)
+    unique: []
+  note:
+    columns:
+      encoding_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      language_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      note_class_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      note_date:
+        nullable: false
+        primary: false
+        type: DATE
+      note_datetime:
+        nullable: true
+        primary: false
+        type: TIMESTAMP WITHOUT TIME ZONE
+      note_event_field_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      note_event_id:
+        nullable: true
+        primary: false
+        type: BIGINT
+      note_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      note_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      note_text:
+        nullable: false
+        primary: false
+        type: TEXT
+      note_title:
+        nullable: true
+        primary: false
+        type: VARCHAR(250)
+      note_type_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      person_id:
+        foreign_keys:
+        - person.person_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      provider_id:
+        foreign_keys:
+        - provider.provider_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      visit_detail_id:
+        foreign_keys:
+        - visit_detail.visit_detail_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      visit_occurrence_id:
+        foreign_keys:
+        - visit_occurrence.visit_occurrence_id
+        nullable: true
+        primary: false
+        type: BIGINT
+    unique: []
+  note_nlp:
+    columns:
+      lexical_variant:
+        nullable: false
+        primary: false
+        type: VARCHAR(250)
+      nlp_date:
+        nullable: false
+        primary: false
+        type: DATE
+      nlp_datetime:
+        nullable: true
+        primary: false
+        type: TIMESTAMP WITHOUT TIME ZONE
+      nlp_system:
+        nullable: true
+        primary: false
+        type: VARCHAR(250)
+      note_id:
+        nullable: false
+        primary: false
+        type: BIGINT
+      note_nlp_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      note_nlp_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      note_nlp_source_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      offset:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      section_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      snippet:
+        nullable: true
+        primary: false
+        type: VARCHAR(250)
+      term_exists:
+        nullable: true
+        primary: false
+        type: VARCHAR(1)
+      term_modifiers:
+        nullable: true
+        primary: false
+        type: VARCHAR(2000)
+      term_temporal:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+    unique: []
+  observation:
+    columns:
+      observation_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      observation_date:
+        nullable: false
+        primary: false
+        type: DATE
+      observation_datetime:
+        nullable: true
+        primary: false
+        type: TIMESTAMP WITHOUT TIME ZONE
+      observation_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      observation_source_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      observation_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      observation_type_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      person_id:
+        foreign_keys:
+        - person.person_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      provider_id:
+        foreign_keys:
+        - provider.provider_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      qualifier_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      qualifier_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      unit_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      unit_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      value_as_concept_id:
+        nullable: true
+        primary: false
+        type: BIGINT
+      value_as_number:
+        nullable: true
+        primary: false
+        type: NUMERIC
+      value_as_string:
+        nullable: true
+        primary: false
+        type: VARCHAR(120)
+      visit_detail_id:
+        foreign_keys:
+        - visit_detail.visit_detail_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      visit_occurrence_id:
+        foreign_keys:
+        - visit_occurrence.visit_occurrence_id
+        nullable: true
+        primary: false
+        type: BIGINT
+    unique: []
+  observation_period:
+    columns:
+      observation_period_end_date:
+        nullable: false
+        primary: false
+        type: DATE
+      observation_period_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      observation_period_start_date:
+        nullable: false
+        primary: false
+        type: DATE
+      period_type_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      person_id:
+        foreign_keys:
+        - person.person_id
+        nullable: false
+        primary: false
+        type: BIGINT
+    unique: []
+  payer_plan_period:
+    columns:
+      family_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      payer_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      payer_plan_period_end_date:
+        nullable: false
+        primary: false
+        type: DATE
+      payer_plan_period_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      payer_plan_period_start_date:
+        nullable: false
+        primary: false
+        type: DATE
+      payer_source_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      payer_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      person_id:
+        foreign_keys:
+        - person.person_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      plan_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      plan_source_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      plan_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      sponsor_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      sponsor_source_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      sponsor_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      stop_reason_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      stop_reason_source_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      stop_reason_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+    unique: []
+  person:
+    columns:
+      birth_datetime:
+        nullable: true
+        primary: false
+        type: TIMESTAMP WITHOUT TIME ZONE
+      care_site_id:
+        foreign_keys:
+        - care_site.care_site_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      day_of_birth:
+        nullable: true
+        primary: false
+        type: BIGINT
+      ethnicity_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      ethnicity_source_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      ethnicity_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      gender_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      gender_source_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      gender_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      location_id:
+        foreign_keys:
+        - location.location_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      month_of_birth:
+        nullable: true
+        primary: false
+        type: BIGINT
+      person_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      person_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      provider_id:
+        foreign_keys:
+        - provider.provider_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      race_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      race_source_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      race_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      year_of_birth:
+        nullable: false
+        primary: false
+        type: BIGINT
+    unique: []
+  procedure_occurrence:
+    columns:
+      modifier_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      modifier_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      person_id:
+        foreign_keys:
+        - person.person_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      procedure_concept_id:
+        nullable: false
+        primary: false
+        type: BIGINT
+      procedure_date:
+        nullable: false
+        primary: false
+        type: DATE
+      procedure_datetime:
+        nullable: true
+        primary: false
+        type: TIMESTAMP WITHOUT TIME ZONE
+      procedure_occurrence_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      procedure_source_concept_id:
+        nullable: true
+        primary: false
+        type: BIGINT
+      procedure_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      procedure_type_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      provider_id:
+        foreign_keys:
+        - provider.provider_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      quantity:
+        nullable: true
+        primary: false
+        type: BIGINT
+      visit_detail_id:
+        foreign_keys:
+        - visit_detail.visit_detail_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      visit_occurrence_id:
+        foreign_keys:
+        - visit_occurrence.visit_occurrence_id
+        nullable: true
+        primary: false
+        type: BIGINT
+    unique: []
+  provider:
+    columns:
+      care_site_id:
+        foreign_keys:
+        - care_site.care_site_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      dea:
+        nullable: true
+        primary: false
+        type: VARCHAR(20)
+      gender_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      gender_source_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      gender_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      npi:
+        nullable: true
+        primary: false
+        type: VARCHAR(20)
+      provider_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      provider_name:
+        nullable: true
+        primary: false
+        type: VARCHAR(255)
+      provider_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      specialty_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      specialty_source_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      specialty_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      year_of_birth:
+        nullable: true
+        primary: false
+        type: BIGINT
+    unique: []
+  relationship:
+    columns:
+      defines_ancestry:
+        nullable: false
+        primary: false
+        type: VARCHAR(1)
+      is_hierarchical:
+        nullable: false
+        primary: false
+        type: VARCHAR(1)
+      relationship_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      relationship_id:
+        nullable: false
+        primary: true
+        type: VARCHAR(20)
+      relationship_name:
+        nullable: false
+        primary: false
+        type: VARCHAR(255)
+      reverse_relationship_id:
+        nullable: false
+        primary: false
+        type: VARCHAR(20)
+    unique: []
+  source_to_concept_map:
+    columns:
+      invalid_reason:
+        nullable: true
+        primary: false
+        type: VARCHAR(1)
+      source_code:
+        nullable: false
+        primary: false
+        type: VARCHAR(50)
+      source_code_description:
+        nullable: true
+        primary: false
+        type: VARCHAR(255)
+      source_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      source_vocabulary_id:
+        nullable: false
+        primary: false
+        type: VARCHAR(20)
+      target_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      target_vocabulary_id:
+        foreign_keys:
+        - vocabulary.vocabulary_id
+        nullable: false
+        primary: false
+        type: VARCHAR(20)
+      valid_end_date:
+        nullable: false
+        primary: false
+        type: DATE
+      valid_start_date:
+        nullable: false
+        primary: false
+        type: DATE
+    unique: []
+  specimen:
+    columns:
+      anatomic_site_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      anatomic_site_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      disease_status_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      disease_status_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      person_id:
+        foreign_keys:
+        - person.person_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      quantity:
+        nullable: true
+        primary: false
+        type: NUMERIC
+      specimen_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      specimen_date:
+        nullable: false
+        primary: false
+        type: DATE
+      specimen_datetime:
+        nullable: true
+        primary: false
+        type: TIMESTAMP WITHOUT TIME ZONE
+      specimen_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      specimen_source_id:
+        nullable: true
+        primary: false
+        type: VARCHAR(255)
+      specimen_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      specimen_type_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      unit_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      unit_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+    unique: []
+  visit_detail:
+    columns:
+      admitting_source_concept_id:
+        nullable: true
+        primary: false
+        type: BIGINT
+      admitting_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      care_site_id:
+        foreign_keys:
+        - care_site.care_site_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      discharge_to_concept_id:
+        nullable: true
+        primary: false
+        type: BIGINT
+      discharge_to_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      person_id:
+        foreign_keys:
+        - person.person_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      preceding_visit_detail_id:
+        foreign_keys:
+        - visit_detail.visit_detail_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      provider_id:
+        foreign_keys:
+        - provider.provider_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      visit_detail_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      visit_detail_end_date:
+        nullable: false
+        primary: false
+        type: DATE
+      visit_detail_end_datetime:
+        nullable: true
+        primary: false
+        type: TIMESTAMP WITHOUT TIME ZONE
+      visit_detail_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      visit_detail_parent_id:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      visit_detail_source_concept_id:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      visit_detail_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(120)
+      visit_detail_start_date:
+        nullable: false
+        primary: false
+        type: DATE
+      visit_detail_start_datetime:
+        nullable: true
+        primary: false
+        type: TIMESTAMP WITHOUT TIME ZONE
+      visit_detail_type_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      visit_occurrence_id:
+        foreign_keys:
+        - visit_occurrence.visit_occurrence_id
+        nullable: false
+        primary: false
+        type: BIGINT
+    unique: []
+  visit_occurrence:
+    columns:
+      admitted_from_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      admitted_from_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      care_site_id:
+        foreign_keys:
+        - care_site.care_site_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      discharged_to_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      discharged_to_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      person_id:
+        foreign_keys:
+        - person.person_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      preceding_visit_occurrence_id:
+        foreign_keys:
+        - visit_occurrence.visit_occurrence_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      provider_id:
+        foreign_keys:
+        - provider.provider_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      visit_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      visit_end_date:
+        nullable: false
+        primary: false
+        type: DATE
+      visit_end_datetime:
+        nullable: true
+        primary: false
+        type: TIMESTAMP WITHOUT TIME ZONE
+      visit_occurrence_id:
+        nullable: false
+        primary: true
+        type: BIGINT
+      visit_source_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: true
+        primary: false
+        type: BIGINT
+      visit_source_value:
+        nullable: true
+        primary: false
+        type: VARCHAR(50)
+      visit_start_date:
+        nullable: false
+        primary: false
+        type: DATE
+      visit_start_datetime:
+        nullable: true
+        primary: false
+        type: TIMESTAMP WITHOUT TIME ZONE
+      visit_type_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+    unique: []
+  vocabulary:
+    columns:
+      vocabulary_concept_id:
+        foreign_keys:
+        - concept.concept_id
+        nullable: false
+        primary: false
+        type: BIGINT
+      vocabulary_id:
+        nullable: false
+        primary: true
+        type: VARCHAR(30)
+      vocabulary_name:
+        nullable: false
+        primary: false
+        type: VARCHAR(255)
+      vocabulary_reference:
+        nullable: true
+        primary: false
+        type: VARCHAR(255)
+      vocabulary_version:
+        nullable: true
+        primary: false
+        type: VARCHAR(255)
+    unique: []

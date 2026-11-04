@@ -71,12 +71,6 @@ we see that they are always 0 or 1 so we will pick randomly from 0 and 1 for our
 .. literalinclude:: ../../examples/loans/config1.yaml
    :language: yaml
 
-We run SqlSynthGen's ``make-generators`` command to create ``ssg.py``, which contains a generator class for each table in the source database:
-
-.. code-block:: console
-
-    $ sqlsynthgen make-generators --config config.yaml
-
 We then run SqlSynthGen's ``create-tables`` command to create the tables in the destination database:
 
 .. code-block:: console
@@ -108,7 +102,6 @@ We can export the vocabularies to ``.yaml`` files, delete the old synthetic data
 
 .. code-block:: console
 
-    $ sqlsynthgen make-generators
     $ sqlsynthgen remove-data
     $ sqlsynthgen create-vocab
     $ sqlsynthgen create-data --num-passes 100
@@ -160,11 +153,10 @@ We add it manually to the orm.py file:
        )
        ...
 
-We'll need to recreate the ``ssg.py`` file, the destination database and the data:
+We'll need to recreate the destination database and the data:
 
 .. code-block:: console
 
-    $ sqlsynthgen make-generators --config-file config.yaml --force
     $ sqlsynthgen remove-tables --yes
     $ sqlsynthgen create-tables
     $ sqlsynthgen create-vocab
@@ -212,11 +204,10 @@ We define a custom row-generator to use the source statistics and Python's ``ran
 .. literalinclude:: ../../examples/loans/my_row_generators.py
    :language: python
 
-As before, we will need to re-create ``ssg.py`` and the data.
+We recreate the data:
 
 .. code-block:: console
 
-    $ sqlsynthgen make-generators --config-file config.yaml --force
     $ sqlsynthgen make-stats --config-file config.yaml --force
     $ sqlsynthgen remove-data --yes
     $ sqlsynthgen create-vocab
