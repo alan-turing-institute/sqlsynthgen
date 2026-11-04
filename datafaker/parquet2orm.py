@@ -81,15 +81,18 @@ def find_parquet_tables(directory: Path | str) -> Generator[ParquetTable, None, 
             logger.warning("Entry %s is empty", child.name)
 
 
-def add_guessed_keys(tables_conf: dict[str, Any]):
+def add_guessed_keys(tables_conf: dict[str, Any], table_names: set[str]):
     """
     Read the orm.yaml config "tables" portion, adding guesses for foreign keys and primary keys.
 
     :param tables_conf: On input, the tables portion of the configuration file; this dictionary will
       be changed to set the appropriate primary and foreign keys.
+    :param table_names: The names of the tables to guess keys for.
     """
     guesser = _ColumnGuesser(tables_conf)
-    for table_name, table_conf in tables_conf.items():
+    for table_name in table_names:
+        table_conf = tables_conf.get(table_name, {})
+        tables_conf[table_name] = table_conf
         columns = get_property(table_conf, "columns", {})
         table_conf["columns"] = columns
         primaries = set()
@@ -100,7 +103,9 @@ def add_guessed_keys(tables_conf: dict[str, Any]):
                     primaries.add(column_name)
                     column_conf["primary"] = True
                     column_conf["nullable"] = False
-                elif (guess := guesser.get_likely_foreign_key_target(column_name)) and guess[0] != table_name:
+                elif (
+                    guess := guesser.get_likely_foreign_key_target(column_name)
+                ) and guess[0] != table_name:
                     column_conf["foreign_keys"] = [f"{guess[0]}.{guess[1]}"]
             if column_name == "id":
                 column_conf["primary"] = True

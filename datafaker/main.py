@@ -200,7 +200,6 @@ def make_tables(
         get_source_schema(),
         views_to_tables=views_to_tables,
         parquet_dir=parquet_dir,
-        guess_keys=views_to_tables or parquet_dir is not None,
     )
     orm_file_path.write_text(content, encoding="utf-8")
     logger.debug("%s created.", orm_file)

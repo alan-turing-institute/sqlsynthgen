@@ -12,6 +12,7 @@ from typing import Any, Final, Optional, Tuple, Type
 import pandas as pd
 import snowflake.sqlalchemy.custom_types as snowflake_types
 import snsql
+import sqlalchemy
 import typer
 import yaml
 from mimesis.providers.base import BaseProvider
@@ -710,7 +711,6 @@ def make_tables_file(
     views_to_tables: bool,
     parquet_dir: Optional[Path] = None,
     engine: Optional[Engine] = None,
-    guess_keys: bool = False,
 ) -> str:
     """Construct the YAML file representing the schema."""
     if engine is None:
@@ -720,16 +720,22 @@ def make_tables_file(
         engine, schema_name=schema_name, views_to_tables=views_to_tables
     )
     meta_dict = metadata_to_dict(metadata, schema_name, engine, parquet_dir)
+    inspector = sqlalchemy.inspect(engine)
+    if hasattr(inspector, "get_view_names"):
+        view_names = set(inspector.get_view_names())
+    else:
+        view_names = set()
 
+    parquet_table_names = set()
     if parquet_dir is not None:
         extra_meta = get_initial_parquet_orm(parquet_dir)
         if extra_meta:
+            parquet_table_names = set(extra_meta.keys())
             md_tables: dict[str, Any] = get_property(meta_dict, "tables", {})
             new_tables = {**extra_meta, **md_tables}
             meta_dict["tables"] = new_tables
 
-    if guess_keys:
-        add_guessed_keys(meta_dict["tables"])
+    add_guessed_keys(meta_dict["tables"], view_names | parquet_table_names)
 
     return yaml.dump(meta_dict, sort_keys=False)
 

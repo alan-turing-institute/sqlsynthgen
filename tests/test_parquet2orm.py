@@ -84,7 +84,7 @@ class Parquet2Orm(ParquetDirTestCase):
         self.write_parquet(data)
         orm = get_initial_parquet_orm(self.parquet_dir)
         assert orm is not None
-        add_guessed_keys(orm)
+        add_guessed_keys(orm, set(data.keys()))
         self.assertSetEqual(set(orm.keys()), set(data.keys()))
         self.assertIn("columns", orm["fruit.parquet"])
         self.assertSetEqual(
@@ -115,7 +115,7 @@ class Parquet2Orm(ParquetDirTestCase):
         self.write_parquet(data)
         orm = get_initial_parquet_orm(self.parquet_dir)
         assert orm is not None
-        add_guessed_keys(orm)
+        add_guessed_keys(orm, set(data.keys()))
         self.assertSetEqual(set(orm.keys()), set(data.keys()))
         primary_keys = {
             name
@@ -143,7 +143,7 @@ class Parquet2Orm(ParquetDirTestCase):
         self.write_parquet(data)
         orm = get_initial_parquet_orm(self.parquet_dir)
         assert orm is not None
-        add_guessed_keys(orm)
+        add_guessed_keys(orm, set(data.keys()))
         self.assertSetEqual(set(orm.keys()), set(data.keys()))
         self.assertNotIn("foreign_keys", orm["fruit.parquet"]["columns"]["fruit_id"])
         self.assertNotIn("foreign_keys", orm["fruit.parquet"]["columns"]["name"])
@@ -181,7 +181,7 @@ class PartitionedParquet2Orm(ParquetDirTestCase):
         )
         orm = get_initial_parquet_orm(self.parquet_dir)
         assert orm is not None
-        add_guessed_keys(orm)
+        add_guessed_keys(orm, {"visit"})
         self.assertSetEqual(set(orm.keys()), {"visit"})
         cols = orm["visit"]["columns"]
         self.assertSetEqual(set(cols.keys()), {"visit_id", "ward", "yr"})
@@ -194,7 +194,7 @@ class PartitionedParquet2Orm(ParquetDirTestCase):
         self.write_files({"visit/yr=2023/p1.parquet": {"visit_id": [1]}})
         orm = get_initial_parquet_orm(self.parquet_dir)
         assert orm is not None
-        add_guessed_keys(orm)
+        add_guessed_keys(orm, {"visit"})
         mock_logger.warning.assert_not_called()
 
     def test_same_part_names_in_different_tables_do_not_collide(self) -> None:
@@ -207,7 +207,7 @@ class PartitionedParquet2Orm(ParquetDirTestCase):
         )
         orm = get_initial_parquet_orm(self.parquet_dir)
         assert orm is not None
-        add_guessed_keys(orm)
+        add_guessed_keys(orm, {"drug", "visit"})
         assert orm is not None
         self.assertSetEqual(set(orm.keys()), {"visit", "drug"})
         self.assertSetEqual(
@@ -229,8 +229,9 @@ class PartitionedParquet2Orm(ParquetDirTestCase):
 
         orm = get_initial_parquet_orm(self.parquet_dir)
         assert orm is not None
-        add_guessed_keys(orm)
-        self.assertSetEqual(set(orm.keys()), {"fruit.parquet", "visit"})
+        table_names = {"fruit.parquet", "visit"}
+        add_guessed_keys(orm, table_names)
+        self.assertSetEqual(set(orm.keys()), table_names)
         mock_logger.warning.assert_called_once_with("Entry %s is empty", "empty")
 
     def test_nested_plain_directories_are_one_table(self) -> None:
@@ -243,7 +244,7 @@ class PartitionedParquet2Orm(ParquetDirTestCase):
         )
         orm = get_initial_parquet_orm(self.parquet_dir)
         assert orm is not None
-        add_guessed_keys(orm)
+        add_guessed_keys(orm, {"sub"})
         self.assertSetEqual(set(orm.keys()), {"sub"})
 
     def test_parquet_dir_that_is_a_dataset(self) -> None:
@@ -256,7 +257,7 @@ class PartitionedParquet2Orm(ParquetDirTestCase):
         )
         orm = get_initial_parquet_orm(self.parquet_dir)
         assert orm is not None
-        add_guessed_keys(orm)
+        add_guessed_keys(orm, {"visit"})
         self.assertSetEqual(set(orm.keys()), {"visit"})
         only = next(iter(orm.values()))
         self.assertSetEqual(set(only["columns"].keys()), {"visit_id", "yr"})
@@ -331,7 +332,7 @@ class PartitionedParquet2Orm(ParquetDirTestCase):
         )
         orm = get_initial_parquet_orm(self.parquet_dir)
         assert orm is not None
-        add_guessed_keys(orm)
+        add_guessed_keys(orm, {"person"})
         self.assertEqual(orm["person"]["columns"]["age"]["type"], "INTEGER")
         mock_logger.warning.assert_called_once_with(
             "Found no likely primary keys for table %s",
@@ -346,7 +347,7 @@ class PartitionedParquet2Orm(ParquetDirTestCase):
         )
         orm = get_initial_parquet_orm(self.parquet_dir)
         assert orm is not None
-        add_guessed_keys(orm)
+        add_guessed_keys(orm, {"person"})
         self.assertEqual(orm["person"]["columns"]["age"]["type"], "INTEGER")
 
 

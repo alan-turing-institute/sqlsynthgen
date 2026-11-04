@@ -115,7 +115,6 @@ class TestCLI(DatafakerTestCase):
             None,
             views_to_tables=False,
             parquet_dir=None,
-            guess_keys=False,
         )
         mock_path.return_value.write_text.assert_called_once_with(
             "some text", encoding="utf-8"
@@ -196,7 +195,6 @@ class TestCLI(DatafakerTestCase):
                     mock_get_settings.return_value.src_schema,
                     views_to_tables=False,
                     parquet_dir=None,
-                    guess_keys=False,
                 )
                 mock_path.return_value.write_text.assert_called_once_with(
                     mock_tables_output, encoding="utf-8"
