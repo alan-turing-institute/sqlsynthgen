@@ -1,5 +1,6 @@
 """Tests for the providers module."""
 import datetime as dt
+from collections import Counter
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -135,6 +136,51 @@ class TimespanProvider(DatafakerTestCase):
         self.assertLessEqual(min_dt, delta)
         self.assertLessEqual(delta, max_dt)
         self.assertEqual(end - start, delta)
+
+
+class DistributionProviderChoiceTestCase(DatafakerTestCase):
+    """Tests for DistributionProvider's weighted_choice/zipf_choice_direct."""
+
+    def test_weighted_choice_follows_counts(self) -> None:
+        """weighted_choice should pick values in proportion to their counts."""
+        prov = providers.DistributionProvider(seed=0)
+        a = [
+            {"value": "rare", "count": 1},
+            {"value": "common", "count": 9},
+            {"value": "never", "count": 0},
+        ]
+        counts = Counter(prov.weighted_choice(a) for _ in range(20000))
+        self.assertNotIn("never", counts)
+        observed_odds = counts["common"] / counts["rare"]
+        self.assertLess(abs(observed_odds / 9 - 1.0), 0.15)
+
+    def test_weighted_choice_empty(self) -> None:
+        """weighted_choice on an empty list returns None."""
+        prov = providers.DistributionProvider(seed=0)
+        self.assertIsNone(prov.weighted_choice([]))
+
+    def test_weighted_choice_caches_per_list_identity(self) -> None:
+        """Repeated/alternating calls with distinct lists must not cross-contaminate.
+
+        Regression test for the id(a)-keyed cache added to speed up repeated
+        calls with the same list object: interleaving two different lists
+        must not return the wrong (stale) values/weights for either.
+        """
+        prov = providers.DistributionProvider(seed=0)
+        a = [{"value": "a-only", "count": 1}]
+        b = [{"value": "b-only", "count": 1}]
+        seen = {prov.weighted_choice(a) for _ in range(5)}
+        seen |= {prov.weighted_choice(b) for _ in range(5)}
+        seen |= {prov.weighted_choice(a) for _ in range(5)}
+        self.assertEqual(seen, {"a-only", "b-only"})
+
+    def test_zipf_choice_direct_decreasing_frequency(self) -> None:
+        """zipf_choice_direct should favour earlier (more frequent) values."""
+        prov = providers.DistributionProvider(seed=0)
+        values = list(range(10))
+        counts = Counter(prov.zipf_choice_direct(values) for _ in range(20000))
+        frequencies = [counts[v] for v in values]
+        self.assertEqual(frequencies, sorted(frequencies, reverse=True))
 
 
 class TestWeightedBooleanProvider(DatafakerTestCase):

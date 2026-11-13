@@ -1,6 +1,7 @@
 """Unit tests for proposers."""
 import re
 from pathlib import Path
+from typing import Any
 
 import duckdb_sqlalchemy
 import pandas as pd
@@ -14,6 +15,8 @@ from sqlalchemy import (
     String,
     Table,
     Text,
+    create_engine,
+    event,
     select,
     text,
 )
@@ -22,6 +25,7 @@ from datafaker.db_utils import create_db_engine, get_sync_engine
 from datafaker.interactive.generators import get_aggregate_query
 from datafaker.proposers import ProposerFactory, everything_factory
 from datafaker.proposers.base import Proposer
+from datafaker.proposers.choice import ChoiceProposer, ChoiceProposerFactory
 from tests.utils import DatafakerTestCase
 
 select_re = re.compile(
@@ -141,3 +145,96 @@ class DuckDbProposerQueriesUnitTests(DatafakerTestCase):
                     self.fail(
                         f"Custom query from {proposer.name()} {name} failed:\n{query}\n{exc}"
                     )
+
+
+class ChoiceProposerFactoryOrderingTests(DatafakerTestCase):
+    """ChoiceProposerFactory.get_proposers must order values by frequency.
+
+    stmt_count's SQL ORDER BY was dropped for performance (sorting it in the
+    database is pure waste in the common case where the cap check fails and
+    the whole result is discarded); this guards that the now-Python-side
+    sort still leaves ZipfChoiceProposer's values most-frequent-first.
+    """
+
+    def test_values_are_most_frequent_first(self) -> None:
+        """Values come back ordered by descending frequency, not insertion order."""
+        engine = create_engine("duckdb:///:memory:")
+        metadata = MetaData()
+        table = Table("category_table", metadata, Column("cat", Text()))
+        metadata.create_all(engine)
+        # Insert in an order that does not match frequency, so a correct
+        # result can only come from sorting by count, not from physical
+        # or insertion order.
+        rows = [{"cat": "rare"}] + [{"cat": "medium"}] * 5 + [{"cat": "common"}] * 10
+        with engine.begin() as conn:
+            conn.execute(table.insert(), rows)
+
+        proposers = ChoiceProposerFactory().get_proposers([table.c.cat], engine)
+        zipf = next(p for p in proposers if p.function_name() == "dist_gen.zipf_choice")
+        assert isinstance(zipf, ChoiceProposer)
+        self.assertEqual(zipf.values, ["common", "medium", "rare"])
+
+
+class ChoiceProposerFactoryExactSkipTests(DatafakerTestCase):
+    """The cheap sample can skip the expensive exact stmt_count GROUP BY.
+
+    Prototype for a fix to the (separately-diagnosed) problem where
+    stmt_count's full-table GROUP BY is catastrophically expensive for an
+    unindexed, very-high-cardinality column: its result is discarded
+    unseen anyway whenever true cardinality exceeds MAXIMUM_CHOICES, so if
+    the cheap SAMPLE_COUNT-row sample we already run is almost entirely
+    distinct, we can skip stmt_count outright instead of paying for it.
+    """
+
+    def _executed_statements(self, engine: Engine, columns: list[Column]) -> list[str]:
+        """Get the SQL text of every statement executed while getting proposers."""
+        statements: list[str] = []
+
+        # pylint: disable-next=too-many-arguments,too-many-positional-arguments
+        def _capture(*args: Any, **_kwargs: Any) -> None:
+            # Signature required by the "before_cursor_execute" event; only
+            # the SQL text (third positional argument) is needed here.
+            statements.append(args[2])
+
+        event.listen(engine, "before_cursor_execute", _capture)
+        try:
+            ChoiceProposerFactory().get_proposers(columns, engine)
+        finally:
+            event.remove(engine, "before_cursor_execute", _capture)
+        return statements
+
+    def test_high_cardinality_sample_skips_exact_query(self) -> None:
+        """Exact stmt_count is skipped when the sample is almost all-distinct."""
+        engine = create_engine("duckdb:///:memory:")
+        metadata = MetaData()
+        table = Table("wide_table", metadata, Column("val", Text()))
+        metadata.create_all(engine)
+        # Every row distinct: a SAMPLE_COUNT-row sample of this table is
+        # always 100% distinct, well over the skip threshold.
+        rows = [{"val": f"unique-{i}"} for i in range(2000)]
+        with engine.begin() as conn:
+            conn.execute(table.insert(), rows)
+
+        statements = self._executed_statements(engine, [table.c.val])
+        # The exact query groups directly on the source table; the sample
+        # query groups on the "_inner" sampling subquery. Only the latter
+        # should have run.
+        self.assertTrue(any("_inner" in s for s in statements))
+        self.assertFalse(
+            any("wide_table" in s and "_inner" not in s for s in statements)
+        )
+
+    def test_low_cardinality_sample_still_runs_exact_query(self) -> None:
+        """Exact stmt_count still runs when cardinality is near/under the cap."""
+        engine = create_engine("duckdb:///:memory:")
+        metadata = MetaData()
+        table = Table("narrow_table", metadata, Column("val", Text()))
+        metadata.create_all(engine)
+        rows = [{"val": f"v{i % 50}"} for i in range(2000)]
+        with engine.begin() as conn:
+            conn.execute(table.insert(), rows)
+
+        statements = self._executed_statements(engine, [table.c.val])
+        self.assertTrue(
+            any("narrow_table" in s and "_inner" not in s for s in statements)
+        )
