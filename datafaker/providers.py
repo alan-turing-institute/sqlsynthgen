@@ -2,6 +2,7 @@
 
 import datetime as dt
 import functools
+import itertools
 import math
 import random
 from collections.abc import Mapping
@@ -244,6 +245,17 @@ def zipf_weights(size: int) -> list[float]:
     return [1 / (n * total) for n in range(1, size + 1)]
 
 
+@functools.cache
+def zipf_cumulative_weights(size: int) -> list[float]:
+    """Get the cumulative Zipf weights for ``random.choices(cum_weights=...)``.
+
+    Precomputing the cumulative sum (and caching it by ``size``) avoids
+    ``random.choices`` redoing that O(n) accumulation from ``zipf_weights(size)``
+    on every single draw.
+    """
+    return list(itertools.accumulate(zipf_weights(size)))
+
+
 def merge_with_constants(
     xs: list[T], constants_at: dict[int, T]
 ) -> Generator[T, None, None]:
@@ -289,6 +301,15 @@ class DistributionProvider(BaseProvider):
         super().__init__(seed=seed, **kwargs)
         np_seed = seed if isinstance(seed, int) else None
         self.np_gen = np.random.default_rng(seed=np_seed)
+        # Keyed by id(a): weighted_choice() is typically called many times
+        # in a row with the very same list object (once per generated row,
+        # or once per propose-preview sample), so caching the derived
+        # (values, cumulative counts) by identity avoids rebuilding them on
+        # every call. The cache holds a strong reference to `a` itself so
+        # its id can't be recycled by another list while the entry lives.
+        self._weighted_choice_cache: dict[
+            int, tuple[list[dict[str, Any]], list[Any], list[int]]
+        ] = {}
 
     def uniform(self, low: float, high: float) -> float:
         """
@@ -363,7 +384,7 @@ class DistributionProvider(BaseProvider):
         """
         if n is None:
             n = len(a)
-        return random.choices(a, weights=zipf_weights(n))[0]
+        return random.choices(a, cum_weights=zipf_cumulative_weights(n))[0]
 
     def zipf_choice(self, a: list[Mapping[str, T]], n: int | None = None) -> T | None:
         """
@@ -391,15 +412,19 @@ class DistributionProvider(BaseProvider):
         """
         if not a:
             return None
-        vs = []
-        counts = []
-        for vc in a:
-            count = vc.get("count", 0)
-            if count:
-                counts.append(count)
-                vs.append(vc.get("value", None))
-        c = random.choices(vs, weights=counts)[0]
-        return c
+        cached = self._weighted_choice_cache.get(id(a))
+        if cached is None or cached[0] is not a:
+            vs = []
+            counts = []
+            for vc in a:
+                count = vc.get("count", 0)
+                if count:
+                    counts.append(count)
+                    vs.append(vc.get("value", None))
+            cached = (a, vs, list(itertools.accumulate(counts)))
+            self._weighted_choice_cache[id(a)] = cached
+        _, vs, cum_counts = cached
+        return random.choices(vs, cum_weights=cum_counts)[0]
 
     def constant(self, value: T) -> T:
         """Return the same value always."""

@@ -212,8 +212,16 @@ class TestChoiceGeneratorStoredQuery(DatafakerTestCase):
 class TestChoiceGeneratorFactoryLiveQueries(DatafakerTestCase):
     """ChoiceGeneratorFactory.get_generators executes dialect-correct live SQL."""
 
-    def _captured_sqls(self, dialect, schema=None) -> list[str]:
-        """Run get_proposers with a mocked engine and return compiled SQL strings."""
+    def _captured_sqls(self, dialect, schema=None) -> dict[str, str]:
+        """Run get_proposers with a mocked engine; return compiled SQL by query kind.
+
+        get_proposers runs the sample query first and the exact stmt_count
+        query second only if the sample wasn't conclusive (see the
+        EXACT_SKIP_SAMPLE_DISTINCT_RATIO heuristic in choice.py), so which
+        one executes first isn't stable across changes to that heuristic.
+        The two are told apart by content instead: only the sample query
+        groups on the "_inner" sampling subquery.
+        """
 
         engine = MagicMock()
         engine.dialect = dialect
@@ -236,12 +244,17 @@ class TestChoiceGeneratorFactoryLiveQueries(DatafakerTestCase):
         conn.__exit__ = MagicMock(return_value=False)
         engine.connect.return_value = conn
 
-        executed = []
-        results_queue = [result_count, result_sample]
+        executed: dict[str, str] = {}
 
         def capture(stmt, *_args, **_kwargs):
-            executed.append(stmt)
-            return results_queue[len(executed) - 1]
+            compiled = str(
+                stmt.compile(dialect=dialect, compile_kwargs={"literal_binds": True})
+            ).upper()
+            if "_INNER" in compiled:
+                executed["sample"] = compiled
+                return result_sample
+            executed["exact"] = compiled
+            return result_count
 
         conn.execute.side_effect = capture
 
@@ -249,38 +262,33 @@ class TestChoiceGeneratorFactoryLiveQueries(DatafakerTestCase):
         tbl = Table("patient", meta, Column("gender", Integer()), schema=schema)
         ChoiceProposerFactory().get_proposers([tbl.c.gender], engine)
 
-        return [
-            str(
-                s.compile(dialect=dialect, compile_kwargs={"literal_binds": True})
-            ).upper()
-            for s in executed
-        ]
+        return executed
 
     def test_mssql_live_queries_use_rand_and_top(self) -> None:
         """MS-SQL live queries use TOP (not LIMIT) and rand() (not random())."""
         sqls = self._captured_sqls(mssql.dialect())
-        self.assert_str_in(" TOP ", sqls[0])
-        self.assert_str_not_in("LIMIT", sqls[0])
-        self.assert_str_in("NEWID()", sqls[1])
-        self.assert_str_not_in("LIMIT", sqls[1])
-        self.assert_str_not_in("RANDOM()", sqls[1])
+        self.assert_str_in(" TOP ", sqls["exact"])
+        self.assert_str_not_in("LIMIT", sqls["exact"])
+        self.assert_str_in("NEWID()", sqls["sample"])
+        self.assert_str_not_in("LIMIT", sqls["sample"])
+        self.assert_str_not_in("RANDOM()", sqls["sample"])
 
     def test_postgresql_live_queries_use_limit_and_random(self) -> None:
         """PostgreSQL live queries use LIMIT and random()."""
         sqls = self._captured_sqls(postgresql.dialect())
-        self.assert_str_in("LIMIT", sqls[0])
-        self.assert_str_not_in(" TOP ", sqls[0])
-        self.assert_str_in("LIMIT", sqls[1])
-        self.assert_str_in("RANDOM()", sqls[1])
-        self.assert_str_not_in(" TOP ", sqls[1])
-        self.assert_str_not_in("NEWID()", sqls[1])
+        self.assert_str_in("LIMIT", sqls["exact"])
+        self.assert_str_not_in(" TOP ", sqls["exact"])
+        self.assert_str_in("LIMIT", sqls["sample"])
+        self.assert_str_in("RANDOM()", sqls["sample"])
+        self.assert_str_not_in(" TOP ", sqls["sample"])
+        self.assert_str_not_in("NEWID()", sqls["sample"])
 
     def test_schema_qualified_table_appears_in_from(self) -> None:
         """Schema-qualified table name is included in the FROM clause on both dialects."""
         for dialect in (mssql.dialect(), postgresql.dialect()):
             with self.subTest(dialect=dialect.name):
                 sqls = self._captured_sqls(dialect, schema="myschema")
-                for sql in sqls:
+                for sql in sqls.values():
                     self.assert_str_in("MYSCHEMA", sql)
 
 
