@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import Integer, String, func, literal
+from sqlalchemy import Integer, String, cast, func, literal
 
 from datafaker.dialects import SecondsDifference, SentenceCount, WordCount
 
@@ -87,7 +87,7 @@ class FirstLetterExtractor(FeatureExtractor):
 
     def expression(self, column):
         """Build the SQL expression for the column's first letter."""
-        return func.lower(func.substr(column, 1, 1))
+        return func.lower(func.substr(cast(column, String), 1, 1))
 
 
 class LastLetterExtractor(FeatureExtractor):
@@ -105,7 +105,7 @@ class LastLetterExtractor(FeatureExtractor):
 
     def expression(self, column):
         """Build the SQL expression for the column's last letter."""
-        return func.lower(func.substr(column, -1, 1))
+        return func.lower(func.substr(cast(column, String), -1, 1))
 
 
 class LengthExtractor(FeatureExtractor):
@@ -120,7 +120,7 @@ class LengthExtractor(FeatureExtractor):
 
     def expression(self, column):
         """Build the SQL expression for the column's string length."""
-        return func.length(column)
+        return func.length(cast(column, String))
 
 
 class WordExtractor(FeatureExtractor):

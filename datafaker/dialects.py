@@ -531,4 +531,4 @@ def compile_timestampltz_ddb(
     element: snowflake_types.TIMESTAMP_LTZ, compiler: Any, **kw: Any
 ) -> str:
     """Render TIMESTAMP_LTZ as TIMESTAMP_LTZ."""
-    return compiler.process(element, **kw)
+    return compiler.visit_TIMESTAMP_LTZ(element, **kw)

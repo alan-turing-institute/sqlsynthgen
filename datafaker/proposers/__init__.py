@@ -31,6 +31,7 @@ from datafaker.proposers.partitioned import (
     NullPartitionedNormalProposerFactory,
 )
 from datafaker.proposers.sequence import IncrementProposerFactory
+from datafaker.proposers.uuid import UuidProposerFactory
 
 
 def everything_factory(config: Mapping, metadata: MetaData) -> ProposerFactory:
@@ -60,4 +61,5 @@ def everything_factory(config: Mapping, metadata: MetaData) -> ProposerFactory:
         CopyProposerFactory(config, metadata),
         DateComponentExtractProposerFactory(config, metadata),
         IncrementProposerFactory(),
+        UuidProposerFactory(),
     )
