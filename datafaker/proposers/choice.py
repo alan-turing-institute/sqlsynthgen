@@ -377,8 +377,8 @@ class ChoiceProposerFactory(ProposerFactory):
                     .group_by(column)
                     .limit(MAXIMUM_CHOICES + 1)
                 )
-                results = connection.execute(stmt_count)
-                if results is not None and results.rowcount <= MAXIMUM_CHOICES:
+            rows = connection.execute(stmt_count).fetchall()
+            if len(rows) <= MAXIMUM_CHOICES:
                     # No ORDER BY above: for a high-cardinality column (the
                     # common case) this result is discarded unseen below, so
                     # asking the database to sort it first - potentially
