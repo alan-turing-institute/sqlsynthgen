@@ -377,8 +377,8 @@ class ChoiceProposerFactory(ProposerFactory):
                     .group_by(column)
                     .limit(MAXIMUM_CHOICES + 1)
                 )
-            rows = connection.execute(stmt_count).fetchall()
-            if len(rows) <= MAXIMUM_CHOICES:
+                rows = connection.execute(stmt_count).fetchall()
+                if len(rows) <= MAXIMUM_CHOICES:
                     # No ORDER BY above: for a high-cardinality column (the
                     # common case) this result is discarded unseen below, so
                     # asking the database to sort it first - potentially
@@ -387,7 +387,7 @@ class ChoiceProposerFactory(ProposerFactory):
                     # never bound (every group was returned), so it's cheap and
                     # correct to sort in Python instead, preserving the
                     # most-frequent-first order ZipfChoiceProposer relies on.
-                    rows = sorted(results, key=lambda row: row.f, reverse=True)
+                    rows = sorted(rows, key=lambda row: row.f, reverse=True)
                     vg = ValueGatherer(rows, self.SUPPRESS_COUNT)
                     if vg.counts:
                         generators += [
