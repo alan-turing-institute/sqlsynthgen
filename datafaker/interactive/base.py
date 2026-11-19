@@ -1,4 +1,5 @@
 """Base configuration command shells."""
+
 import cmd
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, MutableMapping, Sequence
@@ -19,7 +20,7 @@ from datafaker.db_utils import (
     fk_refers_to_ignored_table,
     get_sync_engine,
 )
-from datafaker.dialects import Random
+from datafaker.dialects import random_sample
 from datafaker.theme import get_active_theme
 from datafaker.utils import T, get_property, split_column_full_name
 
@@ -469,12 +470,9 @@ class DbCmd(ABC, cmd.Cmd):
             return
         col_exprs = [table.columns[cn] for cn in col_names]
         nonnull_clauses = [ce.isnot(None) for ce in col_exprs]
-        stmt = (
-            select(*col_exprs)
-            .select_from(table)
-            .where(or_(*nonnull_clauses))
-            .order_by(Random())
-            .limit(max_peek_rows)
+        stmt = random_sample(
+            select(*col_exprs).select_from(table).where(or_(*nonnull_clauses)),
+            max_peek_rows,
         )
         with self.sync_engine.connect() as connection:
             try:
@@ -516,7 +514,7 @@ class DbCmd(ABC, cmd.Cmd):
         :return: The list of all column names or table names or perhaps
          a table name followed by a dot.
         """
-        (first_part, last_part) = split_column_full_name(text)
+        first_part, last_part = split_column_full_name(text)
         if first_part:
             # first_part is table, last_part is column
             table_index = self.get_table_index(first_part)

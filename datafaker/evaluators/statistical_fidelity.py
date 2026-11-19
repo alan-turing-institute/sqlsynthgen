@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 
 from datafaker.evaluators.distribution_builders import (
+    DEFAULT_SAMPLE_SIZE,
     CategoryBuilder,
     DistributionBuilder,
     HistogramBuilder,
@@ -223,7 +224,7 @@ class StatisticalFidelity:
     in terms of statistical properties.
     """
 
-    def __init__(self, column, engine, sample_size=4000):
+    def __init__(self, column, engine, sample_size=DEFAULT_SAMPLE_SIZE):
         """Initialize with no criteria set; call set_eval_criteria() first."""
         self.engine = engine
         self.column = column

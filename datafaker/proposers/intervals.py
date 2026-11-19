@@ -1,4 +1,5 @@
 """Proposers for date intervals."""
+
 import datetime
 from collections.abc import Mapping, Sequence
 from typing import Any
@@ -6,7 +7,7 @@ from typing import Any
 from sqlalchemy import Column, Engine, MetaData, func, select
 from sqlalchemy.types import Date, DateTime
 
-from datafaker.dialects import Random, SecondsDifference, StdDev
+from datafaker.dialects import SecondsDifference, StdDev, random_sample
 from datafaker.proposers.base import (
     Buckets,
     ForeignKeyRelationship,
@@ -380,7 +381,7 @@ class DateAfterProposer(Proposer):
         """
         anchor = self._anchor_related.target
         query = select(anchor).select_from(anchor.table)
-        query = query.order_by(Random()).limit(count)
+        query = random_sample(query, count)
         with self._engine.connect() as conn:
             anchors = conn.execute(query).scalars().all()
         anchors = procrustes(
@@ -544,7 +545,7 @@ class CopyProposer(Proposer):
         """Generate ``count`` random data points for this column."""
         anchor = self._anchor_related.target
         query = select(anchor).select_from(anchor.table)
-        query = query.order_by(Random()).limit(count)
+        query = random_sample(query, count)
         with self._engine.connect() as conn:
             return list(conn.execute(query).scalars().all())
 

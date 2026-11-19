@@ -9,8 +9,10 @@ from typing import Any
 
 from sqlalchemy import func, select
 
-from datafaker.dialects import Random
+from datafaker.dialects import random_sample
 from datafaker.evaluators.feature_extractors import FeatureExtractor, IdentityExtractor
+
+DEFAULT_SAMPLE_SIZE = 4000
 
 
 @dataclass
@@ -43,7 +45,7 @@ class DistributionBuilder(ABC):
         table,
         column,
         extractor: FeatureExtractor = IdentityExtractor(),
-        sample_size=4000,
+        sample_size=DEFAULT_SAMPLE_SIZE,
     ):
         """Initialize the engine/table/column/extractor/sample_size shared by every builder."""
         self.engine = engine
@@ -73,7 +75,7 @@ class HistogramBuilder(DistributionBuilder):
         column,
         bins=10,
         extractor: FeatureExtractor = IdentityExtractor(),
-        sample_size=4000,
+        sample_size=DEFAULT_SAMPLE_SIZE,
     ):
         """Initialize a histogram builder for one column feature."""
         super().__init__(engine, table, column, extractor, sample_size)
@@ -104,10 +106,10 @@ class HistogramBuilder(DistributionBuilder):
         with self.engine.connect() as conn:
             values = (
                 conn.execute(
-                    select(feature_expr)
-                    .select_from(self.table)
-                    .order_by(Random())
-                    .limit(self.sample_size)
+                    random_sample(
+                        select(feature_expr).select_from(self.table),
+                        self.sample_size,
+                    )
                 )
                 .scalars()
                 .all()
@@ -227,10 +229,10 @@ class CategoryBuilder(DistributionBuilder):
             # unordered LIMIT biasing the "real" distribution toward
             # whatever the DB returns first (see HistogramBuilder above).
             rows = conn.execute(
-                select(self.column)
-                .select_from(self.table)
-                .order_by(Random())
-                .limit(self.sample_size)
+                random_sample(
+                    select(self.column).select_from(self.table),
+                    self.sample_size,
+                )
             )
 
             for (value,) in rows:

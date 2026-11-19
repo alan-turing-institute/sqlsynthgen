@@ -1,4 +1,5 @@
 """Proposers for date member extraction."""
+
 import datetime
 from abc import abstractmethod
 from collections.abc import Mapping, Sequence
@@ -7,7 +8,7 @@ from typing import Any
 from sqlalchemy import Column, Engine, MetaData, select
 from sqlalchemy.types import Date, DateTime, Integer
 
-from datafaker.dialects import Random
+from datafaker.dialects import random_sample
 from datafaker.proposers.base import Proposer, ProposerFactory, get_column_type
 from datafaker.providers import ExtractProvider
 
@@ -67,9 +68,7 @@ class DateComponentExtractProposer(Proposer):
     def get_based_on_data(self, count: int) -> list[datetime.datetime]:
         """Get the data from the based-on column in the source data."""
         with self._engine.connect() as conn:
-            rows = conn.execute(select(self._based_on).order_by(Random())).fetchmany(
-                count
-            )
+            rows = conn.execute(random_sample(select(self._based_on), count)).all()
             return [row[0] for row in rows]
 
     def generate_data(self, count: int) -> list[Any]:

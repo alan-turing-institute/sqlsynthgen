@@ -1,4 +1,5 @@
 """Missingness configuration shell."""
+
 import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
@@ -7,7 +8,7 @@ from typing import cast
 from sqlalchemy import Column, Dialect, Table, func, select
 from sqlalchemy.sql.elements import literal_column
 
-from datafaker.dialects import IsNull, Random
+from datafaker.dialects import IsNull, random_sample
 from datafaker.interactive.base import DbCmd, TableEntry
 
 
@@ -39,13 +40,10 @@ class MissingnessType:
         :return: The SQL query to do the sampling.
         """
         results = [IsNull(c).label(c.name + "__is_null") for c in columns]
-        subquery = (
-            select(*results)
-            .select_from(table)
-            .order_by(Random())
-            .limit(literal_column(str(count)))
-            .subquery("__t")
-        )
+        subquery = random_sample(
+            select(*results).select_from(table),
+            literal_column(str(count)),
+        ).subquery("__t")
         result_labels = [subquery.c[r.name].label(r.name) for r in results]
         query = (
             select(
@@ -138,7 +136,7 @@ data from the database. Use 'quit' to exit this tool."""
             if isinstance(mg_name, str):
                 query_comments = self.find_missingness_query(mg)
                 if query_comments is not None:
-                    (query, comments) = query_comments
+                    query, comments = query_comments
                     old = MissingnessType(
                         name=mg_name,
                         query=query,

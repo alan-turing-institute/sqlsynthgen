@@ -1,4 +1,5 @@
 """Dialect differences."""
+
 import re
 from collections.abc import Mapping
 from typing import Any, Optional, TypeVar
@@ -516,6 +517,15 @@ def compile_random_mssql(_element: Random, _compiler: Any, **_kw: Any) -> str:
     same random number gets chosen for each row.
     """
     return "NEWID()"
+
+
+def random_sample(query: Select, n: int | ColumnElement[Any]) -> Select:
+    """Return a random sample of up to n rows of the query.
+
+    The rows are shuffled before limiting, so the sample isn't biased
+    towards the order in which the database happens to store them.
+    """
+    return query.order_by(Random()).limit(n)
 
 
 @compiles(snowflake_types.TIMESTAMP_LTZ)

@@ -26,7 +26,7 @@ from sqlalchemy.sql.functions import coalesce
 from sqlalchemy.types import Integer, Numeric
 from typing_extensions import Self
 
-from datafaker.dialects import IsNotNull, LogNatural, NullIf, Random, StdDev
+from datafaker.dialects import IsNotNull, LogNatural, NullIf, StdDev, random_sample
 from datafaker.proposers.base import (
     Buckets,
     NumericType,
@@ -613,7 +613,7 @@ class CovariateQuery:
         if preds:
             sel = sel.filter(*preds)
         if self._sample_count is not None:
-            sel = sel.order_by(Random()).limit(self._sample_count)
+            sel = random_sample(sel, self._sample_count)
         return sel
 
     def _middle_query(self, inner_query: Any) -> Any:

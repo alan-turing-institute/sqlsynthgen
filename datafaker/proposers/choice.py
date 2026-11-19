@@ -8,7 +8,7 @@ from typing import Any, Sequence, Union
 
 from sqlalchemy import Column, CursorResult, Engine, desc, func, select
 
-from datafaker.dialects import Random
+from datafaker.dialects import random_sample
 from datafaker.proposers.base import (
     Proposer,
     ProposerFactory,
@@ -58,13 +58,9 @@ def _choice_stmt(  # pylint: disable=R0913,R0917
     without TOP; this function never emits such a clause.
     """
     if sample_count is not None:
-        sample_sub = (
-            select(column.label("value"))
-            .where(column.isnot(None))
-            .order_by(Random())
-            .limit(sample_count)
-            .subquery("_inner")
-        )
+        sample_sub = random_sample(
+            select(column.label("value")).where(column.isnot(None)), sample_count
+        ).subquery("_inner")
         counted_sub = (
             select(
                 sample_sub.c.value,
@@ -391,13 +387,9 @@ class ChoiceProposerFactory(ProposerFactory):
                             dialect=dialect,
                         ),
                     ]
-            inner = (
-                select(column.label("v"))
-                .select_from(src_table)
-                .order_by(Random())
-                .limit(self.SAMPLE_COUNT)
-                .subquery("_inner")
-            )
+            inner = random_sample(
+                select(column.label("v")).select_from(src_table), self.SAMPLE_COUNT
+            ).subquery("_inner")
             stmt_sample = (
                 select(
                     inner.c.v, func.count(inner.c.v).label("f")  # pylint: disable=E1102

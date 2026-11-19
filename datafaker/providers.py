@@ -1,4 +1,5 @@
 """This module contains Mimesis Provider sub-classes."""
+
 import datetime as dt
 import functools
 import math
@@ -12,7 +13,7 @@ from mimesis.providers.base import BaseDataProvider, BaseProvider
 from sqlalchemy import Column, Connection, MetaData
 from sqlalchemy.sql import func, select
 
-from datafaker.dialects import Random
+from datafaker.dialects import random_sample
 from datafaker.utils import T, logger
 
 
@@ -29,7 +30,7 @@ class ColumnValueProvider(BaseProvider):
         db_connection: Connection, orm_class: Any, column_name: str
     ) -> Any:
         """Return a random value from the column specified."""
-        query = select(orm_class).order_by(Random()).limit(1)
+        query = random_sample(select(orm_class), 1)
         random_row = db_connection.execute(query).first()
 
         if random_row:

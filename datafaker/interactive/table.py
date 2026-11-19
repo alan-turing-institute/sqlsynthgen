@@ -1,11 +1,12 @@
 """Table configuration command shell."""
+
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, cast
 
 from sqlalchemy import func, select
 
-from datafaker.dialects import Random
+from datafaker.dialects import random_sample
 from datafaker.interactive.base import (
     TYPE_LETTER,
     TYPE_PROMPT,
@@ -483,7 +484,7 @@ Type 'help data' for examples."""
             where_clause = func.length(column) >= min_length
         else:
             where_clause = column.isnot(None)
-        stmt = select(column).where(where_clause).order_by(Random()).limit(count)
+        stmt = random_sample(select(column).where(where_clause), count)
         with self.sync_engine.connect() as connection:
             result = connection.execute(stmt)
             self.columnize([str(x[0]) for x in result.all()])
@@ -494,7 +495,7 @@ Type 'help data' for examples."""
 
         :param count: The number of rows to report.
         """
-        stmt = select(self.table_metadata()).order_by(Random()).limit(count)
+        stmt = random_sample(select(self.table_metadata()), count)
         with self.sync_engine.connect() as connection:
             result = connection.execute(stmt)
             if result is None:

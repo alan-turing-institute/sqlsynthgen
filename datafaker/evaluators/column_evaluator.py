@@ -8,7 +8,8 @@ from sqlalchemy import Column, Engine, Table, UniqueConstraint, select
 from sqlalchemy.types import Date, DateTime, Time
 
 from datafaker.db_utils import is_numeric_sql_type
-from datafaker.dialects import Random
+from datafaker.dialects import random_sample
+from datafaker.evaluators.distribution_builders import DEFAULT_SAMPLE_SIZE
 from datafaker.evaluators.evaluation_profile import EvaluationProfile
 from datafaker.evaluators.metrics import (
     DiversityMetric,
@@ -162,7 +163,7 @@ class ColumnEvaluator:  # pylint: disable=too-many-instance-attributes
     def __init__(self, columns: list[Column], engine: Engine) -> None:
         """Sample the real column(s) and pick the evaluation profile/criteria."""
         assert columns, "ColumnEvaluator needs at least one column"
-        self.sample_size: int = 4000
+        self.sample_size: int = DEFAULT_SAMPLE_SIZE
         self.engine: Engine = engine
         self.novelty_metric: NoveltyMetric = NoveltyMetric()
         self.diversity_metric: DiversityMetric = DiversityMetric()
@@ -194,19 +195,19 @@ class ColumnEvaluator:  # pylint: disable=too-many-instance-attributes
                 # real_uniqueness/copy_fraction/novelty/diversity, all of
                 # which are computed from this sample.
                 rows = conn.execute(
-                    select(columns[0])
-                    .select_from(columns[0].table)
-                    .order_by(Random())
-                    .limit(self.sample_size)
+                    random_sample(
+                        select(columns[0]).select_from(columns[0].table),
+                        self.sample_size,
+                    )
                 )
                 self.real_values = [row[0] for row in rows]
                 column_type = get_column_type(columns[0])
             else:
                 rows = conn.execute(
-                    select(*columns)
-                    .select_from(columns[0].table)
-                    .order_by(Random())
-                    .limit(self.sample_size)
+                    random_sample(
+                        select(*columns).select_from(columns[0].table),
+                        self.sample_size,
+                    )
                 )
                 self.real_values = [tuple(row) for row in rows]
                 column_type = None
