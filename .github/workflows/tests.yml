@@ -25,6 +25,11 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+      # Install poetry into the setup-python interpreter rather than via apt,
+      # so it doesn't run on (and build the venv with) the runner's system Python.
+      - name: Install poetry
+        shell: bash
+        run: python -m pip install poetry
       - name: Start PostgreSQL
         shell: bash
         run: |
