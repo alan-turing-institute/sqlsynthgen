@@ -4,7 +4,7 @@ on:
   push:
     branches:
       # need this to be able to run the workflow until it has been merged into main
-      - yhong123/112-column_evaluators
+      - yhong123/175-ci_python_version
   workflow_dispatch:
 env:
   PYTHON_VERSION: "3.12"
