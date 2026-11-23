@@ -277,7 +277,9 @@ class ValueGatherer:
     from the suppressed values.
     """
 
-    def __init__(self, results: CursorResult, suppress_count: int = 0) -> None:
+    def __init__(
+        self, results: CursorResult | Sequence[Any], suppress_count: int = 0
+    ) -> None:
         """Initialise a ValueGatherer."""
         values = []  # All values found
         counts = []  # The number or each value
@@ -317,6 +319,15 @@ class ChoiceProposerFactory(ProposerFactory):
     SAMPLE_COUNT = MAXIMUM_CHOICES
     SUPPRESS_COUNT = 7
 
+    # If a random sample of SAMPLE_COUNT rows is already at least this
+    # fraction distinct, skip the exact stmt_count GROUP BY below (see
+    # get_proposers). By the birthday problem, even if true cardinality
+    # sat exactly at MAXIMUM_CHOICES, collisions in a same-sized sample
+    # would be expected to pull its distinct fraction down to ~63%
+    # (1 - 1/e), not this high - so this is a conservative trigger that
+    # only fires when cardinality is genuinely far over the cap.
+    EXACT_SKIP_SAMPLE_DISTINCT_RATIO = 0.9
+
     def get_proposers(  # pylint: disable=too-many-locals
         self, columns: list[Column], engine: Engine
     ) -> Sequence[Proposer]:
@@ -329,64 +340,13 @@ class ChoiceProposerFactory(ProposerFactory):
         src_table = column.table  # preserves schema for schema-qualified databases
         generators = []
         with engine.connect() as connection:
-            stmt_count = (
-                select(
-                    column.label("v"),
-                    func.count(column).label("f"),  # pylint: disable=E1102
-                )
-                .select_from(src_table)
-                .group_by(column)
-                .order_by(desc(func.count(column)))  # pylint: disable=E1102
-                .limit(MAXIMUM_CHOICES + 1)
-            )
-            results = connection.execute(stmt_count)
-            if results is not None and results.rowcount <= MAXIMUM_CHOICES:
-                vg = ValueGatherer(results, self.SUPPRESS_COUNT)
-                if vg.counts:
-                    generators += [
-                        ZipfChoiceProposer(
-                            column,
-                            vg.values,
-                            vg.counts,
-                            dialect=dialect,
-                        ),
-                        UniformChoiceProposer(
-                            column,
-                            vg.values,
-                            vg.counts,
-                            dialect=dialect,
-                        ),
-                        WeightedChoiceProposer(
-                            column,
-                            vg.cvs,
-                            vg.counts,
-                            dialect=dialect,
-                        ),
-                    ]
-                if vg.counts_not_suppressed:
-                    generators += [
-                        ZipfChoiceProposer(
-                            column,
-                            vg.values_not_suppressed,
-                            vg.counts_not_suppressed,
-                            suppress_count=self.SUPPRESS_COUNT,
-                            dialect=dialect,
-                        ),
-                        UniformChoiceProposer(
-                            column,
-                            vg.values_not_suppressed,
-                            vg.counts_not_suppressed,
-                            suppress_count=self.SUPPRESS_COUNT,
-                            dialect=dialect,
-                        ),
-                        WeightedChoiceProposer(
-                            column=column,
-                            values=vg.cvs_not_suppressed,
-                            counts=vg.counts_not_suppressed,
-                            suppress_count=self.SUPPRESS_COUNT,
-                            dialect=dialect,
-                        ),
-                    ]
+            # Run the sample first: it's always cheap (bounded by
+            # SAMPLE_COUNT rows) and, if it comes back almost all-distinct,
+            # tells us the exact query below is both unaffordable (for an
+            # unindexed high-cardinality column it can mean a full table
+            # scan plus a disk-spilling hash aggregation) and pointless
+            # (its result would be discarded unseen, since rowcount would
+            # exceed MAXIMUM_CHOICES anyway).
             inner = random_sample(
                 select(column.label("v")).select_from(src_table), self.SAMPLE_COUNT
             ).subquery("_inner")
@@ -399,8 +359,83 @@ class ChoiceProposerFactory(ProposerFactory):
                 .order_by(desc(func.count(inner.c.v)))  # pylint: disable=E1102
             )
             sampled_results = connection.execute(stmt_sample)
-            if sampled_results is not None:
-                vg = ValueGatherer(sampled_results, self.SUPPRESS_COUNT)
+            sampled_rows = (
+                list(sampled_results) if sampled_results is not None else None
+            )
+            sample_distinct_count = len(sampled_rows) if sampled_rows is not None else 0
+            skip_exact = sample_distinct_count >= (
+                self.SAMPLE_COUNT * self.EXACT_SKIP_SAMPLE_DISTINCT_RATIO
+            )
+
+            if not skip_exact:
+                stmt_count = (
+                    select(
+                        column.label("v"),
+                        func.count(column).label("f"),  # pylint: disable=E1102
+                    )
+                    .select_from(src_table)
+                    .group_by(column)
+                    .limit(MAXIMUM_CHOICES + 1)
+                )
+                rows = connection.execute(stmt_count).fetchall()
+                if len(rows) <= MAXIMUM_CHOICES:
+                    # No ORDER BY above: for a high-cardinality column (the
+                    # common case) this result is discarded unseen below, so
+                    # asking the database to sort it first - potentially
+                    # sorting millions of mostly-tied rows just to throw the
+                    # answer away - is pure waste. When we get here the limit
+                    # never bound (every group was returned), so it's cheap and
+                    # correct to sort in Python instead, preserving the
+                    # most-frequent-first order ZipfChoiceProposer relies on.
+                    rows = sorted(rows, key=lambda row: row.f, reverse=True)
+                    vg = ValueGatherer(rows, self.SUPPRESS_COUNT)
+                    if vg.counts:
+                        generators += [
+                            ZipfChoiceProposer(
+                                column,
+                                vg.values,
+                                vg.counts,
+                                dialect=dialect,
+                            ),
+                            UniformChoiceProposer(
+                                column,
+                                vg.values,
+                                vg.counts,
+                                dialect=dialect,
+                            ),
+                            WeightedChoiceProposer(
+                                column,
+                                vg.cvs,
+                                vg.counts,
+                                dialect=dialect,
+                            ),
+                        ]
+                    if vg.counts_not_suppressed:
+                        generators += [
+                            ZipfChoiceProposer(
+                                column,
+                                vg.values_not_suppressed,
+                                vg.counts_not_suppressed,
+                                suppress_count=self.SUPPRESS_COUNT,
+                                dialect=dialect,
+                            ),
+                            UniformChoiceProposer(
+                                column,
+                                vg.values_not_suppressed,
+                                vg.counts_not_suppressed,
+                                suppress_count=self.SUPPRESS_COUNT,
+                                dialect=dialect,
+                            ),
+                            WeightedChoiceProposer(
+                                column=column,
+                                values=vg.cvs_not_suppressed,
+                                counts=vg.counts_not_suppressed,
+                                suppress_count=self.SUPPRESS_COUNT,
+                                dialect=dialect,
+                            ),
+                        ]
+            if sampled_rows is not None:
+                vg = ValueGatherer(sampled_rows, self.SUPPRESS_COUNT)
                 if vg.counts:
                     generators += [
                         ZipfChoiceProposer(
