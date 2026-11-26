@@ -25,7 +25,7 @@ jobs:
         run: |
           python -m ensurepip
           python -m pip install --upgrade pip
-          python -m pip install poetry
+          python -m pip install "poetry>=2.0,<3.0"
       - name: Configure poetry
         shell: bash
         run: |

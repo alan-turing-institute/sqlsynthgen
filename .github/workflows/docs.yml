@@ -20,7 +20,7 @@ jobs:
       - name: Install poetry
         shell: bash
         run: |
-          sudo apt install python3-poetry
+          python -m pip install "poetry>=2.0,<3.0"
       - name: Configure poetry
         shell: bash
         run: |

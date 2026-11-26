@@ -13,11 +13,11 @@ jobs:
         uses: actions/checkout@v6
       - name: Check that tag and package versions match
         run: |
-          PYPROJECT_VERSION=$(sed -n '3p' pyproject.toml | sed "s/version = //")
+          PYPROJECT_VERSION=$(awk '$0 == "[project]" { in_project = 1; next } /^\[/ { in_project = 0 } in_project && /^version = / { gsub(/"/, "", $3); print $3; exit }' pyproject.toml)
           GITHUB_VERSION=${{ github.event.release.tag_name }}
-          if [[ "$PYPROJECT_VERSION" != "\"$GITHUB_VERSION\"" ]]
+          if [[ "$PYPROJECT_VERSION" != "$GITHUB_VERSION" ]]
           then
-              echo "pyproject.toml version $PYPROJECT_VERSION doesn't match GitHub version \"$GITHUB_VERSION\""
+              echo "pyproject.toml version \"$PYPROJECT_VERSION\" doesn't match GitHub version \"$GITHUB_VERSION\""
               exit 1
           fi
       - name: Build and publish to pypi

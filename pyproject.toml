@@ -1,78 +1,79 @@
-[tool.poetry]
+[project]
 name = "datafaker"
 version = "0.5.4"
 description = "Generates fake SQL data"
-authors = ["Tim Band <3266052+tim-band@users.noreply.github.com>"]
+authors = [{name = "Tim Band", email = "3266052+tim-band@users.noreply.github.com"}]
 license = "MIT"
 readme = "README.md"
 classifiers = [
     "Environment :: Console",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Topic :: Database",
     "Topic :: Utilities",
 ]
-homepage = "https://github.com/SAFEHR-data/datafaker"
+requires-python = ">=3.10,<3.14"
+urls = {Homepage = "https://github.com/SAFEHR-data/datafaker"}
+dependencies = [
+    "pydantic[dotenv]>=1.10.2,<2.0.0",
+    "pyodbc>=5.0.0,<6.0.0",
+    "aioodbc>=0.5.0,<0.6.0",
+    "sqlalchemy-utils>=0.41.2,<0.42.0",
+    "mimesis>=18.0.0,<19.0.0",
+    "typer>=0.15.4,<0.16.0",
+    "pyyaml>=6.0,<7.0",
+    "sqlalchemy==2.0.49",
+    "smartnoise-sql>=1.0.0,<2.0.0",
+    "black>=23.3.0,<24.0.0",
+    "jsonschema>=4.17.3,<5.0.0",
+    "asyncpg>=0.30.0,<0.31.0",
+    "greenlet>=3.1.1,<4.0.0",
+    "pymysql>=1.1.0,<2.0.0",
+    "pandas>=2.0.0,<3.0.0",
+    "parsy>=2.1,<3.0",
+    "prettytable>=3.15.1,<4.0.0",
+    "fastparquet>=2024.11.0,<2025.0.0",
+    "duckdb-sqlalchemy>=1.5.2.2,<2.0.0",
+    "ty>=0.0.43,<0.0.44",
+    "colorama>=0.4.6,<0.5.0",
+    "snowflake-sqlalchemy>=1.11.1,<2.0.0",
+    "snowflake-connector-python[secure-local-storage]<5.0.0",
+    "psycopg2>=2.9.13,<3.0.0",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.10,<3.14"
-pydantic = {extras = ["dotenv"], version = "^1.10.2"}
-pyodbc = "^5.0.0"
-aioodbc = "^0.5.0"
-sqlalchemy-utils = "^0.41.2"
-mimesis = "^18.0.0"
-typer = "^0.15.4"
-pyyaml = "^6.0"
-sqlalchemy = "==2.0.49"
-sphinx-rtd-theme = {version = "^1.2.0", optional = true}
-sphinxcontrib-napoleon = {version = "^0.7", optional = true}
-smartnoise-sql = "^1"
-black = "^23.3.0"
-jsonschema = "^4.17.3"
-asyncpg = "^0.30.0"
-greenlet = "^3.1.1"
-pymysql = "^1.1.0"
-pandas = "^2"
-parsy = "^2.1"
-prettytable = "^3.15.1"
-fastparquet = "^2024.11.0"
-duckdb-sqlalchemy = "^1.5.2.2"
-ty = "^0.0.43"
-colorama = "^0.4.6"
-snowflake-sqlalchemy = "^1.11.1"
-snowflake-connector-python = {version = "<5.0.0", extras = ["secure-local-storage"]}
-psycopg2 = "^2.9.13"
+[project.optional-dependencies]
+docs = [
+    "sphinx-rtd-theme>=1.2.0,<2.0.0",
+    "sphinxcontrib-napoleon>=0.7,<0.8.0",
+    "sphinxcontrib-mermaid==2.0.3",
+]
 
-[tool.poetry.group.dev.dependencies]
-isort = "^5.10.1"
-pylint = "^3"
-mypy = "^2.1.0"
-types-pyyaml = "^6.0.12.4"
-pydocstyle = "^6.3.0"
-restructuredtext-lint = "^1.4.0"
-pygments = "^2.14.0"
-rstcheck-core = {extras = ["sphinx"], version = "^1.0.3"}
-json-schema-for-humans = "^1.3.4"
-pre-commit = "^3.3.3"
-testing-postgresql = "^1.3.0"
-duckdb = "^1.4.3"
-sphinx-rtd-theme = "^1.2.0"
-sphinxcontrib-napoleon = "^0.7"
-sphinxcontrib-mermaid = "2.0.3"
-pytest = "^9.0.3"
+[project.scripts]
+datafaker = "datafaker.main:datafaker"
 
-[tool.poetry.group.extras.dependencies]
-tqdm = "^4.65.0"
-
-[tool.poetry.extras]
-docs = ["sphinx-rtd-theme", "sphinxcontrib-napoleon", "sphinxcontrib-mermaid"]
+[dependency-groups]
+dev = [
+    "isort>=5.10.1,<6.0.0",
+    "pylint>=3.0.0,<4.0.0",
+    "mypy>=2.1.0,<3.0.0",
+    "types-pyyaml>=6.0.12.4,<7.0.0",
+    "pydocstyle>=6.3.0,<7.0.0",
+    "restructuredtext-lint>=1.4.0,<2.0.0",
+    "pygments>=2.14.0,<3.0.0",
+    "rstcheck-core[sphinx]>=1.0.3,<2.0.0",
+    "json-schema-for-humans>=1.3.4,<2.0.0",
+    "pre-commit>=3.3.3,<4.0.0",
+    "testing-postgresql>=1.3.0,<2.0.0",
+    "duckdb>=1.4.3,<2.0.0",
+    "sphinx-rtd-theme>=1.2.0,<2.0.0",
+    "sphinxcontrib-napoleon>=0.7,<0.8.0",
+    "sphinxcontrib-mermaid==2.0.3",
+    "pytest>=9.0.3,<10.0.0",
+]
+extras = ["tqdm>=4.65.0,<5.0.0"]
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=2.0.0"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.poetry.scripts]
-datafaker = "datafaker.main:datafaker"
 
 [tool.isort]
 profile = "black"
