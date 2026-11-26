@@ -1,0 +1,49 @@
+---
+name: cross platform install check
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+jobs:
+  poetry-install:
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      # Install poetry into the setup-python interpreter rather than via apt,
+      # so it doesn't run on (and build the venv with) the runner's system Python.
+      - name: Install poetry
+        shell: bash
+        run: python -m pip install "poetry>=2.0"
+      - name: Check poetry version
+        shell: bash
+        run: python -m poetry --version
+      - name: Install datafaker
+        shell: bash
+        run: python -m poetry install --all-extras
+  uv-install:
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Check uv version
+        shell: bash
+        run: uv --version
+      - name: Install datafaker
+        shell: bash
+        run: uv sync
